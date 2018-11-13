@@ -9,6 +9,7 @@
       <Filter>template code</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Sphere.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -21,6 +22,7 @@
     <ClInclude Include="precomp.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Ray.h" />
+    <ClInclude Include="Sphere.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">

@@ -1,17 +1,4 @@
 #pragma once
-struct Ray
-{
-	vec3 Origin = { 0,0,0 };
-	vec3 Direction;
-};
-
-//To support intermediate results > 255, store colors as 3 uints. This is probably terrible performance wise.
-struct Color
-{
-	uint R = 0;
-	uint G = 0;
-	uint B = 0;
-};
 
 
 class Camera

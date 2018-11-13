@@ -66,7 +66,9 @@ using namespace std;
 
 using namespace Tmpl8;
 // Own headers
+
 #include "Ray.h"
+#include "Sphere.h"
 #include "Camera.h"
 
 #include "game.h"

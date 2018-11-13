@@ -5,6 +5,7 @@
 // -----------------------------------------------------------
 void Game::Init()
 {
+	sphere = new Sphere(vec3(0, 0, 8), 1, 0xff0000);
 }
 
 // -----------------------------------------------------------
@@ -26,9 +27,8 @@ void Game::Tick( float deltaTime )
 		{
 			Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
 			
-			Color result = TraceRay(ray);
-			uint color = ((result.R & 255) << 16) + ((result.G & 255) << 8) + (result.B & 255);
-			screen->Plot(pixelx, pixely, color);
+			uint result = TraceRay(ray).to_uint();
+			screen->Plot(pixelx, pixely, result);
 			
 		}
 	}
@@ -40,6 +40,11 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 	color.R = 0;
 	color.G = 0;
 	color.B = 0;
+
+	if (sphere->Intersect(ray) != -1) {
+		color = sphere->color;
+		int c = 9;
+	}
 
 	return color;
 }

@@ -19,6 +19,7 @@ private:
 	Camera camera;
 
 	Color TraceRay(Ray ray);
+	Sphere* sphere;
 
 };
 
