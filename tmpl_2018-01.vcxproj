@@ -138,6 +138,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="template.cpp">
@@ -147,6 +148,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="Geometry.h" />
     <ClInclude Include="precomp.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Sphere.h" />

@@ -19,7 +19,8 @@ float Sphere::Intersect(Ray ray)
 	if (p2 > r2) return -1.0f; //No collision
 
 	t -= sqrt(r2 - p2);
-	return t; //Collision a t.
+	if(t > 0) return t; //Collision a t.
+	else return -1.0f;
 }
 
 

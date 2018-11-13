@@ -68,6 +68,7 @@ using namespace Tmpl8;
 // Own headers
 
 #include "Ray.h"
+#include "Geometry.h"
 #include "Sphere.h"
 #include "Camera.h"
 
