@@ -102,7 +102,6 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 //Cast a ray from the collision point towards the light, to check if light can reach the point
 //TODO: make light sources dynamic. (aka create a class for them and loop over them)
 //TODO: consider distance to light source.
-//TODO: fix that ugly line where the 'does not reach light' crosses in the the 'crosses light, but N dot L should be almost zero'-zone
 //TODO: Check the normals. I suspect some of them are inverted. 
 
 Color Tmpl8::Game::DirectIllumination(Collision collision)
