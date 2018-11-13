@@ -102,7 +102,6 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 //Cast a ray from the collision point towards the light, to check if light can reach the point
 //TODO: make light sources dynamic. (aka create a class for them and loop over them)
 //TODO: consider distance to light source.
-//TODO: Check the normals. I suspect some of them are inverted. 
 
 Color Tmpl8::Game::DirectIllumination(Collision collision)
 {
@@ -114,7 +113,7 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 
 	Ray scatterray;
 	scatterray.Direction = L;
-	scatterray.Origin = collision.Pos - (0.00001 * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction
+	scatterray.Origin = collision.Pos + (0.00001 * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction
 
 	bool collided = false;
 	for (int i = 0; i < numGeometries; i++)
@@ -135,7 +134,7 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 	else {
 		lightcolor.from_uint(0xffffff);
 		//printf("N dot L: %f", dot(-collision.N, L));
-		return lightcolor * dot(-collision.N, L);
+		return lightcolor * dot(collision.N, L);
 	}
 
 }

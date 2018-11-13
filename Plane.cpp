@@ -24,7 +24,7 @@ Collision Plane::Intersect(Ray ray)
 	}
 	else
 	{
-		collision.N = N; //TODO: this is not always correct. If the ray comes from the other side, it should be -N
+		collision.N = -N; //TODO: this is not always correct. If the ray comes from the other side, it should be N
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;
 		collision.t = t;

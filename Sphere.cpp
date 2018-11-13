@@ -29,7 +29,7 @@ Collision Sphere::Intersect(Ray ray)
 		collision.t = t;
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;
-		collision.N = (position - collision.Pos).normalized();
+		collision.N = (collision.Pos - position).normalized();
 		return collision; //Collision at t.
 	}
 	else {
