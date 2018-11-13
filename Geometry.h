@@ -1,4 +1,6 @@
 #pragma once
+
+//This is a base class used for geometry objects.
 class Geometry
 {
 public:

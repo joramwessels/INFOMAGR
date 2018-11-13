@@ -36,3 +36,18 @@ Ray Camera::generateRayTroughVirtualScreen(int pixelx, int pixely)
 	return ray;
 }
 
+void Camera::moveTo(vec3 position, vec3 direction)
+{
+	this->position = position;
+	this->direction = direction.normalized();
+	this->virtualScreenDistance = virtualScreenDistance;
+
+	virtualScreenCenter = position + virtualScreenDistance * direction;
+
+	//Calculate the virtual screen corners
+	virtualScreenCornerTL = virtualScreenCenter + vec3(-1, -1, 0); //top left
+	virtualScreenCornerTR = virtualScreenCenter + vec3(1, -1, 0); //top right
+	virtualScreenCornerBL = virtualScreenCenter + vec3(-1, 1, 0); //bottom left
+
+}
+

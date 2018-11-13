@@ -27,6 +27,10 @@ private:
 	int numGeometries = 2;
 	Geometry** geometry;
 
+
+	//For moving camera, just for fun :)
+	vec3 camerapos = { 0,0,0 };
+
 };
 
 }; // namespace Tmpl8

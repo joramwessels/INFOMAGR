@@ -9,6 +9,8 @@ public:
 
 	Ray generateRayTroughVirtualScreen(int pixelx, int pixely);
 
+	void moveTo(vec3 position, vec3 direction);
+
 private:
 	vec3 position;
 	vec3 direction;
