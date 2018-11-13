@@ -5,8 +5,15 @@
 // -----------------------------------------------------------
 void Game::Init()
 {
-	sphere = new Sphere(vec3(0, 0, 8), 1, 0xff0000);
-	plane = new Plane(vec3(0, 1, 0), -3.0f, 0x00ff00);
+	numGeometries = 6;
+	geometry = new Geometry*[numGeometries];
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0x00ff00);
+	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff0000);
+	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff0000);
+	geometry[3] = new Sphere(vec3(0, 1, 8), 1, 0xff0000);
+	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff0000);
+	geometry[5] = new Sphere(vec3(4.2, 2, 8), 1, 0xff0000);
+
 }
 
 // -----------------------------------------------------------
@@ -35,6 +42,23 @@ void Game::Tick( float deltaTime )
 	}
 }
 
+Geometry * Tmpl8::Game::nearestCollision(Ray ray)
+{
+	float closestdist = 0xffffff;
+	Geometry* closest = nullptr;
+
+	for (int i = 0; i < numGeometries; i++)
+	{
+		float dist = geometry[i]->Intersect(ray);
+		if (dist != -1 && dist < closestdist) {
+			//Collision
+			closest = geometry[i];
+			closestdist = dist;
+		}
+	}
+	return closest;
+}
+
 Color Tmpl8::Game::TraceRay(Ray ray)
 {
 	Color color;
@@ -42,15 +66,12 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 	color.G = 0;
 	color.B = 0;
 
-	if (plane->Intersect(ray) != -1) {
-		color = plane->color;
-	}
+	Geometry* collision = nearestCollision(ray);
 
-	
-	if (sphere->Intersect(ray) != -1) {
-	color = sphere->color;
+	if (collision != nullptr)
+	{
+		color = collision->color;
 	}
-	
 
 	return color;
 }

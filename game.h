@@ -18,9 +18,14 @@ private:
 	Surface* screen;
 	Camera camera;
 
+	Geometry* nearestCollision(Ray ray);
+
 	Color TraceRay(Ray ray);
 	Sphere* sphere;
 	Plane* plane;
+
+	int numGeometries = 2;
+	Geometry** geometry;
 
 };
 
