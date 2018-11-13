@@ -1,6 +1,7 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-bool animatecamera = false;
+bool animatecamera = true;
+int frame = 0;
 
 // -----------------------------------------------------------
 // Initialize the application
@@ -53,6 +54,7 @@ void Game::Tick( float deltaTime )
 		camerapos.z += 0.01;
 		camera.moveTo(camerapos, { 0,0,1 });
 	}
+	printf("Frame %i done. \n", frame++);
 }
 
 //Find the nearest collision along the ray
@@ -62,12 +64,13 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 	Collision closest;
 	closest.t = -1;
 
+	//Loop over all geometries to find the closest collision
 	for (int i = 0; i < numGeometries; i++)
 	{
 		Collision collision = geometry[i]->Intersect(ray);
 		float dist = collision.t;
 		if (dist != -1 && dist < closestdist) {
-			//Collision
+			//Collision. Check if closest
 			closest = collision;
 			closestdist = dist;
 		}
@@ -75,7 +78,7 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 	return closest;
 }
 
-//Trace the ray. TODO: add light sources and stuff
+//Trace the ray. 
 Color Tmpl8::Game::TraceRay(Ray ray)
 {
 	Color color;
@@ -83,22 +86,28 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 	color.G = 0;
 	color.B = 0;
 
+	//check if the ray collides
 	Collision collision = nearestCollision(ray);
 
 	if (collision.t != -1)
 	{
-		color = collision.other->color * DirectIllumination(collision); // * directillumination
-		int d = 7;
+		//The ray collides.
+		color = collision.other->color * DirectIllumination(collision); 
 	}
 
+	//Ray out of scene
 	return color;
 }
 
 //Cast a ray from the collision point towards the light, to check if light can reach the point
+//TODO: make light sources dynamic. (aka create a class for them and loop over them)
+//TODO: consider distance to light source.
+//TODO: fix that ugly line where the 'does not reach light' crosses in the the 'crosses light, but N dot L should be almost zero'-zone
+//TODO: Check the normals. I suspect some of them are inverted. 
+
 Color Tmpl8::Game::DirectIllumination(Collision collision)
 {
 	vec3 lightposition = { -5, -5, 0 };
-	//vec3 lightposition = { 0, -5, 0 };
 	Color lightcolor;
 	lightcolor.from_uint(0x000000);
 
@@ -106,7 +115,7 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 
 	Ray scatterray;
 	scatterray.Direction = L;
-	scatterray.Origin = collision.Pos - (0.0001 * collision.N); //move away a little bit from the surface
+	scatterray.Origin = collision.Pos - (0.0001 * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction
 
 	bool collided = false;
 	for (int i = 0; i < numGeometries; i++)
@@ -115,7 +124,7 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 		Collision scattercollision = geometry[i]->Intersect(scatterray);
 		if (scattercollision.t != -1)
 		{
-			//This ray does not reach the light source
+			//Collision, so this ray does not reach the light source
 			collided = true;
 			break;
 		}
@@ -126,7 +135,8 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 	}
 	else {
 		lightcolor.from_uint(0xffffff);
-		return lightcolor;
+		//printf("N dot L: %f", dot(-collision.N, L));
+		return lightcolor * dot(-collision.N, L);
 	}
 
 }
