@@ -12,10 +12,10 @@ void Game::Init()
 	geometry = new Geometry*[numGeometries];
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0x00ff00);
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff0000);
-	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff0000);
-	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff0000);
-	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff0000);
-	geometry[5] = new Sphere(vec3(4.2, 2, 8), 1, 0xff0000);
+	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff22222);
+	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff4444);
+	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff6666);
+	geometry[5] = new Sphere(vec3(4.2, 2, 8), 1, 0xff8888);
 
 }
 
