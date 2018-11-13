@@ -15,9 +15,21 @@ Plane::~Plane()
 {
 }
 
-float Plane::Intersect(Ray ray)
+Collision Plane::Intersect(Ray ray)
 {
 	float t = -(dot(ray.Origin, N) + d) / (dot(ray.Direction, N));
-	if (t < 0) return -1.0f;
-	else return t;
+
+	Collision collision;
+	if (t < 0) {
+		collision.t = -1;
+		return collision;
+	}
+	else
+	{
+		collision.N = N;
+		collision.other = this;
+		collision.Pos = ray.Origin + t * ray.Direction;
+		collision.t = t;
+		return collision;
+	}
 }

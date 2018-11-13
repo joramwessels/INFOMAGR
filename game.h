@@ -18,7 +18,7 @@ private:
 	Surface* screen;
 	Camera camera;
 
-	Geometry* nearestCollision(Ray ray);
+	Collision nearestCollision(Ray ray);
 
 	Color TraceRay(Ray ray);
 	Sphere* sphere;
@@ -27,6 +27,7 @@ private:
 	int numGeometries = 2;
 	Geometry** geometry;
 
+	Color DirectIllumination(Collision collision);
 
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };

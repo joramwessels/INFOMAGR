@@ -1,4 +1,5 @@
 #pragma once
+class Geometry; //Forward declaration
 
 struct Ray
 {
@@ -13,6 +14,12 @@ struct Color
 	uint G = 0;
 	uint B = 0;
 
+	Color(uint R = 0, uint G = 0, uint B = 0) {
+		this->B = B;
+		this->G = G;
+		this->R = R;
+	}
+
 	uint to_uint() {
 		return ((R & 255) << 16) + ((G & 255) << 8) + (B & 255);
 	}
@@ -22,4 +29,17 @@ struct Color
 		G = (color >> 8) & 255;
 		R = (color >> 16) & 255;
 	}
+
+	Color operator * (const Color& operand) const { return Color(R * operand.R, G * operand.G, B * operand.B); }
+	Color operator / (const Color& operand) const { return Color(R / operand.R, G / operand.G, B / operand.B); }
+	Color operator / (const float& operand) const { return Color(R / operand, G / operand, B / operand); }
+
+};
+
+struct Collision
+{
+	Geometry* other;
+	vec3 N;
+	vec3 Pos;
+	float t;
 };

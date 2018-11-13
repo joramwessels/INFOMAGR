@@ -8,7 +8,7 @@ public:
 	~Geometry();
 	Color color;
 
-	virtual float Intersect(Ray ray);
+	virtual Collision Intersect(Ray ray);
 
 private:
 };

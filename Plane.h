@@ -7,7 +7,7 @@ public:
 	Plane(vec3 N, float d, uint color);
 	~Plane();
 
-	float Intersect(Ray ray) override;
+	Collision Intersect(Ray ray) override;
 
 
 private:

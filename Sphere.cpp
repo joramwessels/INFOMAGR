@@ -9,18 +9,33 @@ Sphere::Sphere(vec3 position, float r, uint color)
 	this->color.from_uint(color);
 }
 
-float Sphere::Intersect(Ray ray)
+Collision Sphere::Intersect(Ray ray)
 {
+	Collision collision;
+
 	vec3 c = position - ray.Origin;
 	float t = dot(c, ray.Direction);
 	vec3 q = c - (t * ray.Direction);
 	float p2 = dot(q, q);
 
-	if (p2 > r2) return -1.0f; //No collision
+	if (p2 > r2) {
+		collision.t = -1; //No collision
+		return collision;
+	}
 
 	t -= sqrt(r2 - p2);
-	if(t > 0) return t; //Collision a t.
-	else return -1.0f;
+	if (t > 0)
+	{
+		collision.t = t;
+		collision.other = this;
+		collision.Pos = ray.Origin + t * ray.Direction;
+		collision.N = (position - collision.Pos).normalized();
+		return collision; //Collision at t.
+	}
+	else {
+		collision.t = -1; //No collision
+	}
+	return collision;
 }
 
 
