@@ -65,6 +65,10 @@ using namespace std;
 #include "template.h"
 
 using namespace Tmpl8;
+// Own headers
+#include "Ray.h"
+#include "Camera.h"
 
 #include "game.h"
 // clang-format on
+

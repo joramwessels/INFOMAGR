@@ -16,6 +16,10 @@ public:
 	void KeyDown( int key ) { /* implement if you want to handle keys */ }
 private:
 	Surface* screen;
+	Camera camera;
+
+	Color TraceRay(Ray ray);
+
 };
 
 }; // namespace Tmpl8
