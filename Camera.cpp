@@ -10,9 +10,11 @@ Camera::Camera(vec3 position, vec3 direction, float virtualScreenDistance)
 	virtualScreenCenter = position + virtualScreenDistance * direction;
 
 	//Calculate the virtual screen corners
-	virtualScreenCornerTL = virtualScreenCenter + vec3(-1, -1, 0); //top left
-	virtualScreenCornerTR = virtualScreenCenter + vec3(1, -1, 0); //top right
-	virtualScreenCornerBL = virtualScreenCenter + vec3(-1, 1, 0); //bottom left
+
+
+	virtualScreenCornerTL = virtualScreenCenter + vec3(-xsize, -ysize, 0); //top left
+	virtualScreenCornerTR = virtualScreenCenter + vec3(xsize, -ysize, 0); //top right
+	virtualScreenCornerBL = virtualScreenCenter + vec3(-xsize, ysize, 0); //bottom left
 }
 
 
@@ -45,9 +47,9 @@ void Camera::moveTo(vec3 position, vec3 direction)
 	virtualScreenCenter = position + virtualScreenDistance * direction;
 
 	//Calculate the virtual screen corners
-	virtualScreenCornerTL = virtualScreenCenter + vec3(-1, -1, 0); //top left
-	virtualScreenCornerTR = virtualScreenCenter + vec3(1, -1, 0); //top right
-	virtualScreenCornerBL = virtualScreenCenter + vec3(-1, 1, 0); //bottom left
+	virtualScreenCornerTL = virtualScreenCenter + vec3(-xsize, -ysize, 0); //top left
+	virtualScreenCornerTR = virtualScreenCenter + vec3(xsize, -ysize, 0); //top right
+	virtualScreenCornerBL = virtualScreenCenter + vec3(-xsize, ysize, 0); //bottom left
 
 }
 

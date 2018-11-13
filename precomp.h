@@ -9,6 +9,9 @@
 
 #define SCRWIDTH 800
 #define SCRHEIGHT 800
+//#define SCRWIDTH 1920
+//#define SCRHEIGHT 1080
+
 // #define FULLSCREEN
 // #define ADVANCEDGL	// faster if your system supports it
 

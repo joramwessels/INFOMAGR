@@ -19,5 +19,9 @@ private:
 	vec3 virtualScreenCenter;
 
 	vec3 virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL;
+
+	float xsize = SCRWIDTH / 800.0f;
+	float ysize = SCRHEIGHT / 800.0f;
+
 };
 
