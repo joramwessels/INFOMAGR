@@ -70,6 +70,7 @@ using namespace Tmpl8;
 #include "Ray.h"
 #include "Geometry.h"
 #include "Sphere.h"
+#include "Plane.h"
 #include "Camera.h"
 
 #include "game.h"

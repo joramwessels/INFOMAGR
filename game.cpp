@@ -6,6 +6,7 @@
 void Game::Init()
 {
 	sphere = new Sphere(vec3(0, 0, 8), 1, 0xff0000);
+	plane = new Plane(vec3(0, 1, 0), -3.0f, 0x00ff00);
 }
 
 // -----------------------------------------------------------
@@ -41,10 +42,15 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 	color.G = 0;
 	color.B = 0;
 
-	if (sphere->Intersect(ray) != -1) {
-		color = sphere->color;
-		int c = 9;
+	if (plane->Intersect(ray) != -1) {
+		color = plane->color;
 	}
+
+	
+	if (sphere->Intersect(ray) != -1) {
+	color = sphere->color;
+	}
+	
 
 	return color;
 }

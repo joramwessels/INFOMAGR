@@ -20,6 +20,7 @@ private:
 
 	Color TraceRay(Ray ray);
 	Sphere* sphere;
+	Plane* plane;
 
 };
 
