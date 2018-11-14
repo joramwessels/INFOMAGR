@@ -4,7 +4,7 @@
 class Camera
 {
 public:
-	Camera(vec3 position = { 0,0,0 }, vec3 direction = { 0,0,1 }, float virtualScreenDistance = 1);
+	Camera(vec3 position = { 0,0,0 }, vec3 direction = { 0,0,1 }, float virtualScreenDistance = 1.2);
 	~Camera();
 
 	Ray generateRayTroughVirtualScreen(int pixelx, int pixely);
