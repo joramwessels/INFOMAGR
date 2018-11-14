@@ -24,6 +24,14 @@ struct Color
 		return ((R & 255) << 16) + ((G & 255) << 8) + (B & 255);
 	}
 
+	uint to_uint_safe() {
+		uint Rtemp = R, Gtemp = G, Btemp = B;
+		if (R > 255) Rtemp = 255; //Set the last bits all to one.
+		if (G > 255) Gtemp = 255; //Set the last bits all to one.
+		if (B > 255) Btemp = 255; //Set the last bits all to one.
+		return ((Rtemp & 255) << 16) + ((Gtemp & 255) << 8) + (Btemp & 255);
+	}
+
 	void from_uint(uint color) {
 		B = color & 255;
 		G = (color >> 8) & 255;

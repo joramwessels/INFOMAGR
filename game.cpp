@@ -42,7 +42,8 @@ void Game::Tick( float deltaTime )
 			Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
 			
 			//Trace the ray, and plot the result to the screen
-			uint result = (TraceRay(ray) / 255).to_uint();
+			int hdrscale = 255;
+			uint result = (TraceRay(ray) / hdrscale).to_uint_safe();
 			screen->Plot(pixelx, pixely, result);
 			
 		}
@@ -113,7 +114,7 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 
 	Ray scatterray;
 	scatterray.Direction = L;
-	scatterray.Origin = collision.Pos + (0.00001 * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction
+	scatterray.Origin = collision.Pos + (0.00001f * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction
 
 	bool collided = false;
 	for (int i = 0; i < numGeometries; i++)
@@ -133,8 +134,10 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 	}
 	else {
 		lightcolor.from_uint(0xffffff);
+		lightcolor = lightcolor * 1000;
 		//printf("N dot L: %f", dot(-collision.N, L));
-		return lightcolor * dot(collision.N, L);
+		float r = (lightposition - collision.Pos).length();
+		return lightcolor * (dot(collision.N, L) / (4 * PI * r * r));
 	}
 
 }
