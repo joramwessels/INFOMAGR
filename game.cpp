@@ -35,6 +35,7 @@ void Game::Shutdown()
 void Game::Tick( float deltaTime )
 {
 	//Shoot a ray for every pixel
+#pragma omp parallel for
 	for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
 	{
 		for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
