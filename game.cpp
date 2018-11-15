@@ -138,7 +138,7 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 		lightcolor = lightcolor * 1000;
 		//printf("N dot L: %f", dot(-collision.N, L));
 		float r = (lightposition - collision.Pos).length();
-		return lightcolor * (dot(collision.N, L) / (4 * PI * r * r));
+		return lightcolor * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
 	}
 
 }
