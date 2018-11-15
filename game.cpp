@@ -11,14 +11,25 @@ void Game::Init()
 
 	//Set up the scene
 	numGeometries = 6;
-	//geometry = new Geometry*[numGeometries];
-	geometry = new Geometry*[6];
+	geometry = new Geometry*[numGeometries];
+	//geometry = new Geometry*[6];
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0x00ff00);
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff0000);
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff22222);
 	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff4444);
 	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff6666);
 	geometry[5] = new Sphere(vec3(4.2, 2, 8), 1, 0xff8888);
+
+	numLights = 2;
+	lights = new Light[numLights];
+	lights[0].position = { -5, -5, 20 };
+	lights[0].color.from_uint(0xffffff);
+	lights[0].color = lights[0].color * 700;
+
+	lights[1].position = {5, -5, 0 };
+	lights[1].color.from_uint(0xffffff);
+	lights[1].color = lights[1].color * 700;
+
 
 }
 
@@ -108,38 +119,42 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 
 Color Tmpl8::Game::DirectIllumination(Collision collision)
 {
-	vec3 lightposition = { -5, -5, 0 };
-	Color lightcolor;
-	lightcolor.from_uint(0x000000);
+	Color result;
+	result.from_uint(0x000000);
 
-	vec3 L = (lightposition - collision.Pos).normalized();
-
-	Ray scatterray;
-	scatterray.Direction = L;
-	scatterray.Origin = collision.Pos + (0.0000025f * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
-
-	bool collided = false;
-	for (int i = 0; i < numGeometries; i++)
+	for (int i = 0; i < numLights; i++)
 	{
-		//Check if position is reachable by lightsource
-		Collision scattercollision = geometry[i]->Intersect(scatterray);
-		if (scattercollision.t != -1)
+
+
+		vec3 L = (lights[i].position - collision.Pos).normalized();
+
+		Ray scatterray;
+		scatterray.Direction = L;
+		scatterray.Origin = collision.Pos + (0.0000025f * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
+
+		bool collided = false;
+		for (int i = 0; i < numGeometries; i++)
 		{
-			//Collision, so this ray does not reach the light source
-			collided = true;
-			break;
+			//Check if position is reachable by lightsource
+			Collision scattercollision = geometry[i]->Intersect(scatterray);
+			if (scattercollision.t != -1)
+			{
+				//Collision, so this ray does not reach the light source
+				collided = true;
+				break;
+			}
+		}
+
+		if (collided) {
+			continue;
+		}
+		else {
+			//lightcolor.from_uint(0xffffff);
+			//lightcolor = lightcolor * 1000;
+			//printf("N dot L: %f", dot(-collision.N, L));
+			float r = (lights[i].position - collision.Pos).length();
+			result += lights[i].color * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
 		}
 	}
-
-	if (collided) {
-		return lightcolor;
-	}
-	else {
-		lightcolor.from_uint(0xffffff);
-		lightcolor = lightcolor * 1000;
-		//printf("N dot L: %f", dot(-collision.N, L));
-		float r = (lightposition - collision.Pos).length();
-		return lightcolor * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
-	}
-
+	return result;
 }

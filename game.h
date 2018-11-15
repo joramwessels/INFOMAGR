@@ -29,6 +29,9 @@ private:
 
 	Color DirectIllumination(Collision collision);
 
+	int numLights = 2;
+	Light* lights;
+
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
