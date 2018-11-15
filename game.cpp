@@ -13,23 +13,26 @@ void Game::Init()
 	numGeometries = 6;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
-	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0x11ff11);
-	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff0000);
-	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff22222);
-	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff4444);
-	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff6666);
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0xff8888);
+	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff8888);
+	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff8888);
+	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff8888);
+	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff8888);
 	geometry[5] = new Sphere(vec3(4.2, 2, 8), 1, 0xff8888);
 
-	numLights = 2;
+	numLights = 3;
 	lights = new Light[numLights];
 	lights[0].position = { -5, -5, 20 };
-	lights[0].color = 0xffffff;
+	lights[0].color = 0xff1111;
 	lights[0].color = lights[0].color * 700;
 
 	lights[1].position = {5, -5, 0 };
-	lights[1].color = 0xffffff;
+	lights[1].color = 0x1111ff;
 	lights[1].color = lights[1].color * 700;
 
+	lights[2].position = { -5, -5, 0 };
+	lights[2].color = 0x11ff11;
+	lights[2].color = lights[2].color * 700;
 
 }
 
