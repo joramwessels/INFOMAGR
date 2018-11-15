@@ -13,7 +13,7 @@ void Game::Init()
 	numGeometries = 6;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
-	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0x00ff00);
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0x11ff11);
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff0000);
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff22222);
 	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff4444);
@@ -23,11 +23,11 @@ void Game::Init()
 	numLights = 2;
 	lights = new Light[numLights];
 	lights[0].position = { -5, -5, 20 };
-	lights[0].color.from_uint(0xffffff);
+	lights[0].color = 0xffffff;
 	lights[0].color = lights[0].color * 700;
 
 	lights[1].position = {5, -5, 0 };
-	lights[1].color.from_uint(0xffffff);
+	lights[1].color = 0xffffff;
 	lights[1].color = lights[1].color * 700;
 
 
@@ -119,8 +119,7 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 
 Color Tmpl8::Game::DirectIllumination(Collision collision)
 {
-	Color result;
-	result.from_uint(0x000000);
+	Color result = 0x000000;
 
 	for (int i = 0; i < numLights; i++)
 	{
@@ -149,7 +148,6 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 			continue;
 		}
 		else {
-			//lightcolor.from_uint(0xffffff);
 			//lightcolor = lightcolor * 1000;
 			//printf("N dot L: %f", dot(-collision.N, L));
 			float r = (lights[i].position - collision.Pos).length();

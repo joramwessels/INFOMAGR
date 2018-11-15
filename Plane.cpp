@@ -5,7 +5,7 @@ Plane::Plane(vec3 N, float d, uint color)
 {
 	this->N = N.normalized();
 	this->d = d;
-	this->color.from_uint(color);
+	this->color = color;
 
 }
 

@@ -41,6 +41,7 @@ struct Color
 	Color operator * (const Color& operand) const { return Color(R * operand.R, G * operand.G, B * operand.B); }
 	Color operator + (const Color& operand) const { return Color(R + operand.R, G + operand.G, B + operand.B); }
 	void operator += (const Color& operand) {R += operand.R; G += operand.G; B += operand.B;}
+	void operator = (const uint& operand) {from_uint(operand);}
 
 	Color operator * (const float& operand) const { return Color((float)R * operand, (float)G * operand, (float)B * operand); }
 	Color operator / (const Color& operand) const { return Color(R / operand.R, G / operand.G, B / operand.B); }
