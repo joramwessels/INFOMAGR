@@ -111,10 +111,10 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 //Trace the ray. 
 Color Tmpl8::Game::TraceRay(Ray ray)
 {
-	Color color;
-	color.R = 0;
-	color.G = 0;
-	color.B = 0;
+	Color color; //sky color
+	/*color.R = 25500;
+	color.G = 25500;
+	color.B = 25500;*/
 
 	//check if the ray collides
 	Collision collision = nearestCollision(ray);
