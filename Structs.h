@@ -58,7 +58,7 @@ struct Material
 	};
 
 	MATERIALTYPE type = DIFFUSE;
-	Color color;
+	Color color; //Should be in range 0...255, to avoid problems with mirrors
 
 	Material()
 	{
