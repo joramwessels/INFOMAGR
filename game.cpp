@@ -134,7 +134,7 @@ Color Tmpl8::Game::TraceRay(Ray ray, int recursiondepth)
 		{
 			Ray reflectedray;
 			reflectedray.Direction = reflect(ray.Direction, collision.N);
-			reflectedray.Origin = collision.Pos; // My intuition says 0.0001f * reflectedray.Direction should be added to this. But it seems to work fine without.
+			reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction; 
 			return (collision.other->material.color * TraceRay(reflectedray, recursiondepth + 1)) / 255; //Devide by 255 to scale back into the same range, after multiplying by material color.
 		}
 	}
