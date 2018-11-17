@@ -156,7 +156,7 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="precomp.h" />
-    <ClInclude Include="Ray.h" />
+    <ClInclude Include="Structs.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="surface.h" />
     <ClInclude Include="template.h" />

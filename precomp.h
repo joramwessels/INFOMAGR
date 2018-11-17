@@ -70,7 +70,7 @@ using namespace std;
 using namespace Tmpl8;
 // Own headers
 
-#include "Ray.h"
+#include "Structs.h"
 #include "Geometry.h"
 #include "Sphere.h"
 #include "Plane.h"

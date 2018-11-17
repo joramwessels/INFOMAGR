@@ -23,10 +23,10 @@
     </ClInclude>
     <ClInclude Include="precomp.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="Ray.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Plane.h" />
+    <ClInclude Include="Structs.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">
