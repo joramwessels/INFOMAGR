@@ -6,7 +6,9 @@ class Geometry
 public:
 	Geometry();
 	~Geometry();
-	Color color;
+	//Color color;
+
+	Material material;
 
 	virtual Collision Intersect(Ray ray);
 

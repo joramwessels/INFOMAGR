@@ -3,7 +3,7 @@
 class Sphere : public Geometry
 {
 public:
-	Sphere(vec3 position, float r, uint color);
+	Sphere(vec3 position, float r, Material material);
 	Collision Intersect(Ray ray) override;
 
 private:

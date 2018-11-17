@@ -10,15 +10,16 @@ void Game::Init()
 {
 
 	//Set up the scene
-	numGeometries = 6;
+	numGeometries = 7;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
-	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, 0xff8888);
-	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, 0xff8888);
-	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, 0xff8888);
-	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, 0xff8888);
-	geometry[4] = new Sphere(vec3(2.1, 1.5, 8), 1, 0xff8888);
-	geometry[5] = new Sphere(vec3(4.2, 2, 8), 1, 0xff8888);
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material::DIFFUSE, 0xff8888));
+	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, 0xff8888));
+	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff8888));
+	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::MIRROR, 0xffffff));
+	geometry[4] = new Sphere(vec3(0, -2, 15), 1, Material(Material::MIRROR, 0xffffff));
+	geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xff8888));
+	geometry[6] = new Sphere(vec3(4.2, 2, 8), 1, Material(Material::DIFFUSE, 0xff8888));
 
 	numLights = 3;
 	lights = new Light[numLights];
@@ -71,7 +72,19 @@ void Game::Tick( float deltaTime )
 		camerapos.z += 0.01;
 		camera.moveTo(camerapos, { 0,0,1 });
 	}
-	printf("Frame %i done. \n", frame++);
+	//printf("Frame %i done. \n", frame++);
+}
+
+void Tmpl8::Game::MouseMove(int x, int y)
+{
+/*	float xf = x / 1000;
+
+	printf("mouse move: %i, %i \n", x, y);
+	vec3 currdirection = camera.getDirection();
+	float newx = currdirection.x * cosf(xf) - currdirection.y * sinf(xf);
+	float newy = currdirection.x * sinf(xf) - currdirection.y * cosf(xf);
+	camera.moveTo({ 0,0,0 }, vec3(newx, 0, newy));
+	*/
 }
 
 //Find the nearest collision along the ray
@@ -109,7 +122,17 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 	if (collision.t != -1)
 	{
 		//The ray collides.
-		color = collision.other->color * DirectIllumination(collision); 
+		if (collision.other->material.type == Material::DIFFUSE)
+		{
+			color = collision.other->material.color * DirectIllumination(collision);
+		}
+		if (collision.other->material.type == Material::MIRROR)
+		{
+			Ray reflectedray;
+			reflectedray.Direction = reflect(ray.Direction, collision.N);
+			reflectedray.Origin = collision.Pos + 0.0001f * reflectedray.Direction;
+			return TraceRay(reflectedray); //TODO: this should be multiplied by collision.other->material.color
+		}
 	}
 
 	//Ray out of scene
@@ -158,4 +181,9 @@ Color Tmpl8::Game::DirectIllumination(Collision collision)
 		}
 	}
 	return result;
+}
+
+vec3 Tmpl8::Game::reflect(vec3 D, vec3 N)
+{
+	return D - 2 * (dot(D, N)) * N;
 }

@@ -49,6 +49,36 @@ struct Color
 
 };
 
+struct Material
+{
+	enum MATERIALTYPE {
+		DIFFUSE,
+		MIRROR,
+		GLASS
+	};
+
+	MATERIALTYPE type = DIFFUSE;
+	Color color;
+
+	Material()
+	{
+		type = DIFFUSE;
+		color.from_uint(0xffffff);
+	}
+
+	Material(MATERIALTYPE type, Color color)
+	{
+		this->type = type;
+		this->color = color;
+	}
+
+	Material(MATERIALTYPE type, uint color) {
+		this->type = type;
+		this->color.from_uint(color);
+
+	}
+};
+
 struct Collision
 {
 	Geometry* other;

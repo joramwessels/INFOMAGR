@@ -1,11 +1,11 @@
 #include "precomp.h"
 #include "Plane.h"
 
-Plane::Plane(vec3 N, float d, uint color)
+Plane::Plane(vec3 N, float d, Material material)
 {
 	this->N = N.normalized();
 	this->d = d;
-	this->color = color;
+	this->material = material;
 
 }
 

@@ -4,7 +4,7 @@ class Plane :
 	public Geometry
 {
 public:
-	Plane(vec3 N, float d, uint color);
+	Plane(vec3 N, float d, Material material);
 	~Plane();
 
 	Collision Intersect(Ray ray) override;

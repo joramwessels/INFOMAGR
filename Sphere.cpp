@@ -2,11 +2,11 @@
 #include "Sphere.h"
 
 
-Sphere::Sphere(vec3 position, float r, uint color)
+Sphere::Sphere(vec3 position, float r, Material material)
 {
 	this->position = position;
 	r2 = r * r;
-	this->color.from_uint(color);
+	this->material = material;
 }
 
 Collision Sphere::Intersect(Ray ray)

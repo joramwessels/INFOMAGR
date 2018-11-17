@@ -11,6 +11,10 @@ public:
 
 	void moveTo(vec3 position, vec3 direction);
 
+	vec3 getDirection() {
+		return direction;
+	}
+
 private:
 	vec3 position;
 	vec3 direction;
