@@ -17,7 +17,7 @@ void Game::Init()
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, 0xff8888));
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff8888));
 	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::MIRROR, 0xffffff));
-	geometry[4] = new Sphere(vec3(0, -2, 15), 1, Material(Material::MIRROR, 0xffffff));
+	geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
 	geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xff8888));
 	geometry[6] = new Sphere(vec3(4.2, 2, 8), 1, Material(Material::DIFFUSE, 0xff8888));
 
@@ -131,7 +131,7 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 			Ray reflectedray;
 			reflectedray.Direction = reflect(ray.Direction, collision.N);
 			reflectedray.Origin = collision.Pos + 0.0001f * reflectedray.Direction;
-			return TraceRay(reflectedray); //TODO: this should be multiplied by collision.other->material.color
+			return (collision.other->material.color * TraceRay(reflectedray)) / 255; //Devide by 255 to scale back into the same range, after multiplying by material color.
 		}
 	}
 
