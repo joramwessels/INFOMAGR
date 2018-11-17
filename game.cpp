@@ -13,13 +13,13 @@ void Game::Init()
 	numGeometries = 7;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
-	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material::DIFFUSE, 0xff8888));
-	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, 0xff8888));
-	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff8888));
-	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::MIRROR, 0xffffff));
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material::DIFFUSE, 0xffffff));
+	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, 0xffffff));
+	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::MIRROR, 0xaaaaaa));
+	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, 0xffffff));
 	geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
-	geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xff8888));
-	geometry[6] = new Sphere(vec3(4.2, 2, 8), 1, Material(Material::DIFFUSE, 0xff8888));
+	geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xffffff));
+	geometry[6] = new Sphere(vec3(4.2, 2, 8), 1, Material(Material::DIFFUSE, 0xffffff));
 
 	numLights = 3;
 	lights = new Light[numLights];
@@ -109,8 +109,12 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 }
 
 //Trace the ray. 
-Color Tmpl8::Game::TraceRay(Ray ray)
+Color Tmpl8::Game::TraceRay(Ray ray, int recursiondepth)
 {
+	if (recursiondepth > MAX_RECURSION_DEPTH) {
+		return 0x000000;
+	}
+
 	Color color; //sky color
 	/*color.R = 25500;
 	color.G = 25500;
@@ -130,8 +134,8 @@ Color Tmpl8::Game::TraceRay(Ray ray)
 		{
 			Ray reflectedray;
 			reflectedray.Direction = reflect(ray.Direction, collision.N);
-			reflectedray.Origin = collision.Pos + 0.0001f * reflectedray.Direction;
-			return (collision.other->material.color * TraceRay(reflectedray)) / 255; //Devide by 255 to scale back into the same range, after multiplying by material color.
+			reflectedray.Origin = collision.Pos; // My intuition says 0.0001f * reflectedray.Direction should be added to this. But it seems to work fine without.
+			return (collision.other->material.color * TraceRay(reflectedray, recursiondepth + 1)) / 255; //Devide by 255 to scale back into the same range, after multiplying by material color.
 		}
 	}
 

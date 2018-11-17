@@ -20,7 +20,7 @@ private:
 
 	Collision nearestCollision(Ray ray);
 
-	Color TraceRay(Ray ray);
+	Color TraceRay(Ray ray, int recursionDepth = 0);
 	Sphere* sphere;
 	Plane* plane;
 

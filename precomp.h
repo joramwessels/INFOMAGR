@@ -9,6 +9,7 @@
 
 #define SCRWIDTH 800
 #define SCRHEIGHT 800
+#define MAX_RECURSION_DEPTH 5
 //#define SCRWIDTH 1920
 //#define SCRHEIGHT 1080
 
