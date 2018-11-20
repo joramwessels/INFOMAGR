@@ -21,7 +21,7 @@ struct Color
 	}
 
 	uint to_uint() {
-		return ((R & 255) << 16) + ((G & 255) << 8) + (B & 255);
+		return ((R & 255) << 16) | ((G & 255) << 8) | (B & 255);
 	}
 
 	uint to_uint_safe() {
@@ -29,7 +29,7 @@ struct Color
 		if (R > 255) Rtemp = 255; //Set the last bits all to one.
 		if (G > 255) Gtemp = 255; //Set the last bits all to one.
 		if (B > 255) Btemp = 255; //Set the last bits all to one.
-		return ((Rtemp & 255) << 16) + ((Gtemp & 255) << 8) + (Btemp & 255);
+		return ((Rtemp & 255) << 16) | ((Gtemp & 255) << 8) | (Btemp & 255);
 	}
 
 	void from_uint(uint color) {
@@ -46,7 +46,12 @@ struct Color
 	Color operator * (const float& operand) const { return Color((float)R * operand, (float)G * operand, (float)B * operand); }
 	Color operator / (const Color& operand) const { return Color(R / operand.R, G / operand.G, B / operand.B); }
 	Color operator / (const float& operand) const { return Color((float)R / operand, (float)G / operand, (float)B / operand); }
-
+	
+	Color operator >> (const int& operand) const { return Color(R >> operand, G >> operand, B >> operand); }
+	Color operator << (const int& operand) const { return Color(R << operand, G << operand, B << operand); }
+	
+	void operator >>=( const int &operand ){ R >> operand; G >> operand; B >> operand;}
+	void operator <<=( const int &operand ){ R << operand; G << operand; B << operand;}
 };
 
 struct Material
