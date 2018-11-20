@@ -24,18 +24,18 @@ void Game::Init()
 	numLights = 3;
 	lights = new Light[numLights];
 	lights[0].position = { -5, -5, 20 };
-	lights[0].color = 0xffffff;
-	//lights[0].color = 0xff1111;
+	//lights[0].color = 0xffffff;
+	lights[0].color = 0xff1111;
 	lights[0].color = lights[0].color * 700;
 
 	lights[1].position = {5, -5, 0 };
-	lights[1].color = 0xffffff;
-	//lights[1].color = 0x1111ff;
+	//lights[1].color = 0xffffff;
+	lights[1].color = 0x1111ff;
 	lights[1].color = lights[1].color * 700;
 
 	lights[2].position = { -5, -5, 0 };
-	lights[2].color = 0xffffff;
-	//lights[2].color = 0x11ff11;
+	//lights[2].color = 0xffffff;
+	lights[2].color = 0x11ff11;
 	lights[2].color = lights[2].color * 700;
 
 }
