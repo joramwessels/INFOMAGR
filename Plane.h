@@ -13,5 +13,8 @@ public:
 private:
 	vec3 N;
 	float d;
+
+	vec3 Xaxis; //For texture alignment
+	vec3 Yaxis;
 };
 

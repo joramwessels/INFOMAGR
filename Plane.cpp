@@ -7,6 +7,18 @@ Plane::Plane(vec3 N, float d, Material material)
 	this->d = d;
 	this->material = material;
 
+	Xaxis.x = N.x * cosf(90 * PI / (180)) + N.z * sinf(90 * PI / (180));
+	Xaxis.y = N.y;
+	Xaxis.z = -(N.x * sinf(90 * PI / (180))) + N.z * cos(90 * PI / (180));
+
+	if (Xaxis.x == N.x && Xaxis.y == N.y && Xaxis.z == N.z) {
+		Xaxis.x = N.x;
+		Xaxis.y = N.y * cosf(90 * PI / (180)) - N.z * sinf(90 * PI / (180));
+		Xaxis.z = N.y * sinf(90 * PI / (180)) + N.z * cos(90 * PI / (180));
+	}
+
+	Yaxis = cross(N, Xaxis);
+
 }
 
 Plane::~Plane()
@@ -35,10 +47,12 @@ Collision Plane::Intersect(Ray ray)
 		}
 		else
 		{
-			vec3 uv = collision.Pos - d * N;
 
-			float u = fmod(uv.x, 1);
-			float v = fmod(uv.z, 1);
+			float un = dot(collision.Pos, Xaxis);
+			float vn = dot(collision.Pos, Yaxis);
+
+			float u = fmod(un, 1);
+			float v = fmod(vn, 1);
 
 			if (u < 0) {
 				u = 1 + u;
