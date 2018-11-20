@@ -51,6 +51,9 @@ Collision Sphere::Intersect(Ray ray)
 					collision.colorAt = material.color;
 				}
 			}
+			if (material.texturetype == Material::TEXTURE) {
+				collision.colorAt = material.texture->GetBuffer()[(int)(material.texture->GetWidth() * u) + (int)(material.texture->GetHeight() * v) * material.texture->GetPitch()];
+			}
 		}
 
 		return collision; //Collision at t.

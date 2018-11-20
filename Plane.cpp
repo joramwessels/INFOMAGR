@@ -67,6 +67,8 @@ Collision Plane::Intersect(Ray ray)
 			//if (u < 0) u = 
 
 			//printf("x: %f, y: %f, z:%f \n", uv.x, uv.y, uv.z);
+			
+			//printf("u: %f, v: %f", u, v);
 
 			if (material.texturetype == Material::CHECKERBOARD)
 			{
@@ -88,6 +90,13 @@ Collision Plane::Intersect(Ray ray)
 				else {
 					collision.colorAt = material.color;
 				}*/
+			}
+			if (material.texturetype == Material::TEXTURE) {
+				if (!isnan(u) && !isnan(v)) {
+					collision.colorAt = material.texture->GetBuffer()[(int)(material.texture->GetWidth() * u) + (int)(material.texture->GetHeight() * v) * material.texture->GetPitch()];
+
+					//printf("Got color %i from texture \n", collision.colorAt);
+				}
 			}
 		}
 

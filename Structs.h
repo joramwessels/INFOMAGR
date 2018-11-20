@@ -73,6 +73,8 @@ struct Material
 	Color color; //Should be in range 0...255, to avoid problems with mirrors
 	Color color2; //For checkerboard
 
+	Surface* texture;
+
 	Material()
 	{
 		type = DIFFUSE;
@@ -99,6 +101,12 @@ struct Material
 		this->color = color1;
 		this->color2 = color2;
 
+	}
+
+	Material(MATERIALTYPE type, TEXTURETYPE texturetype, Surface* texture) {
+		this->texturetype = texturetype;
+		this->type = type;
+		this->texture = texture;
 	}
 };
 
