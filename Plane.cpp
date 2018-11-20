@@ -7,10 +7,12 @@ Plane::Plane(vec3 N, float d, Material material)
 	this->d = d;
 	this->material = material;
 
+	//Rotate the normal 90 degrees along the Y axis to get the X-axis local to the plane. Used for textures
 	Xaxis.x = N.x * cosf(90 * PI / (180)) + N.z * sinf(90 * PI / (180));
 	Xaxis.y = N.y;
 	Xaxis.z = -(N.x * sinf(90 * PI / (180))) + N.z * cos(90 * PI / (180));
 
+	//If Xaxis == N then we need to rotate along a different axis
 	if (Xaxis.x == N.x && Xaxis.y == N.y && Xaxis.z == N.z) {
 		Xaxis.x = N.x;
 		Xaxis.y = N.y * cosf(90 * PI / (180)) - N.z * sinf(90 * PI / (180));
