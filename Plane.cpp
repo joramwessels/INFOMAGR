@@ -28,6 +28,12 @@ Collision Plane::Intersect(Ray ray)
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;
 		collision.t = t;
+
+		if (material.texturetype == Material::COLOR)
+		{
+			collision.colorAt = material.color;
+		}
+
 		return collision;
 	}
 }

@@ -30,6 +30,12 @@ Collision Sphere::Intersect(Ray ray)
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;
 		collision.N = (collision.Pos - position).normalized();
+
+		if (material.texturetype == Material::COLOR)
+		{
+			collision.colorAt = material.color;
+		}
+
 		return collision; //Collision at t.
 	}
 	else {

@@ -62,8 +62,16 @@ struct Material
 		GLASS
 	};
 
+	enum TEXTURETYPE {
+		COLOR,
+		CHECKERBOARD,
+		TEXTURE
+	};
+
 	MATERIALTYPE type = DIFFUSE;
+	TEXTURETYPE texturetype = COLOR;
 	Color color; //Should be in range 0...255, to avoid problems with mirrors
+	Color color2; //For checkerboard
 
 	Material()
 	{
@@ -71,15 +79,17 @@ struct Material
 		color.from_uint(0xffffff);
 	}
 
-	Material(MATERIALTYPE type, Color color)
+	Material(MATERIALTYPE type, Color color, Color color2 = 0x000000)
 	{
 		this->type = type;
 		this->color = color;
+		this->color2 = color2;
 	}
-
-	Material(MATERIALTYPE type, uint color) {
+	
+	Material(MATERIALTYPE type, uint color, uint color2 = 0x000000) {
 		this->type = type;
 		this->color.from_uint(color);
+		this->color2 = color2;
 
 	}
 };
@@ -90,6 +100,7 @@ struct Collision
 	vec3 N;
 	vec3 Pos;
 	float t;
+	Color colorAt;
 };
 
 struct Light
