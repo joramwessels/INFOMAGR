@@ -79,16 +79,24 @@ struct Material
 		color.from_uint(0xffffff);
 	}
 
-	Material(MATERIALTYPE type, Color color, Color color2 = 0x000000)
+	Material(MATERIALTYPE type, Color color)
 	{
+		this->texturetype = COLOR;
 		this->type = type;
 		this->color = color;
-		this->color2 = color2;
 	}
 	
-	Material(MATERIALTYPE type, uint color, uint color2 = 0x000000) {
+	Material(MATERIALTYPE type, uint color) {
+		this->texturetype = COLOR;
 		this->type = type;
-		this->color.from_uint(color);
+		this->color = color;
+
+	}
+
+	Material(MATERIALTYPE type, TEXTURETYPE texturetype, uint color1, uint color2) {
+		this->texturetype = texturetype;
+		this->type = type;
+		this->color = color1;
 		this->color2 = color2;
 
 	}

@@ -35,6 +35,23 @@ Collision Sphere::Intersect(Ray ray)
 		{
 			collision.colorAt = material.color;
 		}
+		else {
+			float u = 0.5 + (atan2f(-collision.N.z, -collision.N.x) / (2 * PI));
+			float v = 0.5 - (asinf(-collision.N.y) / PI);
+
+			if (material.texturetype == Material::CHECKERBOARD)
+			{
+				
+				//printf("u: %f, v: %f \n", u, v);
+					if ((int)(v * 10) % 2 == (int)(u * 10) % 2) {
+						collision.colorAt = material.color2;
+					}
+
+				else {
+					collision.colorAt = material.color;
+				}
+			}
+		}
 
 		return collision; //Collision at t.
 	}
