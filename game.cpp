@@ -17,10 +17,10 @@ void Game::Init()
 	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::MIRROR, 0xaaaaaa));
-	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
+	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
 	geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
 	geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xffffff));
-	geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+	geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
 
 	numLights = 3;
 	lights = new Light[numLights];

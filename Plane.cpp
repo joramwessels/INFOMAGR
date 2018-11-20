@@ -32,7 +32,7 @@ Collision Plane::Intersect(Ray ray)
 	float t = -(dot(ray.Origin, N) + d) / (dot(ray.Direction, N));
 
 	Collision collision;
-	if (t < 0) {
+	if (t < 0 || isinf(t)) {
 		collision.t = -1;
 		return collision;
 	}
@@ -49,7 +49,7 @@ Collision Plane::Intersect(Ray ray)
 		}
 		else
 		{
-
+			
 			float un = dot(collision.Pos, Xaxis);
 			float vn = dot(collision.Pos, Yaxis);
 
@@ -63,13 +63,6 @@ Collision Plane::Intersect(Ray ray)
 				v = 1 + v;
 			}
 
-
-			//if (u < 0) u = 
-
-			//printf("x: %f, y: %f, z:%f \n", uv.x, uv.y, uv.z);
-			
-			//printf("u: %f, v: %f", u, v);
-
 			if (material.texturetype == Material::CHECKERBOARD)
 			{
 
@@ -80,23 +73,10 @@ Collision Plane::Intersect(Ray ray)
 				else{
 					collision.colorAt = material.color2;
 				}
-
-				/*
-				//printf("u: %f, v: %f \n", u, v);
-				if ((int)abs(uv.x) % 2 == (int)abs(uv.z) % 2) {
-					collision.colorAt = material.color2;
-				}
-
-				else {
-					collision.colorAt = material.color;
-				}*/
 			}
 			if (material.texturetype == Material::TEXTURE) {
-				if (!isnan(u) && !isnan(v)) {
 					collision.colorAt = material.texture->GetBuffer()[(int)(material.texture->GetWidth() * u) + (int)(material.texture->GetHeight() * v) * material.texture->GetPitch()];
-
-					//printf("Got color %i from texture \n", collision.colorAt);
-				}
+				
 			}
 		}
 
