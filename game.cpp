@@ -242,7 +242,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 		Ray scatterray;
 		scatterray.Direction = L;
-		scatterray.Origin = collision.Pos + ( 0.0000025f * collision.N ); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
+		scatterray.Origin = collision.Pos + ( 0.00025f * collision.N ); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
 
 		bool collided = false;
 		for ( int i = 0; i < numGeometries; i++ )
