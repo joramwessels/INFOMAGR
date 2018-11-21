@@ -33,6 +33,7 @@ private:
 	Light* lights;
 
 	vec3 reflect(vec3 D, vec3 N);
+	float refractionIndex( int medium );
 
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
