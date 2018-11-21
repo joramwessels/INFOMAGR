@@ -13,7 +13,7 @@ Collision Sphere::Intersect( Ray ray, bool shatterray )
 	Collision collision;
 
 	// If the origin of the ray is inside the sphere
-	if ( (ray.Origin - position).length() < sqrt(r2) )
+	if ( (ray.Origin - position).sqrLentgh() < r2 )
 	{
 		vec3 PO = position - ray.Origin;
 		collision.t = 2 * sqrt( r2 ) * dot( PO.normalized(), ray.Direction );
