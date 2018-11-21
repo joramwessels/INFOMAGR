@@ -39,14 +39,14 @@ Collision Sphere::Intersect( Ray ray, bool shatterray )
 		return collision;
 	}
 
-	
-
 	t -= sqrt( r2 - p2 );
 	if ( t > 0 )
 	{
 		if (shatterray) {
+			collision.t = t;
 			return collision; //We just want to know if it hits *something*
 		}
+
 		collision.t = t;
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;
