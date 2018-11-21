@@ -126,6 +126,39 @@ public:
 		return vec3( y * operand.z - z * operand.y, z * operand.x - x * operand.z, x * operand.y - y * operand.x );
 	}
 	float dot( const vec3& operand ) const { return x * operand.x + y * operand.y + z * operand.z; }
+
+	void rotateX(float deg)
+	{
+		float tempy = y;
+		float tempz = z;
+
+		y = tempy * cosf(deg * PI / (180)) - tempz * sinf(deg * PI / (180));
+		z = tempy * sinf(deg * PI / (180)) + tempz * cosf(deg * PI / (180));
+	}
+
+	void rotateY(float deg)
+	{
+		float tempx = x;
+		float tempz = z;
+
+		x = tempx * cosf(deg * PI / (180)) + tempz * sinf(deg * PI / (180));
+		z = -(tempx * sinf(deg * PI / (180))) + tempz * cos(deg * PI / (180));
+	}
+
+	void rotateZ(float deg)
+	{
+		float tempx = x;
+		float tempy = y;
+
+		x = tempx * cos(deg * PI / 180) - tempy * sin(deg * PI / 180);
+		y = tempx * sin(deg * PI / 180) + tempy * cos(deg * PI / 180);
+	}
+
+	void rotateXYZ(vec3 deg) {
+		rotateX(deg.x);
+		rotateY(deg.y);
+		rotateZ(deg.z);
+	}
 };
 
 class vec4

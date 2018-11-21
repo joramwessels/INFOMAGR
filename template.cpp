@@ -245,7 +245,7 @@ int main( int argc, char **argv )
 #endif
 	printf( "application started.\n" );
 	SDL_Init( SDL_INIT_VIDEO );
-	//SDL_SetRelativeMouseMode(SDL_bool(true));
+	SDL_SetRelativeMouseMode(SDL_bool(true));
 #ifdef ADVANCEDGL
 #ifdef FULLSCREEN
 	window = SDL_CreateWindow( TEMPLATE_VERSION, 100, 100, SCRWIDTH, SCRHEIGHT, SDL_WINDOW_FULLSCREEN|SDL_WINDOW_OPENGL );

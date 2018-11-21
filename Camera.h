@@ -9,7 +9,11 @@ public:
 
 	Ray generateRayTroughVirtualScreen(int pixelx, int pixely);
 
-	void moveTo(vec3 position, vec3 direction);
+	void setPosDir(vec3 position, vec3 direction);
+	void lookAt(vec3 direction);
+	void move(vec3 direction);
+
+	void rotate(vec3 deg);
 
 	vec3 getDirection() {
 		return direction;

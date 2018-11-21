@@ -12,8 +12,42 @@ public:
 	void MouseUp( int button ) { /* implement if you want to detect mouse button presses */ }
 	void MouseDown( int button ) { /* implement if you want to detect mouse button presses */ }
 	void MouseMove(int x, int y);
-	void KeyUp( int key ) { /* implement if you want to handle keys */ }
-	void KeyDown( int key ) { /* implement if you want to handle keys */ }
+	void KeyUp( int key ) { 
+		switch (key)
+		{
+		case 26: //W
+			keyW = false;
+			break;
+		case 4: //A
+			keyA = false;
+			break;
+		case 22: //S
+			keyS = false;
+			break;
+		case 7: //D
+			keyD = false;
+		default:
+			break;
+		}
+	}
+	void KeyDown( int key ) { 
+		switch (key)
+		{
+		case 26: //W
+			keyW = true;
+			break;
+		case 4: //A
+			keyA = true;
+			break;
+		case 22: //S
+			keyS = true;
+			break;
+		case 7: //D
+			keyD = true;
+		default:
+			break;
+		}
+	}
 private:
 	Surface* screen;
 	Camera camera;
@@ -37,6 +71,8 @@ private:
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
+	bool keyW = false, keyA = false, keyS = false, keyD = false;
+	
 };
 
 }; // namespace Tmpl8

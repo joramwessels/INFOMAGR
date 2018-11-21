@@ -1,6 +1,6 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-bool animatecamera = true;
+bool animatecamera = false;
 int frame = 0;
 
 // -----------------------------------------------------------
@@ -10,34 +10,40 @@ void Game::Init()
 {
 
 	//Set up the scene
-	numGeometries = 7;
+	numGeometries = 10;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
-	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
+	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
-	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::MIRROR, 0xaaaaaa));
+	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::MIRROR, 0xffffff));
 	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
 	geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
 	geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xffffff));
 	geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
+	
+	geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xff0000));
+	geometry[8] = new Sphere(vec3(0, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
+	geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
 
 	numLights = 3;
 	lights = new Light[numLights];
 	lights[0].position = { -5, -5, 20 };
-	//lights[0].color = 0xffffff;
-	lights[0].color = 0xff1111;
+	lights[0].color = 0xffffff;
+	//lights[0].color = 0xff1111;
 	lights[0].color = lights[0].color * 700;
 
 	lights[1].position = {5, -5, 0 };
-	//lights[1].color = 0xffffff;
-	lights[1].color = 0x1111ff;
+	lights[1].color = 0xffffff;
+	//lights[1].color = 0x1111ff;
 	lights[1].color = lights[1].color * 700;
 
 	lights[2].position = { -5, -5, 0 };
-	//lights[2].color = 0xffffff;
-	lights[2].color = 0x11ff11;
+	lights[2].color = 0xffffff;
+	//lights[2].color = 0x11ff11;
 	lights[2].color = lights[2].color * 700;
+
+	//camera.lookAt({ 1, 0, 0 });
 
 }
 
@@ -70,25 +76,45 @@ void Game::Tick( float deltaTime )
 		}
 	}
 
+	if (keyW) {
+		camera.move(camera.getDirection() * 0.05);
+	}
+	/*
+	if (keyD) {
+		camera.move(camera.getDirection() * -0.1);
+	}
+	*/
+
 	//Just for fun ;)
 	if (animatecamera)
 	{
 		camerapos.z += 0.01;
-		camera.moveTo(camerapos, { 0,0,1 });
+		camera.setPosDir(camerapos, { 0,0,1 });
 	}
 	//printf("Frame %i done. \n", frame++);
 }
 
 void Tmpl8::Game::MouseMove(int x, int y)
 {
-/*	float xf = x / 1000;
-
 	printf("mouse move: %i, %i \n", x, y);
-	vec3 currdirection = camera.getDirection();
-	float newx = currdirection.x * cosf(xf) - currdirection.y * sinf(xf);
-	float newy = currdirection.x * sinf(xf) - currdirection.y * cosf(xf);
-	camera.moveTo({ 0,0,0 }, vec3(newx, 0, newy));
-	*/
+
+	/*vec3 currdirection = camera.getDirection();
+	vec3 newdirection;
+
+	//Rotate around x-axis for vertical movement
+	newdirection.x = currdirection.x;
+	newdirection.y = currdirection.y * cosf((float)y * PI / 180.0f) - currdirection.z * sinf((float)y * PI / 180.0f);
+	newdirection.z = currdirection.y * sinf((float)y * PI / 180.0f) + currdirection.z * cosf((float)y * PI / 180.0f);
+
+	//Rotate around y-axis for horizontal movement
+	vec3 newnewdirection;
+	newnewdirection.x = newdirection.x * cosf(x * PI / 180) + newdirection.z * sinf(x * PI / 180);
+	newnewdirection.y = newdirection.y;
+	newnewdirection.z = -(newdirection.x * sinf(x * PI * 180)) + newdirection.z * cosf(x * PI / 180);
+
+	camera.lookAt(newnewdirection);*/
+	camera.rotate({ (float)y, (float)x, 0 });
+	
 }
 
 //Find the nearest collision along the ray

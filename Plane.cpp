@@ -16,7 +16,7 @@ Plane::Plane(vec3 N, float d, Material material)
 	if (Xaxis.x == N.x && Xaxis.y == N.y && Xaxis.z == N.z) {
 		Xaxis.x = N.x;
 		Xaxis.y = N.y * cosf(90 * PI / (180)) - N.z * sinf(90 * PI / (180));
-		Xaxis.z = N.y * sinf(90 * PI / (180)) + N.z * cos(90 * PI / (180));
+		Xaxis.z = N.y * sinf(90 * PI / (180)) + N.z * cosf(90 * PI / (180));
 	}
 
 	Yaxis = cross(N, Xaxis);
