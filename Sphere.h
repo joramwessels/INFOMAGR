@@ -4,7 +4,7 @@ class Sphere : public Geometry
 {
 public:
 	Sphere(vec3 position, float r, Material material);
-	Collision Intersect(Ray ray) override;
+	Collision Intersect(Ray ray, bool shatterray = false) override;
 
 private:
 	float r2; // r^2

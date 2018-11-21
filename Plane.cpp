@@ -27,7 +27,7 @@ Plane::~Plane()
 {
 }
 
-Collision Plane::Intersect(Ray ray)
+Collision Plane::Intersect(Ray ray, bool shatterray)
 {
 	float t = -(dot(ray.Origin, N) + d) / (dot(ray.Direction, N));
 
@@ -38,6 +38,11 @@ Collision Plane::Intersect(Ray ray)
 	}
 	else
 	{
+		if (shatterray) {
+			collision.t = 2; //We just want to know if it hits *something*
+			return collision;
+		}
+
 		collision.N = -N; //TODO: this is not always correct. If the ray comes from the other side, it should be N
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;

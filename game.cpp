@@ -13,8 +13,8 @@ void Game::Init()
 	numGeometries = 10;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
-	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
+	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
 	//geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
 	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xffffff));
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff000f));
@@ -248,7 +248,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 		for ( int i = 0; i < numGeometries; i++ )
 		{
 			//Check if position is reachable by lightsource
-			Collision scattercollision = geometry[i]->Intersect( scatterray );
+			Collision scattercollision = geometry[i]->Intersect( scatterray, true );
 			if ( scattercollision.t != -1 )
 			{
 				//Collision, so this ray does not reach the light source
