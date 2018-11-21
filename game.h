@@ -26,6 +26,13 @@ public:
 			break;
 		case 7: //D
 			keyD = false;
+			break;
+		case 20:
+			keyQ = false;
+			break;
+		case 8:
+			keyE = false;
+			break;
 		default:
 			break;
 		}
@@ -44,6 +51,13 @@ public:
 			break;
 		case 7: //D
 			keyD = true;
+			break;
+		case 20:
+			keyQ = true;
+			break;
+		case 8:
+			keyE = true;
+			break;
 		default:
 			break;
 		}
@@ -72,7 +86,7 @@ private:
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
-	bool keyW = false, keyA = false, keyS = false, keyD = false;
+	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false;
 	
 };
 

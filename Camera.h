@@ -19,8 +19,19 @@ public:
 		return direction;
 	}
 
+	vec3 getLeft() {
+		return left;
+	}
+
+	vec3 getUp() {
+		return up;
+	}
+
 private:
 	vec3 position;
+	vec3 left;
+	vec3 up;
+
 	vec3 direction;
 	float virtualScreenDistance; //Change this to change the FOV
 

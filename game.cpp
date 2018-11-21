@@ -78,13 +78,28 @@ void Game::Tick( float deltaTime )
 	}
 
 	if (keyW) {
-		camera.move(camera.getDirection() * 0.05);
+		camera.move(camera.getDirection() * 0.1f);
 	}
 	
 	if (keyS) {
-		camera.move(camera.getDirection() * -0.1);
+		camera.move(camera.getDirection() * -0.1f);
+	}
+
+	if (keyD) {
+		camera.move(camera.getLeft() * 0.1f);
+	}
+
+	if (keyA) {
+		camera.move(camera.getLeft() * -0.1f);
 	}
 	
+	if (keyQ) {
+		camera.move(camera.getUp() * 0.1f);
+	}
+
+	if (keyE) {
+		camera.move(camera.getUp() * -0.1f);
+	}
 
 	//Just for fun ;)
 	if ( animatecamera )
@@ -96,23 +111,6 @@ void Game::Tick( float deltaTime )
 
 void Tmpl8::Game::MouseMove( int x, int y )
 {
-	//printf("mouse move: %i, %i \n", x, y);
-
-	/*vec3 currdirection = camera.getDirection();
-	vec3 newdirection;
-
-	//Rotate around x-axis for vertical movement
-	newdirection.x = currdirection.x;
-	newdirection.y = currdirection.y * cosf((float)y * PI / 180.0f) - currdirection.z * sinf((float)y * PI / 180.0f);
-	newdirection.z = currdirection.y * sinf((float)y * PI / 180.0f) + currdirection.z * cosf((float)y * PI / 180.0f);
-
-	//Rotate around y-axis for horizontal movement
-	vec3 newnewdirection;
-	newnewdirection.x = newdirection.x * cosf(x * PI / 180) + newdirection.z * sinf(x * PI / 180);
-	newnewdirection.y = newdirection.y;
-	newnewdirection.z = -(newdirection.x * sinf(x * PI * 180)) + newdirection.z * cosf(x * PI / 180);
-
-	camera.lookAt(newnewdirection);*/
 	camera.rotate({ (float)y, (float)x, 0 });
 	
 }
