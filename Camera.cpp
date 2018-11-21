@@ -85,7 +85,7 @@ void Camera::rotate(vec3 deg) {
 	vec3 left = direction;
 	left.rotateY(90);
 
-	printf("left x: %f, y: %f, z: %f \n", left.x, left.y, left.z);
+	//printf("left x: %f, y: %f, z: %f \n", left.x, left.y, left.z);
 
 	virtualScreenCornerTL = virtualScreenCenter - xsize * left + vec3(0, -ysize, 0); //top left
 	virtualScreenCornerTR = virtualScreenCenter + xsize * left + vec3(0, -ysize, 0); //top right

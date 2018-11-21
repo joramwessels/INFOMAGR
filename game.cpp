@@ -96,7 +96,7 @@ void Game::Tick( float deltaTime )
 
 void Tmpl8::Game::MouseMove( int x, int y )
 {
-	printf("mouse move: %i, %i \n", x, y);
+	//printf("mouse move: %i, %i \n", x, y);
 
 	/*vec3 currdirection = camera.getDirection();
 	vec3 newdirection;
