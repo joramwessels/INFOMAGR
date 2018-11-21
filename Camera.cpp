@@ -64,7 +64,7 @@ void Camera::lookAt(vec3 direction) {
 void Camera::move(vec3 direction)
 {
 	position += direction;
-	this->direction += direction;
+	//this->direction += direction;
 	virtualScreenCenter += direction;
 	virtualScreenCornerBL += direction;
 	virtualScreenCornerTL += direction;
