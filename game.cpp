@@ -80,11 +80,11 @@ void Game::Tick( float deltaTime )
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.05);
 	}
-	/*
-	if (keyD) {
+	
+	if (keyS) {
 		camera.move(camera.getDirection() * -0.1);
 	}
-	*/
+	
 
 	//Just for fun ;)
 	if ( animatecamera )
