@@ -89,8 +89,7 @@ void Game::Tick( float deltaTime )
 	//Just for fun ;)
 	if ( animatecamera )
 	{
-		camerapos.z += 0.01;
-		camera.setPosDir(camerapos, { 0,0,1 });
+		camera.move({ 0,0,0.01 });
 	}
 	//printf("Frame %i done. \n", frame++);
 }

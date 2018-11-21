@@ -37,9 +37,10 @@ Ray Camera::generateRayTroughVirtualScreen(int pixelx, int pixely)
 
 	return ray;
 }
-
+/*
 void Camera::setPosDir(vec3 position, vec3 direction)
 {
+	
 	vec3 left = direction;
 	left.rotateY(90);
 
@@ -54,12 +55,12 @@ void Camera::setPosDir(vec3 position, vec3 direction)
 	virtualScreenCornerTL = virtualScreenCenter - xsize * left + vec3(0, -ysize, 0); //top left
 	virtualScreenCornerTR = virtualScreenCenter + xsize * left + vec3(0, -ysize, 0); //top right
 	virtualScreenCornerBL = virtualScreenCenter - xsize * left + vec3(0, ysize, 0); //bottom left
-
-}
-
+	
+}*/
+/*
 void Camera::lookAt(vec3 direction) {
 	setPosDir(position, direction);
-}
+}*/
 
 void Camera::move(vec3 direction)
 {
