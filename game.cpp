@@ -176,7 +176,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			else				n1 = refractionIndex( ray.Medium ), n2 = refractionIndex( collision.other->material.type );
 			float transition = n1 / n2;
 			float costheta = dot( collision.N, -ray.Direction );
-			float k = 1 - pow( transition, 2 ) * ( 1.0f - pow( costheta, 2 ) );
+			float k = 1 - ( transition * transition ) * ( 1.0f - ( costheta * costheta ) );
 			if ( k < 0 )
 			{
 				// total internal reflection
@@ -184,8 +184,12 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			}
 
 			// Fresnel reflection (Schlick's approximation)
-			float R0 = pow( (n1 - n2) / (n1 + n2), 2.0f );
-			float Fr = R0 + ( 1.0f - R0 ) * pow( 1.0f - costheta, 5.0f );
+			float ndiff = n1 - n2;
+			float nsumm = n1 + n2;
+			float temp = ndiff / nsumm;
+
+			float R0 = temp * temp;
+			float Fr = R0 + ( 1.0f - R0 ) * powf( 1.0f - costheta, 5.0f );
 			Color reflection;
 			if ( Fr > 0.0f )
 			{

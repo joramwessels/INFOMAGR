@@ -10,7 +10,7 @@ Camera::Camera(vec3 position, vec3 direction, float virtualScreenDistance)
 	virtualScreenCenter = position + virtualScreenDistance * direction;
 
 	//Calculate the virtual screen corners
-
+	
 
 	virtualScreenCornerTL = virtualScreenCenter + vec3(-xsize, -ysize, 0); //top left
 	virtualScreenCornerTR = virtualScreenCenter + vec3(xsize, -ysize, 0); //top right
@@ -84,19 +84,24 @@ void Camera::rotate(vec3 deg) {
 	
 	vec3 left = direction;
 	left.rotateY(90);
+	left.y = 0;
+	left.normalize();
 
 	//printf("left x: %f, y: %f, z: %f \n", left.x, left.y, left.z);
 
-	virtualScreenCornerTL = virtualScreenCenter - xsize * left + vec3(0, -ysize, 0); //top left
-	virtualScreenCornerTR = virtualScreenCenter + xsize * left + vec3(0, -ysize, 0); //top right
-	virtualScreenCornerBL = virtualScreenCenter - xsize * left + vec3(0, ysize, 0); //bottom left
+	//virtualScreenCornerTL = virtualScreenCenter - xsize * left + vec3(0, -ysize, 0); //top left
+	//virtualScreenCornerTR = virtualScreenCenter + xsize * left + vec3(0, -ysize, 0); //top right
+	//virtualScreenCornerBL = virtualScreenCenter - xsize * left + vec3(0, ysize, 0); //bottom left
 
 	mat4 rotationmatrix = mat4::rotate(-left, (deg.x * PI / 180));
 
+	
 	vec4 dir = { direction, 0 };
 	dir = rotationmatrix * dir;
 	direction = { dir.x, dir.y, dir.z };
 	direction.normalize();
+	
+
 
 	vec3 up = cross(direction, left);
 	//up.normalize();
@@ -106,6 +111,7 @@ void Camera::rotate(vec3 deg) {
 	virtualScreenCornerTR = virtualScreenCenter + (xsize * left) - (ysize * up); //top right
 	virtualScreenCornerBL = virtualScreenCenter - (xsize * left) + (ysize * up); //bottom left
 
+	printf("TL y: %f, TR y: %f \n", virtualScreenCornerTL.y, virtualScreenCornerTR.y);
 
 	/*
 
