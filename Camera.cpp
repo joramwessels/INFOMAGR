@@ -75,13 +75,38 @@ void Camera::rotate(vec3 deg) {
 	//TODO Fix this mess
 	//Rotate around world-Y axis
 	direction.rotateY(deg.y);
-	virtualScreenCenter.rotateY(deg.y);
-	virtualScreenCornerTL.rotateY(deg.y);
-	virtualScreenCornerTR.rotateY(deg.y);
-	virtualScreenCornerBL.rotateY(deg.y);
+
+	//virtualScreenCenter.rotateY(deg.y);
+	//virtualScreenCornerTL.rotateY(deg.y);
+	//virtualScreenCornerTR.rotateY(deg.y);
+	//virtualScreenCornerBL.rotateY(deg.y);
 	
 	vec3 left = direction;
 	left.rotateY(90);
+
+	printf("left x: %f, y: %f, z: %f \n", left.x, left.y, left.z);
+
+	virtualScreenCornerTL = virtualScreenCenter - xsize * left + vec3(0, -ysize, 0); //top left
+	virtualScreenCornerTR = virtualScreenCenter + xsize * left + vec3(0, -ysize, 0); //top right
+	virtualScreenCornerBL = virtualScreenCenter - xsize * left + vec3(0, ysize, 0); //bottom left
+
+	mat4 rotationmatrix = mat4::rotate(-left, (deg.x * PI / 180));
+
+	vec4 dir = { direction, 0 };
+	dir = rotationmatrix * dir;
+	direction = { dir.x, dir.y, dir.z };
+	direction.normalize();
+
+	vec3 up = cross(direction, left);
+	//up.normalize();
+	virtualScreenCenter = position + (virtualScreenDistance * direction);
+
+	virtualScreenCornerTL = virtualScreenCenter - (xsize * left) - (ysize * up); //top left
+	virtualScreenCornerTR = virtualScreenCenter + (xsize * left) - (ysize * up); //top right
+	virtualScreenCornerBL = virtualScreenCenter - (xsize * left) + (ysize * up); //bottom left
+
+
+	/*
 
 	vec3 down = { 0, 1, 0 };
 	float angle = dot(direction, down);
@@ -118,5 +143,5 @@ void Camera::rotate(vec3 deg) {
 		virtualScreenCornerBL;
 
 		printf("looking at x: %f y: %f z: %f \n", direction.x, direction.y, direction.z);
-	}
+	}*/
 }
