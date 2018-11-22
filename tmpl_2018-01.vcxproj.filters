@@ -12,6 +12,7 @@
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="Plane.cpp" />
+    <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -27,6 +28,7 @@
     <ClInclude Include="Geometry.h" />
     <ClInclude Include="Plane.h" />
     <ClInclude Include="Structs.h" />
+    <ClInclude Include="Triangle.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">

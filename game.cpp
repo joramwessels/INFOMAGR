@@ -27,6 +27,8 @@ void Game::Init()
 	geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xff0000));
 	geometry[8] = new Sphere(vec3(0, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
 	geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
+	
+	//geometry[10] = new Triangle({ 2, -2, 0 }, { -2.2, 0, 4 }, { -2, -2, 5 } );
 
 	numLights = 3;
 	lights = new Light[numLights];
