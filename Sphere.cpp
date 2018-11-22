@@ -30,7 +30,6 @@ Collision Sphere::Intersect( Ray ray, bool shatterray )
 		
 			float u = 0.5 + ( atan2f( -collision.N.z, -collision.N.x ) / ( 2 * PI ) );
 			float v = 0.5 - ( asinf( -collision.N.y ) / PI );
-
 			if ( material.texturetype == Material::CHECKERBOARD )
 			{
 
@@ -47,7 +46,9 @@ Collision Sphere::Intersect( Ray ray, bool shatterray )
 			}
 			if ( material.texturetype == Material::TEXTURE )
 			{
-				collision.colorAt = material.texture->GetBuffer()[(int)( material.texture->GetWidth() * u ) + (int)( material.texture->GetHeight() * v ) * material.texture->GetPitch()];
+				static int texturex = (material.texture->GetWidth()  - 1)* u;
+				static int texturey = (material.texture->GetHeight() - 1) * v;
+				collision.colorAt = material.texture->GetBuffer()[texturex + texturey * material.texture->GetPitch()];
 			}
 		}
 		return collision;
@@ -98,7 +99,7 @@ Collision Sphere::Intersect( Ray ray, bool shatterray )
 				}
 			}
 			if (material.texturetype == Material::TEXTURE) {
-				collision.colorAt = material.texture->GetBuffer()[(int)(material.texture->GetWidth() * u) + (int)(material.texture->GetHeight() * v) * material.texture->GetPitch()];
+				collision.colorAt = material.texture->GetBuffer()[(int)((material.texture->GetWidth() - 1) * u) + (int)((material.texture->GetHeight() - 1) * v) * material.texture->GetPitch()];
 			}
 		}
 
