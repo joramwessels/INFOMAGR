@@ -16,7 +16,8 @@ void Game::Init()
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
 	//geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
-	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xffffff));
+	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+	//geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xff1111));
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff000f));
 	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
 	geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
@@ -217,7 +218,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				refraction = Color( 0, 0, 0 );
 			}
 
-			return ( collision.other->material.color * ( refraction * ( 1 - Fr ) + reflection * Fr ) ) >> 8;
+			return ( collision.colorAt * ( refraction * ( 1 - Fr ) + reflection * Fr ) ) >> 8;
 		}
 	}
 
