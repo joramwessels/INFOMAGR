@@ -16,8 +16,8 @@ void Game::Init()
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 	//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::CHECKERBOARD, 0xffffff, 0x000000)));
 	//geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
-	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-	//geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xff1111));
+	//geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+	geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xffffff));
 	geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff000f));
 	geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
 	geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
@@ -44,6 +44,8 @@ void Game::Init()
 	lights[2].color = 0xffffff;
 	//lights[2].color = 0x11ff11;
 	lights[2].color = lights[2].color * 700;
+
+	skybox = new Surface("assets\\skybox4.jpg");
 
 	//camera.lookAt({ 1, 0, 0 });
 
@@ -147,6 +149,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	}
 
 	Color color; //sky color
+
 	/*color.R = 25500;
 	color.G = 25500;
 	color.B = 25500;*/
@@ -220,6 +223,22 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 
 			return ( collision.colorAt * ( refraction * ( 1 - Fr ) + reflection * Fr ) ) >> 8;
 		}
+	}
+	else {
+		//There was no collision.
+		//--> skybox.
+		vec3 skyBoxN = ray.Direction;
+
+		float u = 0.5 + (atan2f(-skyBoxN.z, -skyBoxN.x) / (2 * PI));
+		float v = 0.5 - (asinf(-skyBoxN.y) / PI);
+		color = skybox->GetBuffer()[(int)((skybox->GetWidth() - 1) * u) + (int)((skybox->GetHeight() - 1) * v) * skybox->GetPitch()];
+		//color <<= 8;
+
+		//color.R = 255;
+		//color.G = 0;
+		//color.B = 0;
+
+		return color << 8;
 	}
 
 	//Ray out of scene

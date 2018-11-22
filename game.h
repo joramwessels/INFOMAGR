@@ -83,6 +83,8 @@ private:
 	vec3 reflect(vec3 D, vec3 N);
 	float refractionIndex( int medium );
 
+	Surface* skybox;
+
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
