@@ -10,7 +10,7 @@ void Game::Init()
 {
 
 	//Set up the scene
-	numGeometries = 10;
+	numGeometries = 11;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
@@ -28,7 +28,7 @@ void Game::Init()
 	geometry[8] = new Sphere(vec3(0, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
 	geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
 	
-	//geometry[10] = new Triangle({ 2, -2, 0 }, { -2.2, 0, 4 }, { -2, -2, 5 } );
+	geometry[10] = new Triangle({ -1, 0, 0 }, { 1, 0, -1 }, { 1, 0, 1 });
 
 	numLights = 3;
 	lights = new Light[numLights];

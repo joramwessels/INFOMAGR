@@ -2,14 +2,14 @@
 
 
 
-Triangle::Triangle(vec3 v1, vec3 v2, vec3 v3)
+Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2)
 {
 	this->v1 = v1;
 	this->v2 = v2;
 	this->v0 = v0;
 
 	e0 = v1 - v0;
-	e1 = v2 - v0;
+	e1 = v2 - v1;
 	e2 = v0 - v2;
 
 	N = cross(e0, e1);
@@ -39,7 +39,7 @@ Collision Triangle::Intersect(Ray ray, bool shatterray)
 	if (t > 0)
 	{
 		vec3 P = ray.Origin + t * ray.Direction;
-		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e0, (P - v1))) > 0 && dot(N, cross(e0, (P - v2))) > 0)
+		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
 		{
 			//Collision
 			collision.t = t;
