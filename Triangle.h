@@ -4,7 +4,7 @@ class Triangle :
 	public Geometry
 {
 public:
-	Triangle(vec3 v0, vec3 v1, vec3 v2);
+	Triangle(vec3 v0, vec3 v1, vec3 v2, Material material);
 	~Triangle();
 
 	Collision Intersect(Ray ray, bool shatterray = false) override;

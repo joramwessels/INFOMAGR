@@ -28,7 +28,7 @@ void Game::Init()
 	geometry[8] = new Sphere(vec3(0, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
 	geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
 	
-	geometry[10] = new Triangle({ -1, 0, 0 }, { 1, 0, -1 }, { 1, 0, 1 });
+	geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
 
 	numLights = 3;
 	lights = new Light[numLights];
@@ -36,7 +36,7 @@ void Game::Init()
 	lights[0].color = 0xffffff;
 	//lights[0].color = 0xff1111;
 	lights[0].color = lights[0].color * 700;
-
+	
 	lights[1].position = {5, -5, 0 };
 	lights[1].color = 0xffffff;
 	//lights[1].color = 0x1111ff;
@@ -46,7 +46,7 @@ void Game::Init()
 	lights[2].color = 0xffffff;
 	//lights[2].color = 0x11ff11;
 	lights[2].color = lights[2].color * 700;
-
+	
 	skybox = new Surface("assets\\skybox4.jpg");
 
 	//camera.lookAt({ 1, 0, 0 });

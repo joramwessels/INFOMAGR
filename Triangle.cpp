@@ -1,9 +1,11 @@
 #include "precomp.h"
 
 
-
-Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2)
+//Use CCW ordering for the vertices! Otherwise the normal will be flipped.
+Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2, Material material)
 {
+	this->material = material;
+
 	this->v1 = v1;
 	this->v2 = v2;
 	this->v0 = v0;
@@ -43,7 +45,7 @@ Collision Triangle::Intersect(Ray ray, bool shatterray)
 		{
 			//Collision
 			collision.t = t;
-			collision.colorAt = 0xffffff;
+			collision.colorAt = material.color;
 			collision.other = this;
 			collision.N = N;
 			collision.Pos = P;
