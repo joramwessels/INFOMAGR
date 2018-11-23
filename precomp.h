@@ -69,8 +69,9 @@ using namespace std;
 #include "template.h"
 
 using namespace Tmpl8;
-// Own headers
+//tiny obj loader
 
+// Own headers
 #include "Structs.h"
 #include "Geometry.h"
 #include "Sphere.h"

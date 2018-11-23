@@ -1,4 +1,7 @@
 #include "precomp.h" // include (only) this in every .cpp file
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "lib\tinyobjloader\tiny_obj_loader.h"
+
 
 bool animatecamera = false;
 int frame = 0;
@@ -10,7 +13,7 @@ void Game::Init()
 {
 
 	//Set up the scene
-	numGeometries = 11;
+	numGeometries = 12 + 11;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
@@ -49,8 +52,77 @@ void Game::Init()
 	
 	skybox = new Surface("assets\\skybox4.jpg");
 
-	//camera.lookAt({ 1, 0, 0 });
+	camera.rotate({ -45, 180, 0 });
 
+	
+
+	
+
+
+
+
+	string input = "assets\\cube.obj";
+	tinyobj::attrib_t attrib;
+	vector<tinyobj::shape_t> shapes;
+	vector<tinyobj::material_t> materials;
+
+	string error;
+	string warn;
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &error, input.c_str());
+
+	if (!error.empty()) { // `err` may contain warning message.
+		printf("Tinyobjloader error: %s", error);
+	}
+
+	printf("loaded %i shapes \n", shapes.size());
+	printf("loaded %i faces \n", shapes[0].mesh.num_face_vertices.size());
+
+	//From https://github.com/syoyo/tinyobjloader
+	// Loop over shapes
+	for (size_t s = 0; s < 1; s++) {
+		// Loop over faces(polygon)
+		size_t index_offset = 0;
+		//for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
+
+		int k = 11;
+		for (size_t f = 0; f < 12; f++) { //Only do 12 triangles for now
+			int fv = shapes[s].mesh.num_face_vertices[f];
+
+			vec3 vertices[3];
+
+			// Loop over vertices in the face.
+			for (size_t v = 0; v < fv; v++) {
+				// access to vertex
+
+
+				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
+				tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
+				tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
+				tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
+				tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
+				tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
+				tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
+				tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
+				tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
+
+				vertices[v] = { vx, vy, vz }; 
+				printf("Vertice %i: %f, %f, %f, fv: %i \n", v, vx, vy, vz, fv);
+
+				// Optional: vertex colors
+				// tinyobj::real_t red = attrib.colors[3*idx.vertex_index+0];
+				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
+				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
+			}
+			vec3 translate = { 0, 0, 0 };
+			geometry[k] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(Material::DIFFUSE, 0x00ff00)); //Apparently the cube.obj is CW instead of CCW
+			k++;
+
+			index_offset += fv;
+
+			// per-face material
+			shapes[s].mesh.material_ids[f];
+		}
+	}
 }
 
 // -----------------------------------------------------------
