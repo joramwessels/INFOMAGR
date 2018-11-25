@@ -52,7 +52,7 @@ void Game::Init()
 	
 	skybox = new Surface("assets\\skybox4.jpg");
 
-	camera.rotate({ 0, 180, 0 });
+	camera.rotate({ -20, 180, 0 });
 
 	
 
@@ -94,6 +94,7 @@ void Game::Init()
 			int fv = shapes[s].mesh.num_face_vertices[f];
 
 			vec3 vertices[3];
+			vec3 normals[3];
 
 			// Loop over vertices in the face.
 			for (size_t v = 0; v < fv; v++) {
@@ -114,6 +115,7 @@ void Game::Init()
 				vec3 scale = { 0.5f, -0.5f, 0.5f };
 				vertices[v] = vec3( vx, vy, vz );
 				vertices[v] *= scale;
+				normals[v] = { nx, ny, nz };
 				//printf("Vertice %i: %f, %f, %f, fv: %i \n", v, vx, vy, vz, fv);
 
 				// Optional: vertex colors
@@ -345,11 +347,13 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 		scatterray.Origin = collision.Pos + ( 0.00025f * collision.N ); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
 
 		bool collided = false;
+		bool maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hit the light source. Because we don't want to count collisions that are behind the light source.
+
 		for ( int i = 0; i < numGeometries; i++ )
 		{
 			//Check if position is reachable by lightsource
 			Collision scattercollision = geometry[i]->Intersect( scatterray, true );
-			if ( scattercollision.t != -1 )
+			if ( scattercollision.t != -1 && scattercollision.t < maxt)
 			{
 				//Collision, so this ray does not reach the light source
 				collided = true;
