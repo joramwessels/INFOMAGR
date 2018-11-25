@@ -13,7 +13,7 @@ void Game::Init()
 {
 
 	//Set up the scene
-	numGeometries = 12 + 11;
+	numGeometries = 86 + 86 + 664 + 664 + 9;
 	geometry = new Geometry*[numGeometries];
 	//geometry = new Geometry*[6];
 	geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
@@ -28,10 +28,10 @@ void Game::Init()
 	geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
 	
 	geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xff0000));
-	geometry[8] = new Sphere(vec3(0, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
-	geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
+	geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
+	//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
 	
-	geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
+	//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
 
 	numLights = 3;
 	lights = new Light[numLights];
@@ -52,7 +52,7 @@ void Game::Init()
 	
 	skybox = new Surface("assets\\skybox4.jpg");
 
-	camera.rotate({ -45, 180, 0 });
+	camera.rotate({ 0, 180, 0 });
 
 	
 
@@ -61,7 +61,7 @@ void Game::Init()
 
 
 
-	string input = "assets\\cube.obj";
+	string input = "assets\\MaleLow.obj";
 	tinyobj::attrib_t attrib;
 	vector<tinyobj::shape_t> shapes;
 	vector<tinyobj::material_t> materials;
@@ -75,17 +75,22 @@ void Game::Init()
 	}
 
 	printf("loaded %i shapes \n", shapes.size());
-	printf("loaded %i faces \n", shapes[0].mesh.num_face_vertices.size());
+	for (size_t shape = 0; shape < shapes.size(); shape++)
+	{
+		printf("loaded %i faces \n", shapes[shape].mesh.num_face_vertices.size());
+
+	}
 
 	//From https://github.com/syoyo/tinyobjloader
 	// Loop over shapes
-	for (size_t s = 0; s < 1; s++) {
+	int k = 9;
+
+	for (size_t s = 0; s < shapes.size(); s++) {
 		// Loop over faces(polygon)
 		size_t index_offset = 0;
 		//for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
 
-		int k = 11;
-		for (size_t f = 0; f < 12; f++) { //Only do 12 triangles for now
+		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) { //Only do 12 triangles for now
 			int fv = shapes[s].mesh.num_face_vertices[f];
 
 			vec3 vertices[3];
@@ -105,16 +110,19 @@ void Game::Init()
 				tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
 				tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
 
-				vertices[v] = { vx, vy, vz }; 
-				printf("Vertice %i: %f, %f, %f, fv: %i \n", v, vx, vy, vz, fv);
+				//vec3 scale = { 0.000000005f, -0.000000005f, 0.000000005f };
+				vec3 scale = { 0.5f, -0.5f, 0.5f };
+				vertices[v] = vec3( vx, vy, vz );
+				vertices[v] *= scale;
+				//printf("Vertice %i: %f, %f, %f, fv: %i \n", v, vx, vy, vz, fv);
 
 				// Optional: vertex colors
 				// tinyobj::real_t red = attrib.colors[3*idx.vertex_index+0];
 				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
 				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
 			}
-			vec3 translate = { 0, 0, 0 };
-			geometry[k] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(Material::DIFFUSE, 0x00ff00)); //Apparently the cube.obj is CW instead of CCW
+			vec3 translate = { 0, 1.5f, -9 };
+			geometry[k] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(Material::DIFFUSE, 0xffffff)); 
 			k++;
 
 			index_offset += fv;
