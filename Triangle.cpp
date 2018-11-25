@@ -17,7 +17,9 @@ Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2, Material material)
 	N = cross(e0, e1);
 	N.normalize();
 
-	D = dot(N, v0);
+	D = -dot(N, v0);
+	//printf("Triangle N: %f, %f, %f. D: %f \n", N.x, N.y, N.z, D);
+
 }
 
 Triangle::~Triangle()
@@ -42,6 +44,7 @@ Collision Triangle::Intersect(Ray ray, bool shatterray)
 	{
 		vec3 P = ray.Origin + t * ray.Direction;
 		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
+		//if (true)
 		{
 			//Collision
 			collision.t = t;
