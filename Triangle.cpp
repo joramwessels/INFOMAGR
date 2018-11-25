@@ -22,6 +22,27 @@ Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2, Material material)
 
 }
 
+Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2, vec3 N, Material material)
+{
+	this->material = material;
+
+	this->v1 = v1;
+	this->v2 = v2;
+	this->v0 = v0;
+
+	e0 = v1 - v0;
+	e1 = v2 - v1;
+	e2 = v0 - v2;
+
+	this->N = N.normalized();
+
+	//N = cross(e0, e1);
+	//N.normalize();
+
+	D = -dot(N, v0);
+
+}
+
 Triangle::~Triangle()
 {
 }
