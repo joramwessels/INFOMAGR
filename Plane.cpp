@@ -29,11 +29,15 @@ Plane::~Plane()
 
 Collision Plane::Intersect(Ray ray, bool shatterray)
 {
-	float t = -(dot(ray.Origin, N) + d) / (dot(ray.Direction, N));
-
 	Collision collision;
+	collision.t = -1;
+
+	float NdotR = dot(ray.Direction, N);
+	if (NdotR == 0) return collision;
+
+	float t = -(dot(ray.Origin, N) + d) / (NdotR);
+
 	if (t < 0 || isinf(t)) {
-		collision.t = -1;
 		return collision;
 	}
 	else
@@ -43,7 +47,6 @@ Collision Plane::Intersect(Ray ray, bool shatterray)
 			return collision;
 		}
 
-		float NdotR = dot(ray.Direction, N);
 
 		if (NdotR > 0) collision.N = -N;
 		else collision.N = N; 

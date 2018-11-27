@@ -72,7 +72,7 @@ private:
 	Sphere* sphere;
 	Plane* plane;
 
-	int numGeometries = 2;
+	int numGeometries = 0;
 	Geometry** geometry;
 
 	Color DirectIllumination(Collision collision);
@@ -90,6 +90,13 @@ private:
 
 	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false;
 	
+	enum SCENES {
+		TEST,
+		OBJ
+	};
+
+	void loadscene(SCENES scene);
+	void loadobj(string filename, vec3 scale, vec3 translate);
 };
 
 }; // namespace Tmpl8
