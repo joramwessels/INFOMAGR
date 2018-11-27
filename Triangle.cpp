@@ -49,8 +49,6 @@ Triangle::~Triangle()
 
 Collision Triangle::Intersect(Ray ray, bool shatterray)
 {
-	//printf("Triangle intersect \n");
-
 	Collision collision;
 	collision.t = -1;
 	float NdotR = dot(ray.Direction, N);
@@ -58,26 +56,21 @@ Collision Triangle::Intersect(Ray ray, bool shatterray)
 
 	float t = -(dot(ray.Origin, N) + D) / (NdotR);
 
-	//printf("T: %f", t);
-
 	//From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
 	if (t > 0)
 	{
 		vec3 P = ray.Origin + t * ray.Direction;
 		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
-		//if (true)
 		{
 			//Collision
 			collision.t = t;
 			collision.colorAt = material.color;
 			collision.other = this;
-			float cos = dot(N, ray.Direction);
-			if (cos > 0) collision.N = -N;
+			if (NdotR > 0) collision.N = -N;
 			else collision.N = N;
 			collision.Pos = P;
 			return collision;
 		}
-		//printf("no collision \n");
 	}
 	return collision;
 }

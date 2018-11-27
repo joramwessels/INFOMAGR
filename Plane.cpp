@@ -43,7 +43,11 @@ Collision Plane::Intersect(Ray ray, bool shatterray)
 			return collision;
 		}
 
-		collision.N = -N; //TODO: this is not always correct. If the ray comes from the other side, it should be N
+		float NdotR = dot(ray.Direction, N);
+
+		if (NdotR > 0) collision.N = -N;
+		else collision.N = N; 
+
 		collision.other = this;
 		collision.Pos = ray.Origin + t * ray.Direction;
 		collision.t = t;
