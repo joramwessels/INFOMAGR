@@ -71,7 +71,9 @@ Collision Triangle::Intersect(Ray ray, bool shatterray)
 			collision.t = t;
 			collision.colorAt = material.color;
 			collision.other = this;
-			collision.N = N;
+			float cos = dot(N, ray.Direction);
+			if (cos > 0) collision.N = -N;
+			else collision.N = N;
 			collision.Pos = P;
 			return collision;
 		}
