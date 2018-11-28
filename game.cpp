@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(OBJ);
+	loadscene(BANANA);
 }
 
 // -----------------------------------------------------------
@@ -268,7 +268,7 @@ float Tmpl8::Game::refractionIndex( int medium )
 
 void Tmpl8::Game::loadscene(SCENES scene)
 {
-	geometry = new Geometry*[4000];
+	geometry = new Geometry*[5000];
 
 	switch (scene)
 	{
@@ -344,6 +344,34 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		break;
 	}
+	case BANANA:
+	{
+		//camera.rotate({ -40, 0, 0 });
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+
+		numGeometries = 1;
+		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 });
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -5, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+		skybox = new Surface("assets\\skybox4.jpg");
+
+	}
 	default:
 		break;
 	}
@@ -384,7 +412,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate)
 			int fv = shapes[s].mesh.num_face_vertices[f];
 
 			vec3 vertices[3];
-			vec3 normals[3];
+			//vec3 normals[3];
 
 			// Loop over vertices in the face.
 			for (size_t v = 0; v < fv; v++) {
@@ -394,16 +422,16 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate)
 				tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
 				tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
 				tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
-				tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
-				tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
-				tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
+				//tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
+				//tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
+				//tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
 				tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
 				tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
 
 				//vec3 scale = { 0.000000005f, -0.000000005f, 0.000000005f };
 				vertices[v] = vec3(vx, vy, vz);
 				vertices[v] *= scale;
-				normals[v] = { nx, ny, nz };
+				//normals[v] = { nx, ny, nz };
 				//printf("Vertice %i: %f, %f, %f, fv: %i \n", v, vx, vy, vz, fv);
 
 				// Optional: vertex colors
@@ -411,7 +439,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate)
 				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
 				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
 			}
-			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(Material::DIFFUSE, 0xffffff));
+			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(Material::GLASS, 0xffffff));
 			startpos++;
 			numGeometries++;
 

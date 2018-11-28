@@ -92,7 +92,8 @@ private:
 	
 	enum SCENES {
 		TEST,
-		OBJ
+		OBJ,
+		BANANA
 	};
 
 	void loadscene(SCENES scene);
