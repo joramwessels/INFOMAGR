@@ -81,7 +81,6 @@ private:
 	Light* lights;
 
 	vec3 reflect(vec3 D, vec3 N);
-	float refractionIndex( int medium );
 
 	Surface* skybox;
 
@@ -101,7 +100,7 @@ private:
 
 
 	void loadscene(SCENES scene);
-	void loadobj(string filename, vec3 scale, vec3 translate);
+	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
 };
 
 }; // namespace Tmpl8

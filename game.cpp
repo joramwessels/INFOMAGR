@@ -409,7 +409,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 1;
-		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 });
+		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 }, Material(0.0f, 1.52f, 0xffffff));
 
 		numLights = 3;
 		lights = new Light[numLights];
@@ -438,7 +438,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 1;
-		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 });
+		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 }, Material(0.5f, 0.0f, 0xffff00));
 
 		numLights = 3;
 		lights = new Light[numLights];
@@ -465,7 +465,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	}
 }
 
-void Game::loadobj(string filename, vec3 scale, vec3 translate)
+void Game::loadobj(string filename, vec3 scale, vec3 translate, Material material)
 {
 	int startpos = numGeometries;
 
@@ -527,7 +527,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate)
 				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
 				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
 			}
-			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(0.0f, 1.52f, 0xffffff));
+			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, material);
 			startpos++;
 			numGeometries++;
 
