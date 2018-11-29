@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(AMBIENTLIGHT);
+	loadscene(SPOTLIGHT);
 }
 
 // -----------------------------------------------------------
@@ -223,9 +223,17 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 		{
 			vec3 L = (lights[i].position - collision.Pos).normalized();
 
+
 			Ray shadowray;
 			shadowray.Direction = L;
 			shadowray.Origin = collision.Pos + (0.00025f * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
+
+			if (lights[i].type == Light::SPOT) {
+				if (dot(-L, lights[i].direction) < 0.9f) {
+					continue;
+				}
+			}
+
 
 			bool collided = false;
 			bool maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hit the light source. Because we don't want to count collisions that are behind the light source.
@@ -249,6 +257,8 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			}
 			else
 			{
+				
+
 				//lightcolor = lightcolor * 1000;
 				//printf("N dot L: %f", dot(-collision.N, L));
 				float r = (lights[i].position - collision.Pos).length();
@@ -257,7 +267,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 		}
 		else {
 			//AMBIENT LIGHT: just return the light color
-			return lights[i].color;
+			result += lights[i].color;
 		}
 	}
 	return result;
@@ -351,6 +361,41 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[0].color = 0xff1111;
 		lights[0].color = lights[0].color;
 		lights[0].type = Light::AMBIENT;
+
+		skybox = new Surface("assets\\skybox4.jpg");
+
+
+		break;
+	}
+	case SPOTLIGHT:
+	{
+		//Set up the scene
+		numGeometries = 9;
+
+		//geometry = new Geometry*[6];
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+
+		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xffffff));
+		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff000f));
+		geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
+		geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xffffff));
+		geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
+
+		geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xff0000));
+		geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
+		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
+
+		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
+
+		numLights = 1;
+		lights = new Light[numLights];
+		lights[0].position = { 0, -2, -7 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 7000;
+		lights[0].type = Light::SPOT;
+		lights[0].direction = vec3(0, 0.5f, 1).normalized();
 
 		skybox = new Surface("assets\\skybox4.jpg");
 
