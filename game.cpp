@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(BANANA);
+	loadscene(TEST);
 }
 
 // -----------------------------------------------------------
@@ -123,22 +123,31 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	if ( collision.t != -1 )
 	{
 		//The ray collides.
-		if ( collision.other->material.type == Material::DIFFUSE )
-		{
-			color = collision.colorAt * DirectIllumination(collision);
+		if (collision.other->material.refractionIndex == 0.0f) {
+			// Non-transparant objects
+			Color albedo, reflection;
+			float specularity = collision.other->material.specularity;
+			if ( specularity < 1.0f )
+			{
+				// Diffuse aspect
+				albedo = collision.colorAt * DirectIllumination(collision);
+			}
+			if ( specularity > 0.0f )
+			{
+				// Reflective aspect
+				Ray reflectedray;
+				reflectedray.Direction = reflect( ray.Direction, collision.N );
+				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
+				reflection = TraceRay( reflectedray, recursiondepth + 1 );
+			}
+			return ( albedo * ( 1 - specularity ) + reflection * specularity );
 		}
-		if ( collision.other->material.type == Material::MIRROR )
+		else
 		{
-			Ray reflectedray;
-			reflectedray.Direction = reflect( ray.Direction, collision.N );
-			reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
-			return ( collision.colorAt * TraceRay( reflectedray, recursiondepth + 1 ) ) >> 8; //Devide by 255 to scale back into the same range, after multiplying by material color.
-		}
-		if ( collision.other->material.type == Material::GLASS )
-		{
+			// Transparant objects
 			float n1, n2;
-			if ( ray.InObject ) n1 = refractionIndex( ray.Medium ), n2 = refractionIndex( Material::AIR );
-			else				n1 = refractionIndex( ray.Medium ), n2 = refractionIndex( collision.other->material.type );
+			if ( ray.InObject ) n1 = ray.mediumRefractionIndex, n2 = 1.0f;
+			else				n1 = ray.mediumRefractionIndex, n2 = collision.other->material.refractionIndex;
 			float transition = n1 / n2;
 			float costheta = dot( collision.N, -ray.Direction );
 			float k = 1 - ( transition * transition ) * ( 1.0f - ( costheta * costheta ) );
@@ -155,7 +164,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 
 			float R0 = temp * temp;
 			float Fr = R0 + ( 1.0f - R0 ) * powf( 1.0f - costheta, 5.0f );
-			Color reflection;
+			Color reflection, refraction;
 			if ( Fr > 0.0f )
 			{
 				Ray reflectedray;
@@ -163,25 +172,16 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
 				reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
-			else
-			{
-				reflection = Color( 0, 0, 0 );
-			}
 
 			// Snell refraction
-			Color refraction;
 			if ( Fr < 1.0f )
 			{
 				Ray refractedray;
 				refractedray.Direction = transition * ray.Direction + collision.N * ( transition * costheta - sqrt( k ) );
 				refractedray.Origin = collision.Pos + 0.00001f * refractedray.Direction;
 				refractedray.InObject = !ray.InObject;
-				refractedray.Medium = ( ray.InObject ? Material::AIR : collision.other->material.type ); // Exiting an object defaults material to air
+				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other->material.refractionIndex ); // Exiting an object defaults material to air
 				refraction = TraceRay( refractedray, recursiondepth + 1 );
-			}
-			else
-			{
-				refraction = Color( 0, 0, 0 );
 			}
 
 			return ( collision.colorAt * ( refraction * ( 1 - Fr ) + reflection * Fr ) ) >> 8;
@@ -260,12 +260,6 @@ vec3 Tmpl8::Game::reflect( vec3 D, vec3 N )
 	return D - 2 * ( dot( D, N ) ) * N;
 }
 
-float Tmpl8::Game::refractionIndex( int medium )
-{
-	if ( medium == Material::AIR ) return 1.0f;
-	if ( medium == Material::GLASS ) return 1.52f;
-}
-
 void Tmpl8::Game::loadscene(SCENES scene)
 {
 	geometry = new Geometry*[5000];
@@ -278,17 +272,17 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		numGeometries = 9;
 
 		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(Material::GLASS, 0xffffff));
-		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(Material::DIFFUSE, 0xff000f));
-		geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(Material::MIRROR, 0xffffff));
-		geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(Material::DIFFUSE, 0xffffff));
-		geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xffffff));
+		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
+		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
+		geometry[3] = new Sphere( vec3( 0, 1.1, 8 ), 1, Material( 0.0f, 0.0f, Material::TEXTURE, new Surface( "assets\\earthmap1k.jpg" ) ) );
+		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
+		geometry[5] = new Sphere( vec3( 2.1, 1.5, 8 ), 1, Material( 0.3f, 0.0f, 0xffffff ) );
+		geometry[6] = new Sphere( vec3( 4.2, 0, 8 ), 1, Material( 0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xffffff ) );
 
-		geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0xff0000));
-		geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x00ff00));
+		geometry[7] = new Sphere( vec3( 4.2, 0, 0 ), 1, Material( 0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xff0000 ) );
+		geometry[8] = new Sphere( vec3( 3, 0, -8 ), 1, Material( 0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0x00ff00 ) );
 		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
 
 		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
@@ -318,7 +312,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	case OBJ:
 	{
 		camera.rotate({ -20, 180, 0 });
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 1;
 		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 });
@@ -347,7 +341,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	case BANANA:
 	{
 		//camera.rotate({ -40, 0, 0 });
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(Material::DIFFUSE, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 1;
 		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 });
@@ -439,7 +433,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate)
 				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
 				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
 			}
-			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(Material::GLASS, 0xffffff));
+			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, Material(0.0f, 1.52f, 0xffffff));
 			startpos++;
 			numGeometries++;
 

@@ -69,13 +69,6 @@ struct Color
 
 struct Material
 {
-	enum MATERIALTYPE
-	{
-		DIFFUSE,
-		MIRROR,
-		GLASS,
-		AIR
-	};
 
 	enum TEXTURETYPE
 	{
@@ -84,7 +77,8 @@ struct Material
 		TEXTURE
 	};
 
-	MATERIALTYPE type = DIFFUSE;
+	float specularity = 0.0f;
+	float refractionIndex = 0.0f;
 	TEXTURETYPE texturetype = COLOR;
 	Color color;  //Should be in range 0...255, to avoid problems with mirrors
 	Color color2; //For checkerboard
@@ -93,34 +87,42 @@ struct Material
 
 	Material()
 	{
-		type = DIFFUSE;
+		specularity = 1.0f;
+		refractionIndex = 0.0f;
 		color.from_uint( 0xffffff );
 	}
 
-	Material(MATERIALTYPE type, Color color)
+	Material(float specularity, float refractionIndex, Color color)
 	{
 		this->texturetype = COLOR;
-		this->type = type;
+		this->specularity = specularity;
+		this->refractionIndex = refractionIndex;
 		this->color = color;
 	}
 	
-	Material(MATERIALTYPE type, uint color) {
+	Material( float specularity, float refractionIndex, uint color )
+	{
 		this->texturetype = COLOR;
-		this->type = type;
+		this->specularity = specularity;
+		this->refractionIndex = refractionIndex;
 		this->color = color;
 
 	}
 
-	Material(MATERIALTYPE type, TEXTURETYPE texturetype, uint color1, uint color2) {
+	Material( float specularity, float refractionIndex, TEXTURETYPE texturetype, uint color1, uint color2 )
+	{
 		this->texturetype = texturetype;
-		this->type = type;
+		this->specularity = specularity;
+		this->refractionIndex = refractionIndex;
 		this->color = color1;
 		this->color2 = color2;
 	}
 
-	Material(MATERIALTYPE type, TEXTURETYPE texturetype, Surface* texture) {
+	Material( float specularity, float refractionIndex, TEXTURETYPE texturetype, Surface *texture )
+	{
 		this->texturetype = texturetype;
-		this->type = type;
+		this->specularity = specularity;
+		this->refractionIndex = refractionIndex;
 		this->texture = texture;
 	}
 };
@@ -130,7 +132,7 @@ struct Ray
 	vec3 Origin = {0, 0, 0};
 	vec3 Direction;
 	bool InObject = false;
-	Material::MATERIALTYPE Medium = Material::AIR;
+	float mediumRefractionIndex = 1.0f;
 };
 
 struct Collision
