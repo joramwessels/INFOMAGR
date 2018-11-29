@@ -144,6 +144,16 @@ struct Collision
 
 struct Light
 {
+	enum LIGHTTYPE {
+		POINTLIGHT,
+		DIRECTIONAL,
+		SPOT,
+		AMBIENT
+	};
+
+	LIGHTTYPE type = POINTLIGHT;
 	vec3 position;
+	vec3 direction;
 	Color color;
+	
 };

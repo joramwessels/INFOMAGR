@@ -93,8 +93,10 @@ private:
 	enum SCENES {
 		TEST,
 		OBJ,
-		BANANA
+		BANANA,
+		AMBIENTLIGHT
 	};
+
 
 	void loadscene(SCENES scene);
 	void loadobj(string filename, vec3 scale, vec3 translate);
