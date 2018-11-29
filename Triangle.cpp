@@ -47,7 +47,7 @@ Triangle::~Triangle()
 {
 }
 
-Collision Triangle::Intersect(Ray ray, bool shatterray)
+Collision Triangle::Intersect(Ray ray, bool isShadowray)
 {
 	Collision collision;
 	collision.t = -1;
@@ -64,6 +64,11 @@ Collision Triangle::Intersect(Ray ray, bool shatterray)
 		{
 			//Collision
 			collision.t = t;
+	
+			if (isShadowray) {
+				return collision;
+			}
+
 			collision.colorAt = material.color;
 			collision.other = this;
 			if (NdotR > 0) collision.N = -N;

@@ -10,7 +10,7 @@ Geometry::~Geometry()
 {
 }
 
-Collision Geometry::Intersect(Ray ray, bool shatterray)
+Collision Geometry::Intersect(Ray ray, bool isShadowray)
 {
 	printf("This function should not be called");
 	return Collision();

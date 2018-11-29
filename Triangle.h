@@ -8,7 +8,7 @@ public:
 	Triangle(vec3 v0, vec3 v1, vec3 v2, vec3 N, Material material);
 	~Triangle();
 
-	Collision Intersect(Ray ray, bool shatterray = false) override;
+	Collision Intersect(Ray ray, bool isShadowray = false) override;
 
 
 private:

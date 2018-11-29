@@ -10,7 +10,7 @@ public:
 
 	Material material;
 
-	virtual Collision Intersect(Ray ray, bool shatterray = false);
+	virtual Collision Intersect(Ray ray, bool isShadowray = false);
 
 private:
 };

@@ -27,7 +27,7 @@ Plane::~Plane()
 {
 }
 
-Collision Plane::Intersect(Ray ray, bool shatterray)
+Collision Plane::Intersect(Ray ray, bool isShadowray)
 {
 	Collision collision;
 	collision.t = -1;
@@ -42,7 +42,7 @@ Collision Plane::Intersect(Ray ray, bool shatterray)
 	}
 	else
 	{
-		if (shatterray) {
+		if (isShadowray) {
 			collision.t = 2; //We just want to know if it hits *something*
 			return collision;
 		}

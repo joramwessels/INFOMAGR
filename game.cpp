@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(TEST);
+	loadscene(BANANA);
 }
 
 // -----------------------------------------------------------

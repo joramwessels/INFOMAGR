@@ -8,7 +8,7 @@ Sphere::Sphere( vec3 position, float r, Material material )
 	this->material = material;
 }
 
-Collision Sphere::Intersect( Ray ray, bool shatterray )
+Collision Sphere::Intersect( Ray ray, bool isShadowray )
 {
 	Collision collision;
 
@@ -68,7 +68,7 @@ Collision Sphere::Intersect( Ray ray, bool shatterray )
 	t -= sqrt( r2 - p2 );
 	if ( t > 0 )
 	{
-		if (shatterray) {
+		if (isShadowray) {
 			collision.t = t;
 			return collision; //We just want to know if it hits *something*
 		}

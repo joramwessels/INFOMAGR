@@ -7,7 +7,7 @@ public:
 	Plane(vec3 N, float d, Material material);
 	~Plane();
 
-	Collision Intersect(Ray ray, bool shatterray = false) override;
+	Collision Intersect(Ray ray, bool isShadowray = false) override;
 
 
 private:

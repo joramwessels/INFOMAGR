@@ -7,8 +7,8 @@
 // Prevent expansion clashes (when using std::min and std::max):
 #define NOMINMAX
 
-#define SCRWIDTH 1000
-#define SCRHEIGHT 1000
+#define SCRWIDTH 512
+#define SCRHEIGHT 512
 #define MAX_RECURSION_DEPTH 5
 //#define SCRWIDTH 1920
 //#define SCRHEIGHT 1080
