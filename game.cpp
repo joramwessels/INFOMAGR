@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(DIRECTIONALLIGHT);
+	loadscene(TEST);
 }
 
 // -----------------------------------------------------------
@@ -261,7 +261,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			}
 			else
 			{
-				if (lights[i].type == Light::SPOT)
+				if (lights[i].type == Light::SPOT || lights[i].type == Light::POINTLIGHT)
 				{
 					float r = (lights[i].position - collision.Pos).length();
 					result += lights[i].color * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
@@ -464,7 +464,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[2].color = lights[2].color * 700;
 
 		skybox = new Surface("assets\\skybox4.jpg");
-
+		break;
 	}
 	case DIRECTIONALLIGHT:
 	{
@@ -498,7 +498,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[0].direction = vec3(-1, -0.5f, -1).normalized();
 
 		skybox = new Surface("assets\\skybox4.jpg");
-
+		break;
 	}
 	default:
 		break;
