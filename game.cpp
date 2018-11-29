@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(SPOTLIGHT);
+	loadscene(DIRECTIONALLIGHT);
 }
 
 // -----------------------------------------------------------
@@ -211,8 +211,6 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 }
 
 //Cast a ray from the collision point towards the light, to check if light can reach the point
-//TODO: make light sources dynamic. (aka create a class for them and loop over them)
-//TODO: consider distance to light source.
 
 Color Tmpl8::Game::DirectIllumination( Collision collision )
 {
@@ -228,6 +226,13 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			Ray shadowray;
 			shadowray.Direction = L;
 			shadowray.Origin = collision.Pos + (0.00025f * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
+			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hit the light source. Because we don't want to count collisions that are behind the light source.
+
+			
+			if (lights[i].type == Light::DIRECTIONAL) {
+				shadowray.Direction = lights[i].direction;
+				maxt = 5000;
+			}
 
 			if (lights[i].type == Light::SPOT) {
 				if (dot(-L, lights[i].direction) < 0.9f) {
@@ -235,9 +240,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 				}
 			}
 
-
 			bool collided = false;
-			bool maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hit the light source. Because we don't want to count collisions that are behind the light source.
 
 			for (int i = 0; i < numGeometries; i++)
 			{
@@ -258,12 +261,15 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			}
 			else
 			{
-				
-
-				//lightcolor = lightcolor * 1000;
-				//printf("N dot L: %f", dot(-collision.N, L));
-				float r = (lights[i].position - collision.Pos).length();
-				result += lights[i].color * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
+				if (lights[i].type == Light::SPOT)
+				{
+					float r = (lights[i].position - collision.Pos).length();
+					result += lights[i].color * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
+				}
+				else {
+					//DIRECTIONAL, don't use quadratic falloff
+					result += lights[i].color;
+				}
 			}
 		}
 		else {
@@ -456,6 +462,40 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[2].color = 0xffffff;
 		//lights[2].color = 0x11ff11;
 		lights[2].color = lights[2].color * 700;
+
+		skybox = new Surface("assets\\skybox4.jpg");
+
+	}
+	case DIRECTIONALLIGHT:
+	{
+		//Set up the scene
+		numGeometries = 9;
+
+		//geometry = new Geometry*[6];
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+
+		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
+		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
+		geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
+		geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(0.3f, 0.0f, 0xffffff));
+		geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xffffff));
+
+		geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xff0000));
+		geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0x00ff00));
+		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
+
+		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
+
+
+		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
+
+		numLights = 1;
+		lights = new Light[numLights];
+		lights[0].color = 0x888888;
+		//lights[0].color = 0xff1111;
+		lights[0].type = Light::DIRECTIONAL;
+		lights[0].direction = vec3(-1, -0.5f, -1).normalized();
 
 		skybox = new Surface("assets\\skybox4.jpg");
 
