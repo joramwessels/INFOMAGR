@@ -268,7 +268,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 				}
 				else {
 					//DIRECTIONAL, don't use quadratic falloff
-					result += lights[i].color;
+					result += lights[i].color * (max(0.0f, dot(collision.N, lights[i].direction)));
 				}
 			}
 		}
