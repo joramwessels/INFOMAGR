@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(PERFORMANCESCENE);
+	loadscene(SCENE_PERFORMANCE);
 	mytimer.reset();
 }
 
@@ -168,19 +168,25 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			float transition = n1 / n2;
 			float costheta = dot( collision.N, -ray.Direction );
 			float k = 1 - ( transition * transition ) * ( 1.0f - ( costheta * costheta ) );
+
+			float Fr;
 			if ( k < 0 )
 			{
 				// total internal reflection
-				return Color( 0, 0, 0 ) << 8;
+				//return Color( 0, 0, 0 );
+				Fr = 1;
+			}
+			else {
+
+				float ndiff = n1 - n2;
+				float nsumm = n1 + n2;
+				float temp = ndiff / nsumm;
+
+				float R0 = temp * temp;
+				Fr = R0 + ( 1.0f - R0 ) * powf( 1.0f - costheta, 5.0f );
 			}
 
 			// Fresnel reflection (Schlick's approximation)
-			float ndiff = n1 - n2;
-			float nsumm = n1 + n2;
-			float temp = ndiff / nsumm;
-
-			float R0 = temp * temp;
-			float Fr = R0 + ( 1.0f - R0 ) * powf( 1.0f - costheta, 5.0f );
 			Color reflection, refraction;
 			if ( Fr > 0.0f )
 			{
@@ -306,7 +312,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 	switch (scene)
 	{
-	case TEST:
+	case SCENE_TEST:
 	{
 		//Set up the scene
 		numGeometries = 9;
@@ -349,7 +355,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		break;
 	}
-	case AMBIENTLIGHT:
+	case SCENE_LIGHTING_AMBIENT:
 	{
 		//Set up the scene
 		numGeometries = 9;
@@ -386,7 +392,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		break;
 	}
-	case SPOTLIGHT:
+	case SCENE_LIGHTING_SPOT:
 	{
 		//Set up the scene
 		numGeometries = 9;
@@ -424,7 +430,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		break;
 	}
-	case OBJ:
+	case SCENE_OBJ_GLASS:
 	{
 		camera.rotate({ -20, 180, 0 });
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
@@ -453,7 +459,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		break;
 	}
-	case BANANA:
+	case SCENE_OBJ_HALFREFLECT:
 	{
 		//camera.rotate({ -40, 0, 0 });
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
@@ -481,7 +487,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Surface("assets\\skybox4.jpg");
 		break;
 	}
-	case DIRECTIONALLIGHT:
+	case SCENE_LIGHTING_DIRECTIONAL:
 	{
 		//Set up the scene
 		numGeometries = 9;
@@ -515,7 +521,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Surface("assets\\skybox4.jpg");
 		break;
 	}
-	case PERFORMANCESCENE:
+	case SCENE_PERFORMANCE:
 	{
 		//Set up the scene
 		numGeometries = 3;
@@ -542,6 +548,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		skybox = new Surface("assets\\skybox4.jpg");
 		camera.move({ -4, 0.3, 3 });
+		camera.rotate({ 0, 0.001, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
 
 		break;
 	}
