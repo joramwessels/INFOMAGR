@@ -47,6 +47,7 @@ struct Color
 	void operator=( const uint &operand ) { from_uint( operand ); }
 
 	Color operator*( const float &operand ) const { return Color( (float)R * operand, (float)G * operand, (float)B * operand ); }
+	Color operator*(const int &operand) const { return Color(R * operand, G * operand, B * operand); }
 	Color operator/( const Color &operand ) const { return Color( R / operand.R, G / operand.G, B / operand.B ); }
 	Color operator/( const float &operand ) const { return Color( (float)R / operand, (float)G / operand, (float)B / operand ); }
 

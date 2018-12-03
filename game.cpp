@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(SCENE_PERFORMANCE);
+	loadscene(SCENE_TEST);
 	mytimer.reset();
 }
 
@@ -33,9 +33,9 @@ void Game::Tick( float deltaTime )
 
 	//Shoot a ray for every pixel
 #pragma omp parallel for
-	for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
+	for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
 	{
-		for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
+		for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
 		{
 			//Generate the ray
 			Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
