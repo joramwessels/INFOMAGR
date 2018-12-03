@@ -29,6 +29,8 @@ void Game::Shutdown()
 // -----------------------------------------------------------
 void Game::Tick( float deltaTime )
 {
+	frames++;
+
 	//Shoot a ray for every pixel
 #pragma omp parallel for
 	for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
@@ -81,9 +83,6 @@ void Game::Tick( float deltaTime )
 		prevsecframes = frames;
 		frames = 0;
 		mytimer.reset();
-	}
-	else {
-		frames++;
 	}
 
 	char buffer[64];
@@ -172,7 +171,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			if ( k < 0 )
 			{
 				// total internal reflection
-				return Color( 0, 0, 0 );
+				return Color( 0, 0, 0 ) << 8;
 			}
 
 			// Fresnel reflection (Schlick's approximation)
