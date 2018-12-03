@@ -12,7 +12,8 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(BANANA);
+	loadscene(PERFORMANCESCENE);
+	mytimer.reset();
 }
 
 // -----------------------------------------------------------
@@ -75,6 +76,21 @@ void Game::Tick( float deltaTime )
 		camera.move({ 0,0,0.01 });
 	}
 	//printf("Frame %i done. \n", frame++);
+
+	if (mytimer.elapsed() > 1000) {
+		prevsecframes = frames;
+		frames = 0;
+		mytimer.reset();
+	}
+	else {
+		frames++;
+	}
+
+	char buffer[64];
+	sprintf(buffer, "FPS: %i", prevsecframes);
+
+	screen->Bar(0, 0, 45, 8, 0x000000);
+	screen->Print(buffer, 1, 2, 0xffffff);
 }
 
 void Tmpl8::Game::MouseMove( int x, int y )
@@ -225,7 +241,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			Ray shadowray;
 			shadowray.Direction = L;
-			shadowray.Origin = collision.Pos + (0.00025f * collision.N); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
+			shadowray.Origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
 			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hit the light source. Because we don't want to count collisions that are behind the light source.
 
 			
@@ -500,6 +516,37 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Surface("assets\\skybox4.jpg");
 		break;
 	}
+	case PERFORMANCESCENE:
+	{
+		//Set up the scene
+		numGeometries = 3;
+
+		//geometry = new Geometry*[6];
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0xff0000, 0xffff00));
+
+		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 0.95f, 0xffffff));
+		geometry[2] = new Sphere(vec3(-2.1, 0.5, 12), 1, Material(0.3f, 0.0f, 0xffffff));
+
+		numLights = 2;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 0 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0x333333;
+		lights[1].type = Light::AMBIENT;
+		//lights[1].color = 0x1111ff;
+		//lights[1].color = lights[1].color * 700;
+
+
+		skybox = new Surface("assets\\skybox4.jpg");
+		camera.move({ -4, 0.3, 3 });
+
+		break;
+	}
+
 	default:
 		break;
 	}

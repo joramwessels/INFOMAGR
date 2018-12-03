@@ -95,12 +95,18 @@ private:
 		BANANA,
 		AMBIENTLIGHT,
 		SPOTLIGHT,
-		DIRECTIONALLIGHT
+		DIRECTIONALLIGHT,
+		PERFORMANCESCENE
 	};
 
 
 	void loadscene(SCENES scene);
 	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
+
+	//fps counter
+	int frames = 0;
+	int prevsecframes = 0;
+	timer mytimer;
 };
 
 }; // namespace Tmpl8
