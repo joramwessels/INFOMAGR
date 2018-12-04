@@ -78,7 +78,7 @@ struct Material
 		TEXTURE
 	};
 
-	float specularity = 0.0f;
+	int specularity = 0; //Range 0...256
 	float refractionIndex = 0.0f;
 	TEXTURETYPE texturetype = COLOR;
 	Color color;  //Should be in range 0...255, to avoid problems with mirrors
@@ -96,7 +96,7 @@ struct Material
 	Material(float specularity, float refractionIndex, Color color)
 	{
 		this->texturetype = COLOR;
-		this->specularity = specularity;
+		this->specularity = specularity * 256;
 		this->refractionIndex = refractionIndex;
 		this->color = color;
 	}
@@ -104,7 +104,7 @@ struct Material
 	Material( float specularity, float refractionIndex, uint color )
 	{
 		this->texturetype = COLOR;
-		this->specularity = specularity;
+		this->specularity = specularity * 256;
 		this->refractionIndex = refractionIndex;
 		this->color = color;
 
@@ -113,7 +113,7 @@ struct Material
 	Material( float specularity, float refractionIndex, TEXTURETYPE texturetype, uint color1, uint color2 )
 	{
 		this->texturetype = texturetype;
-		this->specularity = specularity;
+		this->specularity = specularity * 256;
 		this->refractionIndex = refractionIndex;
 		this->color = color1;
 		this->color2 = color2;
@@ -122,7 +122,7 @@ struct Material
 	Material( float specularity, float refractionIndex, TEXTURETYPE texturetype, Surface *texture )
 	{
 		this->texturetype = texturetype;
-		this->specularity = specularity;
+		this->specularity = specularity * 256;
 		this->refractionIndex = refractionIndex;
 		this->texture = texture;
 	}

@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(SCENE_PERFORMANCE);
+	loadscene(SCENE_TEST);
 	mytimer.reset();
 }
 
@@ -144,12 +144,12 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			// Non-transparant objects
 			Color albedo, reflection;
 			float specularity = collision.other->material.specularity;
-			if ( specularity < 1.0f )
+			if ( specularity < 256 )
 			{
 				// Diffuse aspect
 				albedo = collision.colorAt * DirectIllumination(collision);
 			}
-			if ( specularity > 0.0f )
+			if ( specularity > 0 )
 			{
 				// Reflective aspect
 				Ray reflectedray;
@@ -157,7 +157,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
 				reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
-			return ( albedo * ( 1 - specularity ) + reflection * specularity );
+			return ( albedo * ( 256 - specularity ) + reflection * specularity ) >> 8; //Fixed point-math
 		}
 		else
 		{
@@ -215,8 +215,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 		//--> skybox.
 		vec3 skyBoxN = ray.Direction;
 
-		float u = 0.5f + (atan2f(-skyBoxN.z, -skyBoxN.x) / (2 * PI));
-		float v = 0.5f - (asinf(-skyBoxN.y) / PI);
+		float u = 0.5f + (atan2f(-skyBoxN.z, -skyBoxN.x) * INV2PI);
+		float v = 0.5f - (asinf(-skyBoxN.y) * INVPI);
 		color = skybox->GetBuffer()[(int)((skybox->GetWidth() - 1) * u) + (int)((skybox->GetHeight() - 1) * v) * skybox->GetPitch()];
 		//color <<= 8;
 
@@ -285,7 +285,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 				if (lights[i].type == Light::SPOT || lights[i].type == Light::POINTLIGHT)
 				{
 					float r = (lights[i].position - collision.Pos).length();
-					result += lights[i].color * (max(0.0f, dot(collision.N, L)) / (4 * PI * r * r));
+					result += lights[i].color * (max(0.0f, dot(collision.N, L)) * INV4PI / (r * r));
 				}
 				else {
 					//DIRECTIONAL, don't use quadratic falloff
