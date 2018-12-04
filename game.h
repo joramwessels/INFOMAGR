@@ -104,6 +104,8 @@ private:
 	void loadscene(SCENES scene);
 	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
 
+	bool SSAA;
+
 	//fps counter
 	int frames = 0;
 	int prevsecframes = 0;

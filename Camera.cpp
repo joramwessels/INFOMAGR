@@ -21,11 +21,11 @@ Camera::~Camera()
 }
 
 //Generate a ray from the camera through a pixel in the virtual screen
-Ray Camera::generateRayTroughVirtualScreen(int pixelx, int pixely)
+Ray Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 {
 	vec2 pixelPosScaled;
-	pixelPosScaled.x = float(pixelx) / SCRWIDTH; //Scale the pixel position to be in the range 0..1
-	pixelPosScaled.y = float(pixely) / SCRHEIGHT;
+	pixelPosScaled.x = pixelx / SCRWIDTH; //Scale the pixel position to be in the range 0..1
+	pixelPosScaled.y = pixely / SCRHEIGHT;
 
 	Ray ray;
 	ray.Origin = position;

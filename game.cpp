@@ -11,8 +11,11 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
+	loadscene(SCENE_TEST);
+	SSAA = true;
 
-	loadscene(SCENE_PERFORMANCE);
+	camera.rotate({ 0, 25, 0 });
+
 	mytimer.reset();
 }
 
@@ -37,13 +40,29 @@ void Game::Tick( float deltaTime )
 	{
 		for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
 		{
-			//Generate the ray
-			Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
+			Color result;
+
+			if (SSAA) {
+				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
+				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + 0.5, pixely);
+				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + 0.5, pixely + 0.5);
+				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + 0.5);
+
+				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
+			}
+			else {
+				//Generate the ray
+				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
+
+				//Trace the ray, and plot the result to the screen
+				int hdrscale = 255;
+				result = TraceRay(ray);
+
+			}
 			
-			//Trace the ray, and plot the result to the screen
-			int hdrscale = 255;
-			uint result = (TraceRay(ray) >> 8).to_uint_safe();
-			screen->Plot(pixelx, pixely, result);
+			
+			
+			screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
 			
 		}
 	}
