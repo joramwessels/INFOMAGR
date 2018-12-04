@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(SCENE_TEST);
+	loadscene(SCENE_PERFORMANCE);
 	mytimer.reset();
 }
 
@@ -215,8 +215,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 		//--> skybox.
 		vec3 skyBoxN = ray.Direction;
 
-		float u = 0.5 + (atan2f(-skyBoxN.z, -skyBoxN.x) / (2 * PI));
-		float v = 0.5 - (asinf(-skyBoxN.y) / PI);
+		float u = 0.5f + (atan2f(-skyBoxN.z, -skyBoxN.x) / (2 * PI));
+		float v = 0.5f - (asinf(-skyBoxN.y) / PI);
 		color = skybox->GetBuffer()[(int)((skybox->GetWidth() - 1) * u) + (int)((skybox->GetHeight() - 1) * v) * skybox->GetPitch()];
 		//color <<= 8;
 

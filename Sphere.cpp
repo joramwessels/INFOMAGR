@@ -28,8 +28,8 @@ Collision Sphere::Intersect( Ray ray, bool isShadowray )
 		else
 		{
 		
-			float u = 0.5 + ( atan2f( -collision.N.z, -collision.N.x ) / ( 2 * PI ) );
-			float v = 0.5 - ( asinf( -collision.N.y ) / PI );
+			float u = 0.5f + ( atan2f( -collision.N.z, -collision.N.x ) / ( 2.0f * PI ) );
+			float v = 0.5f - ( asinf( -collision.N.y ) / PI );
 			if ( material.texturetype == Material::CHECKERBOARD )
 			{
 
@@ -83,8 +83,8 @@ Collision Sphere::Intersect( Ray ray, bool isShadowray )
 			collision.colorAt = material.color;
 		}
 		else {
-			float u = 0.5 + (atan2f(-collision.N.z, -collision.N.x) / (2 * PI));
-			float v = 0.5 - (asinf(-collision.N.y) / PI);
+			float u = 0.5f + (atan2f(-collision.N.z, -collision.N.x) / (2 * PI));
+			float v = 0.5f - (asinf(-collision.N.y) / PI);
 
 			if (material.texturetype == Material::CHECKERBOARD)
 			{
