@@ -546,7 +546,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[1].color = lights[1].color * 700;
 
 
-		skybox = new Skybox(0x09a3cf);
+		skybox = new Skybox(0x58caeb);
 		camera.move({ -4, 0.3, 3 });
 		camera.rotate({ 0, 0.001, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
 
