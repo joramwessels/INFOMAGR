@@ -88,7 +88,7 @@ struct Material
 
 	Material()
 	{
-		specularity = 1.0f;
+		specularity = 256;
 		refractionIndex = 0.0f;
 		color.from_uint( 0xffffff );
 	}

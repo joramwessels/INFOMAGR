@@ -12,7 +12,7 @@ int frame = 0;
 void Game::Init()
 {
 
-	loadscene(SCENE_TEST);
+	loadscene(SCENE_PERFORMANCE);
 	mytimer.reset();
 }
 
@@ -143,7 +143,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 		if (collision.other->material.refractionIndex == 0.0f) {
 			// Non-transparant objects
 			Color albedo, reflection;
-			float specularity = collision.other->material.specularity;
+			int specularity = collision.other->material.specularity;
 			if ( specularity < 256 )
 			{
 				// Diffuse aspect
