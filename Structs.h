@@ -160,3 +160,65 @@ struct Light
 	Color color;
 	
 };
+
+class Skybox
+{
+public:
+	Material::TEXTURETYPE type = Material::COLOR;
+	Color color;
+	Color color2;
+	Surface* texture;
+
+	Skybox(char* filename) {
+		type = Material::TEXTURE;
+		texture = new Surface(filename);
+	}
+
+	Skybox(uint color) {
+		type = Material::COLOR;
+		this->color = color;
+	}
+
+	Skybox(Color color1, Color color2) {
+		type = Material::CHECKERBOARD;
+		this->color = color1;
+		this->color2 = color2;
+	}
+
+	Color ColorAt(vec3 Direction) {
+		float u;
+		float v;
+
+		Color result;
+
+		switch (type)
+		{
+		case Material::COLOR:
+			return color;
+			break;
+		case Material::CHECKERBOARD:
+			u = 0.5f + (atan2f(-Direction.z, -Direction.x) * INV2PI);
+			v = 0.5f - (asinf(-Direction.y) * INVPI);
+
+			if ((int)(v * 10) % 2 == (int)(u * 10) % 2)
+			{
+				return color2;
+			}
+
+			else
+			{
+				return color;
+			}
+			break;
+		case Material::TEXTURE:
+			u = 0.5f + (atan2f(-Direction.z, -Direction.x) * INV2PI);
+			v = 0.5f - (asinf(-Direction.y) * INVPI);
+			result = texture->GetBuffer()[(int)((texture->GetWidth() - 1) * u) + (int)((texture->GetHeight() - 1) * v) * texture->GetPitch()];
+			return result;
+			break;
+		default:
+			break;
+		}
+	}
+
+};

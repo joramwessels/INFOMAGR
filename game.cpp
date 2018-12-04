@@ -213,18 +213,18 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	else {
 		//There was no collision.
 		//--> skybox.
-		vec3 skyBoxN = ray.Direction;
+		/*vec3 skyBoxN = ray.Direction;
 
 		float u = 0.5f + (atan2f(-skyBoxN.z, -skyBoxN.x) * INV2PI);
 		float v = 0.5f - (asinf(-skyBoxN.y) * INVPI);
 		color = skybox->GetBuffer()[(int)((skybox->GetWidth() - 1) * u) + (int)((skybox->GetHeight() - 1) * v) * skybox->GetPitch()];
 		//color <<= 8;
+		*/
+		color.R = 255;
+		color.G = 0;
+		color.B = 0;
 
-		//color.R = 255;
-		//color.G = 0;
-		//color.B = 0;
-
-		return color << 8;
+		return skybox->ColorAt(ray.Direction) << 8;
 	}
 
 	//Ray out of scene
@@ -350,7 +350,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[2].color = 0x11ff11;
 		lights[2].color = lights[2].color * 700;
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skybox4.jpg");
 
 
 		break;
@@ -387,7 +387,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[0].color = lights[0].color;
 		lights[0].type = Light::AMBIENT;
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skybox4.jpg");
 
 
 		break;
@@ -425,7 +425,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[0].type = Light::SPOT;
 		lights[0].direction = vec3(0, 0.5f, 1).normalized();
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skybox4.jpg");
 
 
 		break;
@@ -455,7 +455,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[2].color = 0x11ff11;
 		lights[2].color = lights[2].color * 700;
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skybox4.jpg");
 
 		break;
 	}
@@ -484,7 +484,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[2].color = 0x11ff11;
 		lights[2].color = lights[2].color * 700;
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skybox4.jpg");
 		break;
 	}
 	case SCENE_LIGHTING_DIRECTIONAL:
@@ -518,7 +518,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[0].type = Light::DIRECTIONAL;
 		lights[0].direction = vec3(-1, -0.5f, -1).normalized();
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skybox4.jpg");
 		break;
 	}
 	case SCENE_PERFORMANCE:
@@ -546,7 +546,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[1].color = lights[1].color * 700;
 
 
-		skybox = new Surface("assets\\skybox4.jpg");
+		skybox = new Skybox(0x09a3cf);
 		camera.move({ -4, 0.3, 3 });
 		camera.rotate({ 0, 0.001, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
 
