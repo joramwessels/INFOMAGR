@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(BEERS_LAW);
+	loadscene(SCENE_BEERS_LAW);
 	SSAA = true;
 
 	mytimer.reset();
@@ -236,12 +236,13 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				if (ray.mediumRefractionIndex != 1.0f)
 				{
 					float distance = collision.t;// (collision.Pos - ray.Origin).length();
-					float x = 1000000.0f;
-					//Color a = Color(log(collision.colorAt.R/255.0f), log(collision.colorAt.G / 255.0f), log(collision.colorAt.B / 255.0f));
-					Color a = Color(0.2f, 1.8, 1.8);// Color(log(0), log(x), log(x));
-					refraction.R *= exp(-a.R * distance);
-					refraction.G *= exp(-a.G * distance);
-					refraction.B *= exp(-a.B * distance);
+
+					//vec3 a = { 0.2, 0.8, 0.8 };
+					vec3 a = vec3((float)(256 - collision.colorAt.R) / 256.0f, (float)(256 - collision.colorAt.G) / 256.0f, (float)(256 - collision.colorAt.B) / 256.0f);
+
+					refraction.R *= exp(-a.x * distance);
+					refraction.G *= exp(-a.y * distance);
+					refraction.B *= exp(-a.z * distance);
 					//refraction = refraction >> 8;
 				}
 			}
@@ -591,7 +592,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		break;
 	}
-	case BEERS_LAW:
+	case SCENE_BEERS_LAW:
 	{
 		//Set up the scene
 		numGeometries = 4;
@@ -599,9 +600,9 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry = new Geometry*[6];
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		geometry[1] = new Sphere(vec3(-3, 1, 8), 0.25, Material(0.0f, 1.52f, 0xff0f0f));
-		geometry[2] = new Sphere(vec3(-1, 0.5, 8), 1, Material(0.0f, 1.52f, 0xff0f0f));
-		geometry[3] = new Sphere(vec3(3, -1.5, 8), 3, Material(0.0f, 1.52f, 0xff0f0f));
+		geometry[1] = new Sphere(vec3(-3, 1, 8), 0.25, Material(0.0f, 1.52f, 0xffaaaa));
+		geometry[2] = new Sphere(vec3(-1, 0.5, 8), 1, Material(0.0f, 1.52f, 0xffaaaa));
+		geometry[3] = new Sphere(vec3(3, -1.5, 8), 3, Material(0.0f, 1.52f, 0xffaaaa));
 
 		numLights = 3;
 		lights = new Light[numLights];
