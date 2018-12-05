@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_SIMPLE);
+	loadscene(BEERS_LAW);
 	SSAA = true;
 
 	mytimer.reset();
@@ -231,9 +231,22 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				refractedray.InObject = !ray.InObject;
 				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other->material.refractionIndex ); // Exiting an object defaults material to air
 				refraction = TraceRay( refractedray, recursiondepth + 1 );
+
+				// Beer's law
+				if (ray.mediumRefractionIndex != 1.0f)
+				{
+					float distance = collision.t;// (collision.Pos - ray.Origin).length();
+					float x = 1000000.0f;
+					//Color a = Color(log(collision.colorAt.R/255.0f), log(collision.colorAt.G / 255.0f), log(collision.colorAt.B / 255.0f));
+					Color a = Color(0.2f, 1.8, 1.8);// Color(log(0), log(x), log(x));
+					refraction.R *= exp(-a.R * distance);
+					refraction.G *= exp(-a.G * distance);
+					refraction.B *= exp(-a.B * distance);
+					//refraction = refraction >> 8;
+				}
 			}
 
-			return ( collision.colorAt * ( refraction * ( 1 - Fr ) + reflection * Fr ) ) >> 8;
+			return ( ( refraction * ( 1 - Fr ) + reflection * Fr ) );
 		}
 	}
 	else {
@@ -575,6 +588,40 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Skybox(0x58caeb);
 		camera.move({ -4, 0.3, 3 });
 		camera.rotate({ 0, 0.001, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
+
+		break;
+	}
+	case BEERS_LAW:
+	{
+		//Set up the scene
+		numGeometries = 4;
+
+		//geometry = new Geometry*[6];
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+
+		geometry[1] = new Sphere(vec3(-3, 1, 8), 0.25, Material(0.0f, 1.52f, 0xff0f0f));
+		geometry[2] = new Sphere(vec3(-1, 0.5, 8), 1, Material(0.0f, 1.52f, 0xff0f0f));
+		geometry[3] = new Sphere(vec3(3, -1.5, 8), 3, Material(0.0f, 1.52f, 0xff0f0f));
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -5, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+		skybox = new Skybox("assets\\skybox4.jpg");
+
 
 		break;
 	}
