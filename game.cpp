@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_SIMPLE);
+	loadscene(SCENE_OBJ_HALFREFLECT);
 	SSAA = true;
 
 	mytimer.reset();
@@ -24,6 +24,13 @@ void Game::Shutdown()
 {
 	
 }
+
+//Random positions for the SSAA
+float random1 = RandomFloat();
+float random2 = RandomFloat();
+float random3 = RandomFloat();
+float random4 = RandomFloat();
+
 
 // -----------------------------------------------------------
 // Main application tick function
@@ -42,9 +49,9 @@ void Game::Tick( float deltaTime )
 
 			if (SSAA) {
 				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + 0.5f, pixely);
-				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + 0.5f, pixely + 0.5f);
-				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + 0.5f);
+				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely);
+				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
+				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + random4);
 
 				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
 			}
