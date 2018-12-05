@@ -11,10 +11,8 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_TEST);
+	loadscene(SCENE_SIMPLE);
 	SSAA = true;
-
-	camera.rotate({ 0, 25, 0 });
 
 	mytimer.reset();
 }
@@ -44,9 +42,9 @@ void Game::Tick( float deltaTime )
 
 			if (SSAA) {
 				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + 0.5, pixely);
-				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + 0.5, pixely + 0.5);
-				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + 0.5);
+				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + 0.5f, pixely);
+				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + 0.5f, pixely + 0.5f);
+				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + 0.5f);
 
 				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
 			}
@@ -331,7 +329,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 	switch (scene)
 	{
-	case SCENE_TEST:
+	case SCENE_SIMPLE:
 	{
 		//Set up the scene
 		numGeometries = 9;

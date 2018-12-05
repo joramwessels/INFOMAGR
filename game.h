@@ -91,7 +91,7 @@ private:
 	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false;
 	
 	enum SCENES {
-		SCENE_TEST,
+		SCENE_SIMPLE,
 		SCENE_OBJ_GLASS,
 		SCENE_OBJ_HALFREFLECT,
 		SCENE_LIGHTING_AMBIENT,
