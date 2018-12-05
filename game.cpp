@@ -11,8 +11,8 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_PERFORMANCE);
-	SSAA = false;
+	loadscene(SCENE_SIMPLE);
+	SSAA = true;
 
 	mytimer.reset();
 }
@@ -216,7 +216,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			{
 				Ray reflectedray;
 				reflectedray.Direction = reflect( ray.Direction, collision.N );
-				reflectedray.Origin = collision.Pos + 0.00001f * -collision.N;
+				//reflectedray.Origin = collision.Pos + 0.00001f * -collision.N;
+				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
 				reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
 
@@ -225,7 +226,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			{
 				Ray refractedray;
 				refractedray.Direction = transition * ray.Direction + collision.N * ( transition * costheta - sqrt( k ) );
-				refractedray.Origin = collision.Pos + 0.00001f * -collision.N;
+				//refractedray.Origin = collision.Pos + 0.00001f * -collision.N;
+				refractedray.Origin = collision.Pos + 0.00001f * refractedray.Direction;
 				refractedray.InObject = !ray.InObject;
 				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other->material.refractionIndex ); // Exiting an object defaults material to air
 				refraction = TraceRay( refractedray, recursiondepth + 1 );
@@ -344,7 +346,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry = new Geometry*[6];
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.1f, 0xffffff));
+		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
 		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
 		geometry[3] = new Sphere( vec3( 0, 1.1, 8 ), 1, Material( 0.0f, 0.0f, Material::TEXTURE, new Surface( "assets\\earthmap1k.jpg" ) ) );
 		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
