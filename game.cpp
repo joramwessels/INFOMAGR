@@ -25,6 +25,13 @@ void Game::Shutdown()
 	
 }
 
+//Random positions for the SSAA
+float random1 = RandomFloat();
+float random2 = RandomFloat();
+float random3 = RandomFloat();
+float random4 = RandomFloat();
+
+
 // -----------------------------------------------------------
 // Main application tick function
 // -----------------------------------------------------------
@@ -42,9 +49,9 @@ void Game::Tick( float deltaTime )
 
 			if (SSAA) {
 				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + 0.5f, pixely);
-				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + 0.5f, pixely + 0.5f);
-				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + 0.5f);
+				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely);
+				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
+				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + random4);
 
 				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
 			}
@@ -209,7 +216,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			{
 				Ray reflectedray;
 				reflectedray.Direction = reflect( ray.Direction, collision.N );
-				reflectedray.Origin = collision.Pos + 0.001f * reflectedray.Direction;
+				reflectedray.Origin = collision.Pos + 0.00001f * -collision.N;
 				reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
 
@@ -218,7 +225,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			{
 				Ray refractedray;
 				refractedray.Direction = transition * ray.Direction + collision.N * ( transition * costheta - sqrt( k ) );
-				refractedray.Origin = collision.Pos + 0.001f * refractedray.Direction;
+				refractedray.Origin = collision.Pos + 0.00001f * -collision.N;
 				refractedray.InObject = !ray.InObject;
 				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other->material.refractionIndex ); // Exiting an object defaults material to air
 				refraction = TraceRay( refractedray, recursiondepth + 1 );
