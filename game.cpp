@@ -3,7 +3,7 @@
 #include "lib\tinyobjloader\tiny_obj_loader.h"
 
 
-bool animatecamera = false;
+bool animatecamera = false; //Move the camera forward every frame
 int frame = 0;
 
 // -----------------------------------------------------------
@@ -48,11 +48,13 @@ void Game::Tick( float deltaTime )
 			Color result;
 
 			if (SSAA) {
+				//Generate 4 rays
 				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
 				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely);
 				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
 				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + random4);
 
+				//Average the result
 				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
 			}
 			else {
@@ -62,10 +64,7 @@ void Game::Tick( float deltaTime )
 				//Trace the ray, and plot the result to the screen
 				int hdrscale = 255;
 				result = TraceRay(ray);
-
 			}
-			
-			
 			
 			screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
 			
@@ -96,12 +95,10 @@ void Game::Tick( float deltaTime )
 		camera.move(camera.getUp() * -0.1f);
 	}
 
-	//Just for fun ;)
 	if ( animatecamera )
 	{
 		camera.move({ 0,0,0.01 });
 	}
-	//printf("Frame %i done. \n", frame++);
 
 	if (mytimer.elapsed() > 1000) {
 		prevsecframes = frames;
@@ -119,7 +116,6 @@ void Game::Tick( float deltaTime )
 void Tmpl8::Game::MouseMove( int x, int y )
 {
 	camera.rotate({ (float)y, (float)x, 0 });
-	
 }
 
 //Find the nearest collision along the ray
@@ -129,7 +125,7 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 	Collision closest;
 	closest.t = -1;
 
-	//Loop over all geometries to find the closest collision
+	//Loop over all primitives to find the closest collision
 	for ( int i = 0; i < numGeometries; i++ )
 	{
 		Collision collision = geometry[i]->Intersect( ray );
@@ -152,15 +148,11 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 		return 0x000000;
 	}
 
-	Color color; //sky color
+	Color color; 
 
-	/*color.R = 25500;
-	color.G = 25500;
-	color.B = 25500;*/
-
-	//check if the ray collides
 	Collision collision = nearestCollision( ray );
 
+	//check if the ray collides
 	if ( collision.t != -1 )
 	{
 		//The ray collides.
@@ -197,7 +189,6 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			if ( k < 0 )
 			{
 				// total internal reflection
-				//return Color( 0, 0, 0 );
 				Fr = 1;
 			}
 			else {
@@ -235,9 +226,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				// Beer's law
 				if (ray.mediumRefractionIndex != 1.0f && collision.colorAt.to_uint() != 0xffffff)
 				{
-					float distance = collision.t;// (collision.Pos - ray.Origin).length();
+					float distance = collision.t;
 
-					//vec3 a = { 0.2, 0.8, 0.8 };
 					vec3 a = vec3((float)(256 - collision.colorAt.R) / 256.0f, (float)(256 - collision.colorAt.G) / 256.0f, (float)(256 - collision.colorAt.B) / 256.0f);
 
 					refraction.R *= exp(-a.x * distance);
@@ -253,17 +243,6 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	else {
 		//There was no collision.
 		//--> skybox.
-		/*vec3 skyBoxN = ray.Direction;
-
-		float u = 0.5f + (atan2f(-skyBoxN.z, -skyBoxN.x) * INV2PI);
-		float v = 0.5f - (asinf(-skyBoxN.y) * INVPI);
-		color = skybox->GetBuffer()[(int)((skybox->GetWidth() - 1) * u) + (int)((skybox->GetHeight() - 1) * v) * skybox->GetPitch()];
-		//color <<= 8;
-		*/
-		color.R = 255;
-		color.G = 0;
-		color.B = 0;
-
 		return skybox->ColorAt(ray.Direction) << 8;
 	}
 
@@ -272,7 +251,6 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 }
 
 //Cast a ray from the collision point towards the light, to check if light can reach the point
-
 Color Tmpl8::Game::DirectIllumination( Collision collision )
 {
 	Color result = 0x000000;
@@ -286,9 +264,8 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			Ray shadowray;
 			shadowray.Direction = L;
-			shadowray.Origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction. TODO: what is the best value here?
-			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hit the light source. Because we don't want to count collisions that are behind the light source.
-
+			shadowray.Origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 			
 			if (lights[i].type == Light::DIRECTIONAL) {
 				shadowray.Direction = lights[i].direction;
