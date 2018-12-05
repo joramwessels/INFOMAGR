@@ -11,8 +11,8 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_BEERS_LAW);
-	SSAA = true;
+	loadscene(SCENE_PERFORMANCE);
+	SSAA = false;
 
 	mytimer.reset();
 }
@@ -233,7 +233,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				refraction = TraceRay( refractedray, recursiondepth + 1 );
 
 				// Beer's law
-				if (ray.mediumRefractionIndex != 1.0f)
+				if (ray.mediumRefractionIndex != 1.0f && collision.colorAt.to_uint() != 0xffffff)
 				{
 					float distance = collision.t;// (collision.Pos - ray.Origin).length();
 
