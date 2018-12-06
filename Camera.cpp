@@ -80,13 +80,15 @@ void Camera::calculateVirtualScreenCorners()
 void Camera::setFocalPoint(float f)
 {
 	focalpoint = f;
+	//printf("Set camera focal point to %f \n", focalpoint);
+
 	calculateVirtualScreenCorners();
 }
 
 void Camera::setZoom(float z)
 {
 	zoom = z;
-	printf("Set camera zoom to %f", zoom);
+	//printf("Set camera zoom to %f \n", zoom);
 
 	calculateVirtualScreenCorners();
 }

@@ -32,6 +32,7 @@ public:
 	void setFocalPoint(float f);
 	void setZoom(float z);
 	float zoom = 1.0f; //READ-ONLY! Use setZoom() to change!
+	float focalpoint; //READ-ONLY! Use setFocalPoint() to change!
 
 	bool DoF = false;
 
@@ -49,6 +50,5 @@ private:
 	float xsize = SCRWIDTH / 800.0f;
 	float ysize = SCRHEIGHT / 800.0f;
 
-	float focalpoint; //Change this to change the FOV
 };
 

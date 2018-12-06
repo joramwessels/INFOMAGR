@@ -40,6 +40,12 @@ public:
 		case 86: //-
 			keymin = false;
 			break;
+		case 54: //,
+			keyComma = false;
+			break;
+		case 55: //.
+			keyPeriod = false;
+
 		default:
 			break;
 		}
@@ -70,6 +76,12 @@ public:
 			break;
 		case 86: //-
 			keymin = true;
+			break;
+		case 54: //,
+			keyComma = true;
+			break;
+		case 55: //.
+			keyPeriod = true;
 			break;
 
 		default:
@@ -102,7 +114,7 @@ private:
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
-	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false;
+	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false, keyComma = false, keyPeriod = false;
 	
 	enum SCENES {
 		SCENE_SIMPLE,

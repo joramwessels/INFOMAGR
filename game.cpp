@@ -105,6 +105,14 @@ void Game::Tick( float deltaTime )
 		camera.setZoom(camera.zoom / 1.1);
 	}
 
+	if (keyComma) {
+		camera.setFocalPoint(camera.focalpoint / 1.1);
+	}
+
+	if (keyPeriod) {
+		camera.setFocalPoint(camera.focalpoint * 1.1);
+	}
+
 	if ( animatecamera )
 	{
 		camera.move({ 0,0,0.01 });
