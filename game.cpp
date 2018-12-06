@@ -14,7 +14,6 @@ void Game::Init()
 	loadscene(SCENE_SIMPLE);
 	SSAA = true;
 	camera.DoF = true;
-	//camera.zoom = 2;
 
 	mytimer.reset();
 }
