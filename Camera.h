@@ -27,13 +27,20 @@ public:
 		return up;
 	}
 
+	void calculateVirtualScreenCorners();
+
+	void setFocalPoint(float f);
+	void setZoom(float z);
+	float zoom = 1.0f; //READ-ONLY! Use setZoom() to change!
+
+	bool DoF = false;
+
 private:
 	vec3 position;
 	vec3 left;
 	vec3 up;
 
 	vec3 direction;
-	float virtualScreenDistance; //Change this to change the FOV
 
 	vec3 virtualScreenCenter;
 
@@ -42,5 +49,6 @@ private:
 	float xsize = SCRWIDTH / 800.0f;
 	float ysize = SCRHEIGHT / 800.0f;
 
+	float focalpoint; //Change this to change the FOV
 };
 

@@ -13,6 +13,8 @@ void Game::Init()
 {
 	loadscene(SCENE_SIMPLE);
 	SSAA = true;
+	camera.DoF = true;
+	//camera.zoom = 2;
 
 	mytimer.reset();
 }
@@ -93,6 +95,14 @@ void Game::Tick( float deltaTime )
 
 	if (keyE) {
 		camera.move(camera.getUp() * -0.1f);
+	}
+
+	if (keyplus) {
+		camera.setZoom(camera.zoom * 1.1);
+	}
+
+	if (keymin) {
+		camera.setZoom(camera.zoom / 1.1);
 	}
 
 	if ( animatecamera )

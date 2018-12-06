@@ -34,6 +34,12 @@ public:
 		case 8:
 			keyE = false;
 			break;
+		case 87: //+
+			keyplus = false;
+			break;
+		case 86: //-
+			keymin = false;
+			break;
 		default:
 			break;
 		}
@@ -59,7 +65,15 @@ public:
 		case 8:
 			keyE = true;
 			break;
+		case 87: //+
+			keyplus = true;
+			break;
+		case 86: //-
+			keymin = true;
+			break;
+
 		default:
+			printf("Key %i pressed. \n", key);
 			break;
 		}
 	}
@@ -88,7 +102,7 @@ private:
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
-	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false;
+	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false;
 	
 	enum SCENES {
 		SCENE_SIMPLE,
@@ -106,6 +120,7 @@ private:
 	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
 
 	bool SSAA;
+	bool DoF = false;
 
 	//fps counter
 	int frames = 0;

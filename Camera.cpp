@@ -5,14 +5,9 @@ Camera::Camera(vec3 position, vec3 direction, float virtualScreenDistance)
 {
 	this->position = position;
 	this->direction = direction.normalized();
-	this->virtualScreenDistance = virtualScreenDistance;
+	this->focalpoint = virtualScreenDistance;
 
-	virtualScreenCenter = position + virtualScreenDistance * direction;
-
-	//Calculate the virtual screen corners
-	virtualScreenCornerTL = virtualScreenCenter + vec3(-xsize * virtualScreenDistance, -ysize * virtualScreenDistance, 0); //top left
-	virtualScreenCornerTR = virtualScreenCenter + vec3(xsize * virtualScreenDistance, -ysize * virtualScreenDistance, 0); //top right
-	virtualScreenCornerBL = virtualScreenCenter + vec3(-xsize * virtualScreenDistance, ysize * virtualScreenDistance, 0); //bottom left
+	calculateVirtualScreenCorners();
 }
 
 
@@ -27,8 +22,11 @@ Ray Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 	pixelPosScaled.x = pixelx / SCRWIDTH; //Scale the pixel position to be in the range 0..1
 	pixelPosScaled.y = pixely / SCRHEIGHT;
 
+	vec3 DofRandomness = { 0, 0, 0 };
+	if (DoF) DofRandomness = vec3((RandomFloat() * 0.1 - 0.05), (RandomFloat() * 0.1 - 0.05), 0); //TODO: make random and maybe 7-gon instead of square?
+
 	Ray ray;
-	ray.Origin = position + vec3((RandomFloat() * 0.1 - 0.05), (RandomFloat() * 0.1 - 0.05), 0);
+	ray.Origin = position + DofRandomness;
 
 	vec3 positionOnVirtualScreen = virtualScreenCornerTL + pixelPosScaled.x * (virtualScreenCornerTR - virtualScreenCornerTL) + pixelPosScaled.y * (virtualScreenCornerBL - virtualScreenCornerTL);
 	ray.Direction = (positionOnVirtualScreen - ray.Origin).normalized();
@@ -50,11 +48,6 @@ void Camera::rotate(vec3 deg) {
 	//Rotate around world-Y axis
 	direction.rotateY(deg.y);
 
-	left = direction;
-	left.y = 0;
-	left.rotateY(90);
-	left.normalize();
-
 	//Rotate around 'left' vector, aka local X axis
 	mat4 rotationmatrix = mat4::rotate(-left, (deg.x * PI / 180));
 	
@@ -63,10 +56,37 @@ void Camera::rotate(vec3 deg) {
 	direction = { dir.x, dir.y, dir.z };
 	direction.normalize();
 
-	up = cross(direction, left);
-	virtualScreenCenter = position + (virtualScreenDistance * direction);
+	calculateVirtualScreenCorners();
+}
 
-	virtualScreenCornerTL = virtualScreenCenter - (xsize * left * virtualScreenDistance) - (ysize * up * virtualScreenDistance); //top left
-	virtualScreenCornerTR = virtualScreenCenter + (xsize * left * virtualScreenDistance) - (ysize * up * virtualScreenDistance); //top right
-	virtualScreenCornerBL = virtualScreenCenter - (xsize * left * virtualScreenDistance) + (ysize * up * virtualScreenDistance); //bottom left
+void Camera::calculateVirtualScreenCorners()
+{
+	left = direction;
+	left.y = 0;
+	left.rotateY(90);
+	left.normalize();
+
+	up = cross(direction, left);
+
+	float zoomscale = focalpoint / zoom;
+	
+	virtualScreenCenter = position + (focalpoint * direction);
+
+	virtualScreenCornerTL = virtualScreenCenter - (xsize * left * zoomscale) - (ysize * up * zoomscale); //top left
+	virtualScreenCornerTR = virtualScreenCenter + (xsize * left * zoomscale) - (ysize * up * zoomscale); //top right
+	virtualScreenCornerBL = virtualScreenCenter - (xsize * left * zoomscale) + (ysize * up * zoomscale); //bottom left
+}
+
+void Camera::setFocalPoint(float f)
+{
+	focalpoint = f;
+	calculateVirtualScreenCorners();
+}
+
+void Camera::setZoom(float z)
+{
+	zoom = z;
+	printf("Set camera zoom to %f", zoom);
+
+	calculateVirtualScreenCorners();
 }
