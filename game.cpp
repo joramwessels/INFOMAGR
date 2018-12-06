@@ -11,8 +11,8 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_PERFORMANCE);
-	SSAA = false;
+	loadscene(SCENE_SIMPLE);
+	SSAA = true;
 
 	mytimer.reset();
 }

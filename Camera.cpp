@@ -10,9 +10,9 @@ Camera::Camera(vec3 position, vec3 direction, float virtualScreenDistance)
 	virtualScreenCenter = position + virtualScreenDistance * direction;
 
 	//Calculate the virtual screen corners
-	virtualScreenCornerTL = virtualScreenCenter + vec3(-xsize, -ysize, 0); //top left
-	virtualScreenCornerTR = virtualScreenCenter + vec3(xsize, -ysize, 0); //top right
-	virtualScreenCornerBL = virtualScreenCenter + vec3(-xsize, ysize, 0); //bottom left
+	virtualScreenCornerTL = virtualScreenCenter + vec3(-xsize * virtualScreenDistance, -ysize * virtualScreenDistance, 0); //top left
+	virtualScreenCornerTR = virtualScreenCenter + vec3(xsize * virtualScreenDistance, -ysize * virtualScreenDistance, 0); //top right
+	virtualScreenCornerBL = virtualScreenCenter + vec3(-xsize * virtualScreenDistance, ysize * virtualScreenDistance, 0); //bottom left
 }
 
 
@@ -28,10 +28,10 @@ Ray Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 	pixelPosScaled.y = pixely / SCRHEIGHT;
 
 	Ray ray;
-	ray.Origin = position;
+	ray.Origin = position + vec3((RandomFloat() * 0.1 - 0.05), (RandomFloat() * 0.1 - 0.05), 0);
 
 	vec3 positionOnVirtualScreen = virtualScreenCornerTL + pixelPosScaled.x * (virtualScreenCornerTR - virtualScreenCornerTL) + pixelPosScaled.y * (virtualScreenCornerBL - virtualScreenCornerTL);
-	ray.Direction = (positionOnVirtualScreen - position).normalized();
+	ray.Direction = (positionOnVirtualScreen - ray.Origin).normalized();
 
 	return ray;
 }
@@ -66,7 +66,7 @@ void Camera::rotate(vec3 deg) {
 	up = cross(direction, left);
 	virtualScreenCenter = position + (virtualScreenDistance * direction);
 
-	virtualScreenCornerTL = virtualScreenCenter - (xsize * left) - (ysize * up); //top left
-	virtualScreenCornerTR = virtualScreenCenter + (xsize * left) - (ysize * up); //top right
-	virtualScreenCornerBL = virtualScreenCenter - (xsize * left) + (ysize * up); //bottom left
+	virtualScreenCornerTL = virtualScreenCenter - (xsize * left * virtualScreenDistance) - (ysize * up * virtualScreenDistance); //top left
+	virtualScreenCornerTR = virtualScreenCenter + (xsize * left * virtualScreenDistance) - (ysize * up * virtualScreenDistance); //top right
+	virtualScreenCornerBL = virtualScreenCenter - (xsize * left * virtualScreenDistance) + (ysize * up * virtualScreenDistance); //bottom left
 }
