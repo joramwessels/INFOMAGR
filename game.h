@@ -83,7 +83,9 @@ public:
 		case 55: //.
 			keyPeriod = true;
 			break;
-
+		case 56: // /
+			SSAA = !SSAA;
+			break;
 		default:
 			printf("Key %i pressed. \n", key);
 			break;

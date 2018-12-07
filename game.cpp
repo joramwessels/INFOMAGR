@@ -13,7 +13,7 @@ void Game::Init()
 {
 	loadscene(SCENE_SIMPLE);
 	SSAA = true;
-	camera.DoF = true;
+	camera.DoF = false;
 
 	mytimer.reset();
 }
@@ -31,6 +31,10 @@ float random1 = RandomFloat();
 float random2 = RandomFloat();
 float random3 = RandomFloat();
 float random4 = RandomFloat();
+float random5 = RandomFloat();
+float random6 = RandomFloat();
+float random7 = RandomFloat();
+float random8 = RandomFloat();
 
 
 // -----------------------------------------------------------
@@ -50,10 +54,10 @@ void Game::Tick( float deltaTime )
 
 			if (SSAA) {
 				//Generate 4 rays
-				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely);
+				Ray ray = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
+				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
 				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
-				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx, pixely + random4);
+				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
 
 				//Average the result
 				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
