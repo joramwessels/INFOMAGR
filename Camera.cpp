@@ -48,6 +48,11 @@ void Camera::rotate(vec3 deg) {
 	//Rotate around world-Y axis
 	direction.rotateY(deg.y);
 
+	left = direction;
+	left.y = 0;
+	left.rotateY(90);
+	left.normalize();
+
 	//Rotate around 'left' vector, aka local X axis
 	mat4 rotationmatrix = mat4::rotate(-left, (deg.x * PI / 180));
 	
