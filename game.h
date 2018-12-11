@@ -86,6 +86,9 @@ public:
 		case 56: // /
 			SSAA = !SSAA;
 			break;
+		case 16: // M
+			camera.DoF = !camera.DoF;
+			break;
 		default:
 			printf("Key %i pressed. \n", key);
 			break;
