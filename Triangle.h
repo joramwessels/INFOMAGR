@@ -9,6 +9,7 @@ public:
 	~Triangle();
 
 	Collision Intersect(Ray ray, bool isShadowray = false) override;
+	AABB GetAABB();
 
 
 private:

@@ -111,3 +111,9 @@ Collision Sphere::Intersect( Ray ray, bool isShadowray )
 	}
 	return collision;
 }
+
+AABB Sphere::GetAABB()
+{
+	float r = sqrt(r2);
+	return AABB(position.x - r, position.x + r, position.y - r, position.y + r, position.z - r, position.z + r);
+}

@@ -8,6 +8,7 @@ public:
 	~Plane();
 
 	Collision Intersect(Ray ray, bool isShadowray = false) override;
+	AABB GetAABB();
 
 
 private:

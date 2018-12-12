@@ -95,3 +95,9 @@ Collision Plane::Intersect(Ray ray, bool isShadowray)
 		return collision;
 	}
 }
+
+AABB Plane::GetAABB()
+{
+	// TODO
+	return AABB();
+}
