@@ -10,5 +10,7 @@ public:
 private:
 	float r2; // r^2
 	vec3 position;
+
+	void calculateAABB() override;
 };
 

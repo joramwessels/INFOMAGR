@@ -16,8 +16,7 @@ Collision Geometry::Intersect(Ray ray, bool isShadowray)
 	return Collision();
 }
 
-AABB Geometry::GetAABB()
+void Geometry::calculateAABB()
 {
 	printf("This function should not be called");
-	return AABB();
 }

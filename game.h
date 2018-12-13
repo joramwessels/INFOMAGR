@@ -143,6 +143,9 @@ private:
 	int frames = 0;
 	int prevsecframes = 0;
 	timer mytimer;
+
+	//BVH
+	BVH bvh;
 };
 
 }; // namespace Tmpl8

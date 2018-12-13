@@ -20,7 +20,7 @@ Plane::Plane(vec3 N, float d, Material material)
 	}
 
 	Yaxis = cross(N, Xaxis);
-
+	calculateAABB();
 }
 
 Plane::~Plane()
@@ -96,8 +96,8 @@ Collision Plane::Intersect(Ray ray, bool isShadowray)
 	}
 }
 
-AABB Plane::GetAABB()
+void Plane::calculateAABB()
 {
 	// TODO
-	return AABB();
+	aabb = AABB(0, 1, 0, 1, 0, 1);
 }

@@ -6,6 +6,7 @@ Sphere::Sphere( vec3 position, float r, Material material )
 	this->position = position;
 	r2 = r * r;
 	this->material = material;
+	calculateAABB();
 }
 
 Collision Sphere::Intersect( Ray ray, bool isShadowray )
@@ -112,8 +113,8 @@ Collision Sphere::Intersect( Ray ray, bool isShadowray )
 	return collision;
 }
 
-AABB Sphere::GetAABB()
+void Sphere::calculateAABB()
 {
 	float r = sqrt(r2);
-	return AABB(position.x - r, position.x + r, position.y - r, position.y + r, position.z - r, position.z + r);
+	aabb = AABB(position.x - r, position.x + r, position.y - r, position.y + r, position.z - r, position.z + r);
 }

@@ -9,7 +9,6 @@ public:
 	~Triangle();
 
 	Collision Intersect(Ray ray, bool isShadowray = false) override;
-	AABB GetAABB();
 
 
 private:
@@ -17,5 +16,6 @@ private:
 	vec3 e0, e1, e2;
 	vec3 N;
 	float D; //Distance plane triangle to origin
+	void calculateAABB() override;
 };
 

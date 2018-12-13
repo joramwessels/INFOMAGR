@@ -19,7 +19,7 @@ Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2, Material material)
 
 	D = -dot(N, v0);
 	//printf("Triangle N: %f, %f, %f. D: %f \n", N.x, N.y, N.z, D);
-
+	calculateAABB();
 }
 
 Triangle::Triangle(vec3 v0, vec3 v1, vec3 v2, vec3 N, Material material)
@@ -80,9 +80,9 @@ Collision Triangle::Intersect(Ray ray, bool isShadowray)
 	return collision;
 }
 
-AABB Triangle::GetAABB()
+void Triangle::calculateAABB()
 {
-	return AABB(
+	aabb = AABB(
 		(v0.x <= v1.x && v0.x <= v2.x ? v0.x : (v1.x <= v0.x && v1.x <= v2.x ? v1.x : v2.x)),
 		(v0.x >= v1.x && v0.x >= v2.x ? v0.x : (v1.x >= v0.x && v1.x >= v2.x ? v1.x : v2.x)),
 		(v0.y <= v1.y && v0.y <= v2.y ? v0.y : (v1.y <= v0.y && v1.y <= v2.y ? v1.y : v2.y)),

@@ -22,6 +22,10 @@ struct AABB		// 6*4 = 24 bytes
 		this->zmin = zmin;
 		this->zmax = zmax;
 	}
+
+	vec3 Midpoint() {
+		return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
+	}
 };
 
 struct BVHNode		// 32 bytes
@@ -40,12 +44,21 @@ class BVH
 public:
 	BVH();
 	~BVH();
-	void Build(Geometry* scene, int no_elements);
+	void Build(Geometry** scene, int no_elements);
 	void load(char* filename);
 	void save(char* filename);
 private:
-	Geometry* scene;
-	int* orderedIndices;
-	BVHNode* tree;
+	//Scene information
+	Geometry** scene;
+	int totalNoElements = 0;
+
+	//BVH Construction
+	BVHNode* pool;
+	uint* orderedIndices;
+
+	AABB calculateAABB(uint* indices, int start, int no_elements);
+
+	//Final BVH
+	BVHNode* root;
 };
 

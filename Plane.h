@@ -8,7 +8,6 @@ public:
 	~Plane();
 
 	Collision Intersect(Ray ray, bool isShadowray = false) override;
-	AABB GetAABB();
 
 
 private:
@@ -17,5 +16,7 @@ private:
 
 	vec3 Xaxis; //For texture alignment
 	vec3 Yaxis;
+
+	void calculateAABB() override;
 };
 

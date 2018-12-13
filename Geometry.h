@@ -12,8 +12,9 @@ public:
 	Material material;
 
 	virtual Collision Intersect(Ray ray, bool isShadowray = false);
-	virtual AABB GetAABB();
+	AABB aabb;
 
 private:
+	virtual void calculateAABB();
 };
 
