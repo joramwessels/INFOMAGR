@@ -1,5 +1,4 @@
 #pragma once
-#include "BVH.h"
 
 //This is a base class used for geometry objects.
 class Geometry

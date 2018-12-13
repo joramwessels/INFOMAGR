@@ -83,6 +83,7 @@ using namespace Tmpl8;
 #include "Plane.h"
 #include "Triangle.h"
 #include "Camera.h"
+#include "BVH.h"
 
 #include "game.h"
 // clang-format on

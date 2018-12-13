@@ -222,3 +222,31 @@ public:
 	}
 
 };
+
+struct AABB		// 6*4 = 24 bytes
+{
+	float xmin;
+	float xmax;
+	float ymin;
+	float ymax;
+	float zmin;
+	float zmax;
+
+	AABB()
+	{
+	}
+
+	AABB(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
+	{
+		this->xmin = xmin;
+		this->xmax = xmax;
+		this->ymin = ymin;
+		this->ymax = ymax;
+		this->zmin = zmin;
+		this->zmax = zmax;
+	}
+
+	vec3 Midpoint() {
+		return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
+	}
+};

@@ -1,6 +1,4 @@
 #include "precomp.h"
-#include "BVH.h"
-#include <numeric>
 
 //----------------------------------------------
 // TODO:
@@ -50,12 +48,12 @@ void BVH::Build(Geometry** scene, int no_elements)
 
 	//the root is the first bvhnode
 	root = &pool[0];
+	poolPtr = 2;
+
 	root->leftFirst = 0;
 	root->count = no_elements;
 	root->bounds = calculateAABB(orderedIndices, root->leftFirst, root->count);
-	root->subdivide(); //TODO: make :P
-
-		// TODO: recursively build tree
+	root->subdivide(this); 
 }
 
 /*
@@ -78,9 +76,17 @@ BVHNode* BVH::calculateLeafNodes(Geometry* scene, int no_elements)
 // Calculates the smallest surrounding AABB for the given array of nodes
 AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 {
-	float xmin = scene[indices[0]]->aabb.xmin, xmax = scene[indices[0]]->aabb.xmax, ymin = scene[indices[0]]->aabb.ymin;
-	float ymax = scene[indices[0]]->aabb.ymax, zmin = scene[indices[0]]->aabb.zmin, zmax = scene[indices[0]]->aabb.zmax;
-	for (int i = start; i < start + no_elements; i++) {
+	if (no_elements == 0) {
+		printf("This shouldn't happen! \n");
+	}
+
+	float xmin = scene[indices[start]]->aabb.xmin;
+	float xmax = scene[indices[start]]->aabb.xmax;
+	float ymin = scene[indices[start]]->aabb.ymin;
+	float ymax = scene[indices[start]]->aabb.ymax;
+	float zmin = scene[indices[start]]->aabb.zmin;
+	float zmax = scene[indices[start]]->aabb.zmax;
+	for (int i = start + 1; i < (start + no_elements); i++) {
 		AABB thisGeometryAABB = scene[indices[i]]->aabb;
 		if (thisGeometryAABB.xmin < xmin) xmin = thisGeometryAABB.xmin;
 		if (thisGeometryAABB.xmax > xmax) xmax = thisGeometryAABB.xmax;

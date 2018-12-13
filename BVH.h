@@ -1,31 +1,29 @@
 #pragma once
+struct BVHNode;
 
-struct AABB		// 6*4 = 24 bytes
+class BVH
 {
-	float xmin;
-	float xmax;
-	float ymin;
-	float ymax;
-	float zmin;
-	float zmax;
+public:
+	BVH();
+	~BVH();
+	void Build(Geometry** scene, int no_elements);
+	void load(char* filename);
+	void save(char* filename);
 
-	AABB()
-	{
-	}
+	//Scene information
+	Geometry** scene;
+	int totalNoElements = 0;
 
-	AABB(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
-	{
-		this->xmin = xmin;
-		this->xmax = xmax;
-		this->ymin = ymin;
-		this->ymax = ymax;
-		this->zmin = zmin;
-		this->zmax = zmax;
-	}
+	//BVH Construction
+	BVHNode* pool;
+	uint poolPtr;
+	uint* orderedIndices;
 
-	vec3 Midpoint() {
-		return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
-	}
+	AABB calculateAABB(uint* indices, int start, int no_elements);
+
+	//Final BVH
+	BVHNode* root;
+	int depth;
 };
 
 struct BVHNode		// 32 bytes
@@ -38,15 +36,64 @@ struct BVHNode		// 32 bytes
 	{
 	}
 
-	void subdivide() {
+	void subdivide(BVH* bvh, int recursiondepth = 0) {
+		printf("\n*** Subdividing BVHNode on level %i. Count: %i ***\n", recursiondepth, count);
+
+		//Just to keep track of the bvh depth. Not used, other than to print it
+		if (recursiondepth > bvh->depth) bvh->depth = recursiondepth;
+
+		printf("\nBounding box: \n");
+		printf("xmin: %f \n", bounds.xmin);
+		printf("xmax: %f \n", bounds.xmax);
+		printf("ymin: %f \n", bounds.ymin);
+		printf("ymax: %f \n", bounds.ymax);
+		printf("zmin: %f \n", bounds.zmin);
+		printf("zmax: %f \n\n", bounds.zmax);
+
+		if (count < 3) {
+			printf("This is a leaf node. \n");
+			return;
+		}
+
 		int axis = calculateSplitAxis();
+		printf("Selected axis %i \n", axis);
+
 		float splitposition = calculateSplitPosition(axis);
-		//sortOnAxis(axis) //TODO: sort the elements on the selected axis (use the midpoint of the aabb). Or just put all elements that have the splitaxis < splitposition in the front. No real sorting needed.
-		//TODO: create child nodes, and subdevide them
+		printf("Splitposition %f \n", splitposition);
+
+		int firstForRightChild = sortOnAxis(axis, splitposition, bvh->orderedIndices, bvh->scene);
+
+		int leftchild = bvh->poolPtr++;
+		int rightchild = bvh->poolPtr++; //For right child.
+
+		//Create the left child
+		bvh->pool[leftchild].leftFirst = leftFirst;
+		bvh->pool[leftchild].count = firstForRightChild - leftFirst;
+		printf("Set count of leftchild to %i \n", bvh->pool[leftchild].count);
+		bvh->pool[leftchild].bounds = bvh->calculateAABB(bvh->orderedIndices, bvh->pool[leftchild].leftFirst, bvh->pool[leftchild].count);
+
+		//Create the right child
+		bvh->pool[rightchild].leftFirst = firstForRightChild;
+		bvh->pool[rightchild].count = count - firstForRightChild;
+		printf("Set count of rightchild to %i \n", bvh->pool[rightchild].count);
+
+		bvh->pool[rightchild].bounds = bvh->calculateAABB(bvh->orderedIndices, firstForRightChild, count - firstForRightChild);
+
+		//Subdivide the children
+		printf("Starting subdivide of left child on level %i \n", recursiondepth);
+		bvh->pool[leftchild].subdivide(bvh, recursiondepth + 1);
+		printf("Starting subdivide of right child on level %i \n", recursiondepth);
+		bvh->pool[rightchild].subdivide(bvh, recursiondepth + 1);
+
+		leftFirst = leftchild;
+		count = 0; //Set count to 0, because this node is no longer a leaf node.
+
+		printf("Node on level %i done. \n", recursiondepth);
+
 	}
 
 	//Will return 0 for x, 1 for y, 2 for z.
-	int calculateSplitAxis(){
+	int calculateSplitAxis() {
 		float xdiff = bounds.xmax - bounds.xmin;
 		float ydiff = bounds.ymax - bounds.ymin;
 		float zdiff = bounds.zmax - bounds.zmin;
@@ -61,45 +108,64 @@ struct BVHNode		// 32 bytes
 
 	//Currently midpoint-split. TODO: surface area heuristic or something
 	float calculateSplitPosition(int axis) {
+		
 		float diff;
+		float base;
+
 		switch (axis)
 		{
 		case 0:
 			diff = bounds.xmax - bounds.xmin;
+			base = bounds.xmin;
 			break;
 		case 1:
 			diff = bounds.ymax - bounds.ymin;
+			base = bounds.ymin;
 			break;
 		case 2:
 			diff = bounds.zmax - bounds.zmin;
+			base = bounds.zmin;
 			break;
 		default:
 			break;
 		}
-		return diff / 2.0f;
+		printf("Diff: %f \n", diff);
+
+		return base + (diff / 2.0f);
+	}
+
+	//Partitions into left right on splitplane, returns first for right node
+	int sortOnAxis(int axis, float splitplane, uint* orderedIndices, Geometry** scene) {
+		int start = leftFirst;
+		int end = start + count;
+
+		bool sorted = false;
+		
+		int left = start;
+		int right = end - 1;
+		
+		while(!sorted)
+		{
+			while (scene[orderedIndices[left]]->aabb.Midpoint()[axis] < splitplane) {
+				left++;
+			}
+
+			while (scene[orderedIndices[right]]->aabb.Midpoint()[axis] >= splitplane) {
+				right--;
+			}
+
+			if (left >= right) {
+				sorted = true;
+			}
+			else {
+				int temp = orderedIndices[left];
+				orderedIndices[left] = orderedIndices[right];
+				orderedIndices[right] = temp;
+			}
+
+		}
+		return left;
 	}
 };
 
-class BVH
-{
-public:
-	BVH();
-	~BVH();
-	void Build(Geometry** scene, int no_elements);
-	void load(char* filename);
-	void save(char* filename);
-private:
-	//Scene information
-	Geometry** scene;
-	int totalNoElements = 0;
-
-	//BVH Construction
-	BVHNode* pool;
-	uint* orderedIndices;
-
-	AABB calculateAABB(uint* indices, int start, int no_elements);
-
-	//Final BVH
-	BVHNode* root;
-};
 
