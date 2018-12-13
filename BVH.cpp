@@ -53,7 +53,7 @@ void BVH::Build(Geometry** scene, int no_elements)
 	root->leftFirst = 0;
 	root->count = no_elements;
 	root->bounds = calculateAABB(orderedIndices, root->leftFirst, root->count);
-	//root->subdivide(); //TODO: make :P
+	root->subdivide(); //TODO: make :P
 
 		// TODO: recursively build tree
 }
