@@ -60,7 +60,6 @@ struct BVHNode		// 32 bytes
 	}
 
 	//Currently midpoint-split. TODO: surface area heuristic or something
-	//TODO this is wrong. It should be a split in space, not just half/half in number of objects. I think..
 	float calculateSplitPosition(int axis) {
 		float diff;
 		switch (axis)
