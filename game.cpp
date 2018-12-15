@@ -150,7 +150,7 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 {
 	if (use_bvh)
 	{
-		printf("BVH TRAVERSAL ");
+		//printf("BVH TRAVERSAL ");
 		return bvh.Traverse(ray, bvh.root);
 	}
 	else
