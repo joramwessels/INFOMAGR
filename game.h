@@ -139,6 +139,7 @@ private:
 
 	bool SSAA;
 	bool DoF = false;
+	bool use_bvh = false;
 
 	//fps counter
 	int frames = 0;

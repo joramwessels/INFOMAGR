@@ -249,4 +249,33 @@ struct AABB		// 6*4 = 24 bytes
 	vec3 Midpoint() {
 		return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
 	}
+
+	// Ray-AABB intersection algorithm found at:
+	//		https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
+	bool Intersects(Ray ray)
+	{
+		// Intersect with the extended box edges
+		float t0x = (xmin - ray.Origin.x) / ray.Direction.x;
+		float t1x = (xmax - ray.Origin.x) / ray.Direction.x;
+		float t0y = (ymin - ray.Origin.y) / ray.Direction.y;
+		float t1y = (ymax - ray.Origin.y) / ray.Direction.y;
+		// Check if the max is actually bigger than the min
+		if (t0x > t1x) swap(t0x, t1x);
+		if (t0y > t1y) swap(t0y, t1y);
+		// If not neither the x nor y dimension intersects, there's no intersection
+		if ((t0x > t1y) || (t0y > t1x)) return false;
+
+		// Take the smallest and biggest of the x-y pairs
+		float t0 = (t0y > t0x ? t0y : t0x);
+		float t1 = (t1y < t1x ? t1y : t1x);
+		// Intersect with the extended z box edge
+		float t0z = (zmin - ray.Origin.z) / ray.Direction.z;
+		float t1z = (zmax - ray.Origin.z) / ray.Direction.z;
+		if (t0z > t1z) swap(t0z, t1z);
+		// If it's not on the z edge, there's no intersection
+		if ((t0 > t1z) || (t0z > t1)) return false;
+		
+		return true;
+	}
+
 };

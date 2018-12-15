@@ -97,3 +97,44 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 	}
 	return AABB(xmin, xmax, ymin, ymax, zmin, zmax);
 }
+
+// Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
+Collision BVH::Traverse(Ray ray, BVHNode* nodeptr)
+{
+	BVHNode node = *nodeptr;
+	if (node.bounds.Intersects(ray))
+	{
+		// If leaf
+		if (node.count != 0)
+		{
+			float closestdist = 0xffffff;
+			Collision closest;
+			closest.t = -1;
+
+			// Find closest collision
+			for (int i = 0; i < node.count; i++)
+			{
+				Collision collision = scene[node.leftFirst + i]->Intersect(ray);
+				float dist = collision.t;
+				if (dist != -1 && dist < closestdist)
+				{
+					//Collision. Check if closest
+					closest = collision;
+					closestdist = dist;
+				}
+			}
+			return closest;
+		}
+		// If node
+		else
+		{
+			// Check both children and return the closest collision if both intersected
+			Collision col1 = Traverse(ray, &(pool[node.leftFirst]));
+			Collision col2 = Traverse(ray, &(pool[node.leftFirst + 1]));
+			if (col1.t == -1 && col2.t == -1) return col1;
+			if (col1.t != -1 && col2.t == -1) return col1;
+			if (col1.t == -1 && col2.t != -1) return col2;
+			return (col1.t < col2.t ? col1 : col2);
+		}
+	}
+}

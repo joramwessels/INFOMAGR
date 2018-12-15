@@ -11,14 +11,15 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_OBJ_GLASS);
+	loadscene(SCENE_SIMPLE);
 
 	printf("Starting BVH generation... \n");
 	bvh.Build(geometry, numGeometries);
 	printf("BVH Generation done. Depth: %i \n", bvh.depth);
 
-	SSAA = true;
+	SSAA = false;
 	camera.DoF = false;
+	use_bvh = true;
 
 	mytimer.reset();
 }
@@ -147,23 +148,31 @@ void Tmpl8::Game::MouseMove( int x, int y )
 //Find the nearest collision along the ray
 Collision Tmpl8::Game::nearestCollision(Ray ray)
 {
-	float closestdist = 0xffffff;
-	Collision closest;
-	closest.t = -1;
-
-	//Loop over all primitives to find the closest collision
-	for ( int i = 0; i < numGeometries; i++ )
+	if (use_bvh)
 	{
-		Collision collision = geometry[i]->Intersect( ray );
-		float dist = collision.t;
-		if ( dist != -1 && dist < closestdist )
-		{
-			//Collision. Check if closest
-			closest = collision;
-			closestdist = dist;
-		}
+		printf("BVH TRAVERSAL ");
+		return bvh.Traverse(ray, bvh.root);
 	}
-	return closest;
+	else
+	{
+		float closestdist = 0xffffff;
+		Collision closest;
+		closest.t = -1;
+
+		//Loop over all primitives to find the closest collision
+		for (int i = 0; i < numGeometries; i++)
+		{
+			Collision collision = geometry[i]->Intersect(ray);
+			float dist = collision.t;
+			if (dist != -1 && dist < closestdist)
+			{
+				//Collision. Check if closest
+				closest = collision;
+				closestdist = dist;
+			}
+		}
+		return closest;
+	}
 }
 
 //Trace the ray.

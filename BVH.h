@@ -7,6 +7,7 @@ public:
 	BVH();
 	~BVH();
 	void Build(Geometry** scene, int no_elements);
+	Collision Traverse(Ray ray, BVHNode* node);
 	void load(char* filename);
 	void save(char* filename);
 
@@ -37,29 +38,29 @@ struct BVHNode		// 32 bytes
 	}
 
 	void subdivide(BVH* bvh, int recursiondepth = 0) {
-		printf("\n*** Subdividing BVHNode on level %i. Count: %i ***\n", recursiondepth, count);
+		//printf("\n*** Subdividing BVHNode on level %i. Count: %i ***\n", recursiondepth, count);
 
 		//Just to keep track of the bvh depth. Not used, other than to print it
 		if (recursiondepth > bvh->depth) bvh->depth = recursiondepth;
 
-		printf("\nBounding box: \n");
-		printf("xmin: %f \n", bounds.xmin);
-		printf("xmax: %f \n", bounds.xmax);
-		printf("ymin: %f \n", bounds.ymin);
-		printf("ymax: %f \n", bounds.ymax);
-		printf("zmin: %f \n", bounds.zmin);
-		printf("zmax: %f \n\n", bounds.zmax);
+		//printf("\nBounding box: \n");
+		//printf("xmin: %f \n", bounds.xmin);
+		//printf("xmax: %f \n", bounds.xmax);
+		//printf("ymin: %f \n", bounds.ymin);
+		//printf("ymax: %f \n", bounds.ymax);
+		//printf("zmin: %f \n", bounds.zmin);
+		//printf("zmax: %f \n\n", bounds.zmax);
 
 		if (count < 3) {
-			printf("This is a leaf node. \n");
+			//printf("This is a leaf node. \n");
 			return;
 		}
 
 		int axis = calculateSplitAxis();
-		printf("Selected axis %i \n", axis);
+		//printf("Selected axis %i \n", axis);
 
 		float splitposition = calculateSplitPosition(axis);
-		printf("Splitposition %f \n", splitposition);
+		//printf("Splitposition %f \n", splitposition);
 
 		int firstForRightChild = sortOnAxis(axis, splitposition, bvh->orderedIndices, bvh->scene);
 
@@ -69,26 +70,26 @@ struct BVHNode		// 32 bytes
 		//Create the left child
 		bvh->pool[leftchild].leftFirst = leftFirst;
 		bvh->pool[leftchild].count = firstForRightChild - leftFirst;
-		printf("Set count of leftchild to %i \n", bvh->pool[leftchild].count);
+		//printf("Set count of leftchild to %i \n", bvh->pool[leftchild].count);
 		bvh->pool[leftchild].bounds = bvh->calculateAABB(bvh->orderedIndices, bvh->pool[leftchild].leftFirst, bvh->pool[leftchild].count);
 
 		//Create the right child
 		bvh->pool[rightchild].leftFirst = firstForRightChild;
 		bvh->pool[rightchild].count = count - firstForRightChild;
-		printf("Set count of rightchild to %i \n", bvh->pool[rightchild].count);
+		//printf("Set count of rightchild to %i \n", bvh->pool[rightchild].count);
 
 		bvh->pool[rightchild].bounds = bvh->calculateAABB(bvh->orderedIndices, firstForRightChild, count - firstForRightChild);
 
 		//Subdivide the children
-		printf("Starting subdivide of left child on level %i \n", recursiondepth);
+		//printf("Starting subdivide of left child on level %i \n", recursiondepth);
 		bvh->pool[leftchild].subdivide(bvh, recursiondepth + 1);
-		printf("Starting subdivide of right child on level %i \n", recursiondepth);
+		//printf("Starting subdivide of right child on level %i \n", recursiondepth);
 		bvh->pool[rightchild].subdivide(bvh, recursiondepth + 1);
 
 		leftFirst = leftchild;
 		count = 0; //Set count to 0, because this node is no longer a leaf node.
 
-		printf("Node on level %i done. \n", recursiondepth);
+		//printf("Node on level %i done. \n", recursiondepth);
 
 	}
 
@@ -129,7 +130,7 @@ struct BVHNode		// 32 bytes
 		default:
 			break;
 		}
-		printf("Diff: %f \n", diff);
+		//printf("Diff: %f \n", diff);
 
 		return base + (diff / 2.0f);
 	}
