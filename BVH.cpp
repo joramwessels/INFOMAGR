@@ -114,7 +114,7 @@ Collision BVH::Traverse(Ray ray, BVHNode* nodeptr)
 			// Find closest collision
 			for (int i = 0; i < node.count; i++)
 			{
-				Collision collision = scene[node.leftFirst + i]->Intersect(ray);
+				Collision collision = scene[orderedIndices[node.leftFirst + i]]->Intersect(ray);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
 				{
