@@ -315,16 +315,25 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			bool collided = false;
 
-			for (int i = 0; i < numGeometries; i++)
+
+			if (use_bvh)
 			{
-				//Check if position is reachable by lightsource
-				Collision scattercollision = geometry[i]->Intersect(shadowray, true);
-				if (scattercollision.t != -1 && scattercollision.t < maxt)
+				Collision shadowcollision = bvh.Traverse(shadowray, bvh.root);
+				if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
+			}
+			else {
+				for (int i = 0; i < numGeometries; i++)
 				{
-					//Collision, so this ray does not reach the light source
-					collided = true;
-					break;
+					//Check if position is reachable by lightsource
+					Collision scattercollision = geometry[i]->Intersect(shadowray, true);
+					if (scattercollision.t != -1 && scattercollision.t < maxt)
+					{
+						//Collision, so this ray does not reach the light source
+						collided = true;
+						break;
+					}
 				}
+
 			}
 
 
