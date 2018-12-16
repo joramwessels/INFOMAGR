@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_SIMPLE);
+	loadscene(SCENE_OBJ_GLASS);
 
 	printf("Starting BVH generation... \n");
 	bvh.Build(geometry, numGeometries);
