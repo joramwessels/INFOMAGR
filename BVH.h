@@ -100,6 +100,7 @@ struct BVHNode		// 32 bytes
 			//Apparently the centers are too close together or something. devide equally between L / R
 			//Totally not a hack.
 			bvh->pool[leftchild].count = count / 2;
+			firstForRightChild = leftFirst + bvh->pool[leftchild].count;
 		}
 
 

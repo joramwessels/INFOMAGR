@@ -99,5 +99,6 @@ Collision Plane::Intersect(Ray ray, bool isShadowray)
 void Plane::calculateAABB()
 {
 	// TODO
-	aabb = AABB(0, 1, 0, 1, 0, 1);
+	aabb = AABB(-20, 20, -20, 20, -3, -3);
+	//aabb = AABB(0,1,0,1,0,1);
 }
