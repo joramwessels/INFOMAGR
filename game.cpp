@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENE_OBJ_GLASS);
+	loadscene(SCENE_STRESSTEST);
 
 	printf("Starting BVH generation... \n");
 	bvh.Build(geometry, numGeometries);
@@ -678,6 +678,49 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Skybox("assets\\skybox4.jpg");
 
 	}
+	case SCENE_STRESSTEST:
+	{
+		delete geometry;
+		geometry = new Geometry*[150000];
+
+		//Set up the scene
+		numGeometries = 1;
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+
+		for (size_t i = 0; i < 100; i++)
+		{
+			float ix = i % 7;
+			float iy = i / 7;
+
+			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+
+		}
+
+		camera.rotate({ 30, 150, 0 });
+		camera.move({ 0.0f, -5.0f, 0.0f });
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -10, -20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -10, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -10, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+
+		skybox = new Skybox("assets\\skybox4.jpg");
+
+	}
+
 	default:
 		break;
 	}
