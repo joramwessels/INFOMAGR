@@ -273,7 +273,7 @@ struct AABB		// 6*4 = 24 bytes
 		float t1z = (zmax - ray.Origin.z) / ray.Direction.z;
 		if (t0z > t1z) swap(t0z, t1z);
 		// If it's not on the z edge, there's no intersection
-		if ((t0 > t1z) || (t0z > t1)) return false;
+		if ((t0 > t1z) || (t0z > t1) || (t1 < 0)) return false;
 		
 		return true;
 	}
