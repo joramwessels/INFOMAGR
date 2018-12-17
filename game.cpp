@@ -129,6 +129,8 @@ void Game::Tick( float deltaTime )
 
 	if (mytimer.elapsed() > 1000) {
 		prevsecframes = frames;
+		avgFrameTime = mytimer.elapsed() / (float)frames;
+
 		frames = 0;
 		mytimer.reset();
 	}
@@ -136,8 +138,13 @@ void Game::Tick( float deltaTime )
 	char buffer[64];
 	sprintf(buffer, "FPS: %i", prevsecframes);
 
-	screen->Bar(0, 0, 45, 8, 0x000000);
+	screen->Bar(0, 0, 150, 16, 0x000000);
 	screen->Print(buffer, 1, 2, 0xffffff);
+
+	sprintf(buffer, "Avg time (ms): %.0f", avgFrameTime);
+
+	screen->Print(buffer, 1, 10, 0xffffff);
+
 }
 
 void Tmpl8::Game::MouseMove( int x, int y )

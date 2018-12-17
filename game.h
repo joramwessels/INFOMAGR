@@ -146,6 +146,8 @@ private:
 	int frames = 0;
 	int prevsecframes = 0;
 	timer mytimer;
+	float avgFrameTime;
+
 
 	//BVH
 	BVH bvh;
