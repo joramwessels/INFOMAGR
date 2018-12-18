@@ -9,7 +9,7 @@ public:
 	~BVH();
 	void Build(Geometry** scene, int no_elements);
 	Collision Traverse(Ray ray, BVHNode* node);
-	void load(char* filename);
+	void load(char * filename, int totalNoElements, Geometry** scene);
 	void save(char* filename);
 
 	//Scene information

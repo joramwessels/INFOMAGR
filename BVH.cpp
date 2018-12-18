@@ -143,3 +143,50 @@ Collision BVH::Traverse(Ray ray, BVHNode* node)
 	}
 	return closest;
 }
+
+void BVH::load(char * filename, int totalNoElements, Geometry** scene)
+{
+	this->totalNoElements = totalNoElements;
+	this->scene = scene;
+
+	int metadata[2]; //no elements & poolptr
+	ifstream inFile(filename, ios::in | ios::binary);
+	inFile.read((char*)metadata, sizeof(int) * 2);
+
+	if (metadata[0] != totalNoElements) {
+		printf("Number of elements in bvh does not match the given scene!");
+		exit(-1);
+	}
+
+	this->poolPtr = metadata[1];
+	orderedIndices = new uint[poolPtr];
+	inFile.read((char*)orderedIndices, sizeof(uint) * totalNoElements);
+
+	pool = new BVHNode[poolPtr];
+	inFile.read((char*)pool, sizeof(BVHNode) * poolPtr);
+	root = pool;
+	
+	printf("BVH loaded: %s \n", filename);
+
+
+}
+
+void BVH::save(char * filename)
+{
+	printf("Saving bvh to %s... \n", filename);
+	ofstream outFile(filename, ios::out | ios::binary);
+	
+	//Save the number of elements and number of bvhnodes (=poolptr) to the file 
+	int metadata[2];
+	metadata[0] = totalNoElements;
+	metadata[1] = poolPtr;
+	
+	outFile.write((char*)metadata, sizeof(int) * 2);
+	outFile.write((char*)orderedIndices, sizeof(uint) * totalNoElements);
+	outFile.write((char*)pool, sizeof(BVHNode) * poolPtr);
+
+
+	outFile.close();
+	printf("BVH saved as %s \n", filename);
+
+}
