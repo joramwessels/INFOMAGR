@@ -15,8 +15,8 @@ void Game::Init()
 
 	printf("Starting BVH generation... \n");
 	//bvh.Build(geometry, numGeometries);
-	//bvh.save("stresstest10bins.bvh");
-	bvh.load("stresstest10bins.bvh", numGeometries, geometry);
+	//bvh.save("stresstest20bins.bvh");
+	bvh.load("stresstest20bins.bvh", numGeometries, geometry);
 	printf("BVH Generation done. Depth: %i \n", bvh.depth);
 
 	SSAA = false;
