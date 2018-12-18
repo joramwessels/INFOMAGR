@@ -11,12 +11,12 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENES::SCENE_SIMPLE);
+	loadscene(SCENES::SCENE_STRESSTEST);
 
 	printf("Starting BVH generation... \n");
 	//bvh.Build(geometry, numGeometries);
-	//bvh.save("test12345.bvh");
-	bvh.load("test12345.bvh", 2, geometry);
+	//bvh.save("stresstest10bins.bvh");
+	bvh.load("stresstest10bins.bvh", numGeometries, geometry);
 	printf("BVH Generation done. Depth: %i \n", bvh.depth);
 
 	SSAA = false;
