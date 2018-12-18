@@ -90,7 +90,7 @@ struct BVHNode		// 32 bytes
 		if (debugprints) printf("Set count of leftchild to %i \n", bvh->pool[leftchild].count);
 
 		if (bvh->pool[leftchild].count == 0 || count - bvh->pool[leftchild].count == 0) {
-			if (debugprints)
+			if (true)
 			{
 				printf("Zero in this child, all %i items (orderedindex: geometryindex) ", count);
 
@@ -153,24 +153,24 @@ struct BVHNode		// 32 bytes
 		float diff;
 		float base;
 
-		switch (axis)
+		float smallest;
+		float highest;
+
+		for (size_t i = 0; i < count; i++)
 		{
-		case 0:
-			diff = bounds.xmax - bounds.xmin;
-			base = bounds.xmin;
-			break;
-		case 1:
-			diff = bounds.ymax - bounds.ymin;
-			base = bounds.ymin;
-			break;
-		case 2:
-			diff = bounds.zmax - bounds.zmin;
-			base = bounds.zmin;
-			break;
-		default:
-			break;
+			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+			if (mid[axis] > highest || i == 0)
+			{
+				highest = mid[axis];
+			}
+			if (mid[axis] < smallest || i == 0)
+			{
+				smallest = mid[axis];
+			}
 		}
-		//printf("Diff: %f \n", diff);
+
+		diff = highest - smallest;
+		base = smallest;
 
 #if 0
 		//MIDPOINTSPLIT
@@ -178,14 +178,14 @@ struct BVHNode		// 32 bytes
 		return sortOnAxis(axis, base + (diff / 2.0f), bvh->orderedIndices, bvh->scene);
 #else
 		//SAH
-		int numbins = 10;
+		int numbins = 20;
 		float binsize = diff / (float)numbins;
 
 		float mincost = bounds.Area() * count;
 		float bestPositionSoFar = -1;
 
 		//printf("Parent cost: %f \n", mincost);
-
+		
 		//evaluate all split planes
 		for (size_t i = 1; i < numbins; i++)
 		{
@@ -194,16 +194,18 @@ struct BVHNode		// 32 bytes
 
 			//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
 
-
+			
 			if (cost < mincost && cost > 0) {
 				mincost = cost;
 				bestPositionSoFar = currentPosition;
 			}
 		}
 		
+
+
 		//Check if this split will actually help
 		if (bestPositionSoFar == -1) {
-			//printf("Not splitting. \n");
+			//printf("Not splitting. count: %i \n", count);
 			return -1;
 		}
 		else {

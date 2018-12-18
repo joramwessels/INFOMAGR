@@ -14,9 +14,10 @@ void Game::Init()
 	loadscene(SCENES::SCENE_STRESSTEST);
 
 	printf("Starting BVH generation... \n");
-	//bvh.Build(geometry, numGeometries);
-	//bvh.save("stresstest20bins.bvh");
-	bvh.load("stresstest20bins.bvh", numGeometries, geometry);
+	bvh.Build(geometry, numGeometries);
+	//bvh.save("OBJ_GLASS_10bins.bvh");
+	//bvh.load("stresstest20bins.bvh", numGeometries, geometry);
+	//bvh.load("OBJ_GLASS_10bins.bvh", numGeometries, geometry);
 	printf("BVH Generation done. Depth: %i \n", bvh.depth);
 
 	SSAA = false;
@@ -137,15 +138,20 @@ void Game::Tick( float deltaTime )
 		mytimer.reset();
 	}
 
+	screen->Bar(0, 0, 150, 24, 0x000000);
 	char buffer[64];
+	sprintf(buffer, "No. primitives: %i", numGeometries);
+
+	screen->Print(buffer, 1, 2, 0xffffff);
+	
 	sprintf(buffer, "FPS: %i", prevsecframes);
 
-	screen->Bar(0, 0, 150, 16, 0x000000);
-	screen->Print(buffer, 1, 2, 0xffffff);
+	//screen->Bar(0, 0, 150, 16, 0x000000);
+	screen->Print(buffer, 1, 10, 0xffffff);
 
 	sprintf(buffer, "Avg time (ms): %.0f", avgFrameTime);
 
-	screen->Print(buffer, 1, 10, 0xffffff);
+	screen->Print(buffer, 1, 18, 0xffffff);
 
 }
 
