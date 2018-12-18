@@ -250,6 +250,14 @@ struct AABB		// 6*4 = 24 bytes
 		return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
 	}
 
+	float Area() {
+		float diffx = xmax - xmin;
+		float diffy = ymax - ymin;
+		float diffz = zmax - zmin;
+
+		return 2 * ((diffx * diffy) + (diffy * diffz) + (diffx * diffz));
+	}
+
 	// Ray-AABB intersection algorithm found at:
 	//		https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
 	bool Intersects(Ray ray)

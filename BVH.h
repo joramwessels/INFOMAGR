@@ -72,10 +72,14 @@ struct BVHNode		// 32 bytes
 		int axis = calculateSplitAxis();
 		if (debugprints) printf("Selected axis %i \n", axis);
 
-		float splitposition = calculateSplitPosition(axis);
-		if (debugprints) printf("Splitposition %f \n", splitposition);
+		int firstForRightChild = calculateSplitPosition(axis, bvh);
+		if (firstForRightChild == -1) return; //Splitting this node will not make things better
 
-		int firstForRightChild = sortOnAxis(axis, splitposition, bvh->orderedIndices, bvh->scene);
+
+
+		if (debugprints) printf("First for right child: %i \n", firstForRightChild);
+
+		//int firstForRightChild = sortOnAxis(axis, splitposition, bvh->orderedIndices, bvh->scene);
 
 		int leftchild = bvh->poolPtr++;
 		int rightchild = bvh->poolPtr++; //For right child.
@@ -120,8 +124,8 @@ struct BVHNode		// 32 bytes
 		if (debugprints) printf("Starting subdivide of left child on level %i \n", recursiondepth);
 		bvh->pool[leftchild].subdivide(bvh, recursiondepth + 1);
 		if (debugprints) printf("Starting subdivide of right child on level %i \n", recursiondepth);
-		bvh->pool[rightchild].subdivide(bvh, recursiondepth + 1);
 
+		bvh->pool[rightchild].subdivide(bvh, recursiondepth + 1);
 		leftFirst = leftchild;
 		count = 0; //Set count to 0, because this node is no longer a leaf node.
 
@@ -144,7 +148,7 @@ struct BVHNode		// 32 bytes
 	}
 
 	//Currently midpoint-split. TODO: surface area heuristic or something
-	float calculateSplitPosition(int axis) {
+	float calculateSplitPosition(int axis, BVH* bvh) {
 		
 		float diff;
 		float base;
@@ -168,10 +172,64 @@ struct BVHNode		// 32 bytes
 		}
 		//printf("Diff: %f \n", diff);
 
-		return base + (diff / 2.0f);
+#if 0
+		//MIDPOINTSPLIT
+		//return base + (diff / 2.0f);
+		return sortOnAxis(axis, base + (diff / 2.0f), bvh->orderedIndices, bvh->scene);
+#else
+		//SAH
+		int numbins = 10;
+		float binsize = diff / (float)numbins;
+
+		float mincost = bounds.Area() * count;
+		float bestPositionSoFar = -1;
+
+		//printf("Parent cost: %f \n", mincost);
+
+		//evaluate all split planes
+		for (size_t i = 1; i < numbins; i++)
+		{
+			float currentPosition = base + (i * binsize);
+			float cost = calculateSplitCost(axis, currentPosition, bvh);
+
+			//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
+
+
+			if (cost < mincost && cost > 0) {
+				mincost = cost;
+				bestPositionSoFar = currentPosition;
+			}
+		}
+		
+		//Check if this split will actually help
+		if (bestPositionSoFar == -1) {
+			//printf("Not splitting. \n");
+			return -1;
+		}
+		else {
+			//printf("Selected splitposition: %f \n", bestPositionSoFar);
+			return sortOnAxis(axis, bestPositionSoFar, bvh->orderedIndices, bvh->scene);
+		}
+#endif
 	}
 
-	//Partitions into left right on splitplane, returns first for right node
+	float calculateSplitCost(int axis, float splitplane, BVH* bvh) {
+		int rightfirst = sortOnAxis(axis, splitplane, bvh->orderedIndices, bvh->scene);
+
+		int Nleft = rightfirst - leftFirst;
+		int Nright = count - Nleft;
+
+		//One of the leafs empty, split will never be worth it.
+		if (Nleft == 0 || Nright == 0) return -1;
+
+		float Aleft = bvh->calculateAABB(bvh->orderedIndices, leftFirst, Nleft).Area();
+		float Aright = bvh->calculateAABB(bvh->orderedIndices, rightfirst, Nright).Area();
+
+		return (Aleft * Nleft) + (Aright * Nright);
+	}
+
+	//Partitions into left right on splitplane, returns first for right node.
+	// O(n) :)
 	int sortOnAxis(int axis, float splitplane, uint* orderedIndices, Geometry** scene) {
 		int start = leftFirst;
 		int end = start + count;
@@ -184,10 +242,18 @@ struct BVHNode		// 32 bytes
 		while(!sorted)
 		{
 			while (scene[orderedIndices[left]]->aabb.Midpoint()[axis] < splitplane) {
+				if (left >= (end - 1)) {
+					return 0;
+				}
+				
 				left++;
 			}
 
 			while (scene[orderedIndices[right]]->aabb.Midpoint()[axis] >= splitplane) {
+				if (right <= 1) {
+					return 0;
+				}
+				
 				right--;
 			}
 
