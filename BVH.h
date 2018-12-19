@@ -178,7 +178,7 @@ struct BVHNode		// 32 bytes
 		return sortOnAxis(axis, base + (diff / 2.0f), bvh->orderedIndices, bvh->scene);
 #else
 		//SAH
-		int numbins = 20;
+		int numbins = 10;
 		float binsize = diff / (float)numbins;
 
 		float mincost = bounds.Area() * count;
