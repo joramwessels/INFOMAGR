@@ -14,11 +14,12 @@ void Game::Init()
 	loadscene(SCENES::SCENE_STRESSTEST);
 
 	printf("Starting BVH generation... \n");
+	mytimer.reset();
 	bvh.Build(geometry, numGeometries);
 	//bvh.save("OBJ_GLASS_10bins.bvh");
 	//bvh.load("stresstest20bins.bvh", numGeometries, geometry);
 	//bvh.load("OBJ_GLASS_10bins.bvh", numGeometries, geometry);
-	printf("BVH Generation done. Depth: %i \n", bvh.depth);
+	printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh.depth);
 
 	SSAA = false;
 	camera.DoF = false;
