@@ -697,18 +697,18 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	case SCENE_STRESSTEST:
 	{
 		delete geometry;
-		geometry = new Geometry*[150000];
+		geometry = new Geometry*[300002];
 
 		//Set up the scene
 		numGeometries = 1;
 		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		for (size_t i = 0; i < 100; i++)
+		for (size_t i = 0; i < 200; i++)
 		{
-			float ix = i % 7;
-			float iy = i / 7;
+			float ix = i % 14;
+			float iy = i / 14;
 
-			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
 
 		}
 
