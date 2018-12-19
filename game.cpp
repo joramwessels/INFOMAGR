@@ -697,7 +697,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	case SCENE_STRESSTEST:
 	{
 		delete geometry;
-		geometry = new Geometry*[300002];
+		geometry = new Geometry*[900002];
 
 		//Set up the scene
 		numGeometries = 1;
@@ -707,8 +707,11 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		{
 			float ix = i % 14;
 			float iy = i / 14;
+			
 
 			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -2.0f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -5.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
 
 		}
 
