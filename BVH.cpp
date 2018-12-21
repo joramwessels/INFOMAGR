@@ -104,8 +104,6 @@ Collision BVH::Traverse(Ray ray, BVHNode* node)
 	Collision closest;
 	closest.t = -1;
 
-	if (node->bounds.Intersects(ray))
-	{
 		// If leaf
 		if (node->count != 0)
 		{
@@ -130,17 +128,33 @@ Collision BVH::Traverse(Ray ray, BVHNode* node)
 		else
 		{
 			// Check both children and return the closest collision if both intersected
-			Collision col1 = Traverse(ray, &(pool[node->leftFirst]));
-			Collision col2 = Traverse(ray, &(pool[node->leftFirst + 1]));
+			AABB::AABBIntersection tleft = pool[node->leftFirst].bounds.Intersects(ray);
+			AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray);
+			
+			int flip = 0;
+			float tEntryFarNode = tright.tEntry;
+			if (tright.tEntry < tleft.tEntry) { flip = 1; tEntryFarNode = tleft.tEntry; };
 
-			//printf("Not leaf, t1: %f, t2: %f \n", col1.t, col2.t);
+			Collision colclose, colfar;
+			colclose.t = -1;
+			colfar.t = -1;
 
-			if (col1.t == -1 && col2.t == -1) return col1;
-			if (col1.t != -1 && col2.t == -1) return col1;
-			if (col1.t == -1 && col2.t != -1) return col2;
-			return (col1.t < col2.t ? col1 : col2);
+			if ((tleft.intersects && !flip) || (flip && tright.intersects)) {
+				colclose = Traverse(ray, &(pool[node->leftFirst + flip]));
+				if (colclose.t < tEntryFarNode && colclose.t > 0) {
+					return colclose;
+				}
+			}
+			if ((tright.intersects && !flip) || (tleft.intersects && flip)) {
+				colfar = Traverse(ray, &(pool[node->leftFirst + (1 - flip)]));
+			}
+
+			if (colclose.t == -1 && colfar.t == -1) return colclose;
+			if (colclose.t != -1 && colfar.t == -1) return colclose;
+			if (colclose.t == -1 && colfar.t != -1) return colfar;
+			return (colclose.t < colfar.t ? colclose : colfar);
 		}
-	}
+	
 	return closest;
 }
 
