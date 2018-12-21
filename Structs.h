@@ -261,7 +261,6 @@ struct AABB		// 6*4 = 24 bytes
 	struct AABBIntersection {
 		bool intersects;
 		float tEntry;
-		float tExit;
 	};
 
 	// Ray-AABB intersection algorithm found at:
@@ -277,7 +276,7 @@ struct AABB		// 6*4 = 24 bytes
 		if (t0x > t1x) swap(t0x, t1x);
 		if (t0y > t1y) swap(t0y, t1y);
 		// If not neither the x nor y dimension intersects, there's no intersection
-		if ((t0x > t1y) || (t0y > t1x)) return { false, -1, -1 };
+		if ((t0x > t1y) || (t0y > t1x)) return { false, -1};
 
 		// Take the smallest and biggest of the x-y pairs
 		float t0 = (t0y > t0x ? t0y : t0x);
@@ -287,9 +286,9 @@ struct AABB		// 6*4 = 24 bytes
 		float t1z = (zmax - ray.Origin.z) / ray.Direction.z;
 		if (t0z > t1z) swap(t0z, t1z);
 		// If it's not on the z edge, there's no intersection
-		if ((t0 > t1z) || (t0z > t1) || (t1 < 0)) return {false, -1, -1 };
+		if ((t0 > t1z) || (t0z > t1) || (t1 < 0)) return {false, -1};
 		
-		return {true, t0, t1 };
+		return {true, t0};
 	}
 
 };

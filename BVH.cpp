@@ -149,9 +149,8 @@ Collision BVH::Traverse(Ray ray, BVHNode* node)
 				colfar = Traverse(ray, &(pool[node->leftFirst + (1 - flip)]));
 			}
 
-			if (colclose.t == -1 && colfar.t == -1) return colclose;
-			if (colclose.t != -1 && colfar.t == -1) return colclose;
-			if (colclose.t == -1 && colfar.t != -1) return colfar;
+			if (colfar.t == -1) return colclose;
+			if (colclose.t == -1) return colfar;
 			return (colclose.t < colfar.t ? colclose : colfar);
 		}
 	
