@@ -24,7 +24,7 @@ void Game::Init()
 	SSAA = false;
 	camera.DoF = false;
 	use_bvh = true;
-	bvhdebug = true;
+	bvhdebug = false;
 
 	mytimer.reset();
 }

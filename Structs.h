@@ -132,6 +132,8 @@ struct Ray
 {
 	vec3 Origin = {0, 0, 0};
 	vec3 Direction;
+	vec3 invDirection;
+
 	bool InObject = false;
 	float mediumRefractionIndex = 1.0f;
 	int bvhtraversals = 0;
@@ -269,7 +271,7 @@ struct AABB		// 6*4 = 24 bytes
 	//		https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
 	AABBIntersection Intersects(Ray ray)
 	{
-		// Intersect with the extended box edges
+		/*// Intersect with the extended box edges
 		float t0x = (xmin - ray.Origin.x) / ray.Direction.x;
 		float t1x = (xmax - ray.Origin.x) / ray.Direction.x;
 		float t0y = (ymin - ray.Origin.y) / ray.Direction.y;
@@ -290,7 +292,41 @@ struct AABB		// 6*4 = 24 bytes
 		// If it's not on the z edge, there's no intersection
 		if ((t0 > t1z) || (t0z > t1) || (t1 < 0)) return {false, -1};
 		
-		return {true, t0};
+		return {true, t0};*/
+
+		float invDirX = 1 / ray.Direction.x;
+		float tmin = (xmin - ray.Origin.x) * invDirX;
+		float tmax = (xmax - ray.Origin.x) * invDirX;
+
+		if (tmin > tmax) swap(tmin, tmax);
+
+		float invDirY = 1 / ray.Direction.y;
+		float tymin = (ymin - ray.Origin.y) * invDirY;
+		float tymax = (ymax - ray.Origin.y) * invDirY;
+
+		if (tymin > tymax) swap(tymin, tymax);
+
+		if ((tmin > tymax) || (tymin > tmax))
+			return { false, -1 };
+
+		tmin = max(tmin, tymin);
+		tmax = min(tymax, tmax);
+
+		float invDirZ = 1 / ray.Direction.z;
+		float tzmin = (zmin - ray.Origin.z) * invDirZ;
+		float tzmax = (zmax - ray.Origin.z) * invDirZ;
+
+		if (tzmin > tzmax) swap(tzmin, tzmax);
+
+		if ((tmin > tzmax) || (tzmin > tmax))
+			return { false, -1 };
+
+		tmin = max(tmin, tzmin);
+		tmax = min(tzmax, tmax);
+
+		if (tmax < 0) return { false, -1 };
+
+		return { true, tmin };
 	}
 
 };

@@ -89,6 +89,9 @@ public:
 		case 16: // M
 			camera.DoF = !camera.DoF;
 			break;
+		case 5: // M
+			bvhdebug = !bvhdebug;
+			break;
 		default:
 			printf("Key %i pressed. \n", key);
 			break;
