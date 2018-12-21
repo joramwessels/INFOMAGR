@@ -184,7 +184,6 @@ struct BVHNode		// 32 bytes
 		float mincost = bounds.Area() * count;
 		float bestPositionSoFar = -1;
 		
-		
 		for (size_t i = 0; i < count; i++)
 		{
 			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
@@ -205,7 +204,7 @@ struct BVHNode		// 32 bytes
 
 
 		//printf("Parent cost: %f \n", mincost);
-		
+
 		//evaluate all split planes
 		for (size_t i = 1; i < numbins; i++)
 		{
@@ -223,49 +222,51 @@ struct BVHNode		// 32 bytes
 		
 		
 		int chosenaxis = axis;
-		/*
-		//loop over all axis
-		for (int axisi = 0; axisi < 3; axisi++)
-		{
-			for (size_t i = 0; i < count; i++)
+		bool checkotheraxis = false;
+		if (checkotheraxis) {
+
+			//loop over all axis
+			for (int axisi = 0; axisi < 3; axisi++)
 			{
-				vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
-				if (mid[axisi] > highest || i == 0)
+				for (size_t i = 0; i < count; i++)
 				{
-					highest = mid[axisi];
+					vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+					if (mid[axisi] > highest || i == 0)
+					{
+						highest = mid[axisi];
+					}
+					if (mid[axisi] < smallest || i == 0)
+					{
+						smallest = mid[axisi];
+					}
 				}
-				if (mid[axisi] < smallest || i == 0)
+
+				diff = highest - smallest;
+				base = smallest;
+
+				float binsize = diff / (float)numbins;
+
+
+				//printf("Parent cost: %f \n", mincost);
+
+				//evaluate all split planes
+				for (size_t i = 1; i < numbins; i++)
 				{
-					smallest = mid[axisi];
-				}
-			}
+					float currentPosition = base + (i * binsize);
+					float cost = calculateSplitCost(axisi, currentPosition, bvh);
 
-			diff = highest - smallest;
-			base = smallest;
-
-			float binsize = diff / (float)numbins;
+					//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
 
 
-			//printf("Parent cost: %f \n", mincost);
-
-			//evaluate all split planes
-			for (size_t i = 1; i < numbins; i++)
-			{
-				float currentPosition = base + (i * binsize);
-				float cost = calculateSplitCost(axisi, currentPosition, bvh);
-
-				//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
-
-
-				if (cost < mincost && cost > 0) {
-					printf("Found smaller cost on axis %i instead of %i: %f instead of %f \n", axis, axisi, cost, mincost);
-					mincost = cost;
-					bestPositionSoFar = currentPosition;
-					chosenaxis = axisi;
+					if (cost < mincost && cost > 0) {
+						printf("Found smaller cost on axis %i instead of %i: %f instead of %f \n", axis, axisi, cost, mincost);
+						mincost = cost;
+						bestPositionSoFar = currentPosition;
+						chosenaxis = axisi;
+					}
 				}
 			}
 		}
-		*/
 		//Check if this split will actually help
 		if (bestPositionSoFar == -1) {
 			//printf("Not splitting. count: %i \n", count);

@@ -11,7 +11,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENES::SCENE_SIMPLE);
+	loadscene(SCENES::SCENE_STRESSTEST);
 
 	printf("Starting BVH generation... \n");
 	mytimer.reset();
