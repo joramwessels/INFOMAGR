@@ -145,7 +145,6 @@ struct Collision
 	vec3 Pos;
 	float t;
 	Color colorAt;
-	int bvhdepth = 0;
 };
 
 struct Light

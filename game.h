@@ -98,7 +98,7 @@ private:
 	Surface* screen;
 	Camera camera;
 
-	Collision nearestCollision(Ray ray);
+	Collision nearestCollision(Ray* ray);
 
 	Color TraceRay(Ray ray, int recursionDepth = 0);
 	Sphere* sphere;

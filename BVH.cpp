@@ -123,8 +123,6 @@ Collision BVH::Traverse(Ray* ray, BVHNode* node)
 				}
 			}
 			//printf("leaf: collision at %f \n", closest.t);
-			closest.bvhdepth = depth;
-			closest.bvhdepth = ray->bvhtraversals;
 			return closest;
 		}
 		// If node
