@@ -8,7 +8,7 @@ public:
 	BVH();
 	~BVH();
 	void Build(Geometry** scene, int no_elements);
-	Collision Traverse(Ray ray, BVHNode* node);
+	Collision Traverse(Ray* ray, BVHNode* node);
 	void load(char * filename, int totalNoElements, Geometry** scene);
 	void save(char* filename);
 
@@ -156,6 +156,8 @@ struct BVHNode		// 32 bytes
 		float smallest;
 		float highest;
 
+
+#if 0
 		for (size_t i = 0; i < count; i++)
 		{
 			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
@@ -172,17 +174,35 @@ struct BVHNode		// 32 bytes
 		diff = highest - smallest;
 		base = smallest;
 
-#if 0
 		//MIDPOINTSPLIT
 		//return base + (diff / 2.0f);
 		return sortOnAxis(axis, base + (diff / 2.0f), bvh->orderedIndices, bvh->scene);
 #else
 		//SAH
 		int numbins = 10;
-		float binsize = diff / (float)numbins;
 
 		float mincost = bounds.Area() * count;
 		float bestPositionSoFar = -1;
+		
+		
+		for (size_t i = 0; i < count; i++)
+		{
+			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+			if (mid[axis] > highest || i == 0)
+			{
+				highest = mid[axis];
+			}
+			if (mid[axis] < smallest || i == 0)
+			{
+				smallest = mid[axis];
+			}
+		}
+
+		diff = highest - smallest;
+		base = smallest;
+
+		float binsize = diff / (float)numbins;
+
 
 		//printf("Parent cost: %f \n", mincost);
 		
@@ -194,15 +214,58 @@ struct BVHNode		// 32 bytes
 
 			//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
 
-			
+
 			if (cost < mincost && cost > 0) {
 				mincost = cost;
 				bestPositionSoFar = currentPosition;
 			}
 		}
 		
+		
+		int chosenaxis = axis;
+		/*
+		//loop over all axis
+		for (int axisi = 0; axisi < 3; axisi++)
+		{
+			for (size_t i = 0; i < count; i++)
+			{
+				vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+				if (mid[axisi] > highest || i == 0)
+				{
+					highest = mid[axisi];
+				}
+				if (mid[axisi] < smallest || i == 0)
+				{
+					smallest = mid[axisi];
+				}
+			}
+
+			diff = highest - smallest;
+			base = smallest;
+
+			float binsize = diff / (float)numbins;
 
 
+			//printf("Parent cost: %f \n", mincost);
+
+			//evaluate all split planes
+			for (size_t i = 1; i < numbins; i++)
+			{
+				float currentPosition = base + (i * binsize);
+				float cost = calculateSplitCost(axisi, currentPosition, bvh);
+
+				//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
+
+
+				if (cost < mincost && cost > 0) {
+					printf("Found smaller cost on axis %i instead of %i: %f instead of %f \n", axis, axisi, cost, mincost);
+					mincost = cost;
+					bestPositionSoFar = currentPosition;
+					chosenaxis = axisi;
+				}
+			}
+		}
+		*/
 		//Check if this split will actually help
 		if (bestPositionSoFar == -1) {
 			//printf("Not splitting. count: %i \n", count);
@@ -210,6 +273,8 @@ struct BVHNode		// 32 bytes
 		}
 		else {
 			//printf("Selected splitposition: %f \n", bestPositionSoFar);
+			//printf("Given axis: %i, chosen axis: %i \n", axis, chosenaxis);
+			axis = chosenaxis;
 			return sortOnAxis(axis, bestPositionSoFar, bvh->orderedIndices, bvh->scene);
 		}
 #endif

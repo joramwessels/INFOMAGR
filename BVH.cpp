@@ -30,7 +30,7 @@ void BVH::Build(Geometry** scene, int no_elements)
 	BVHNode root = BVHNode();
 	root.bounds = calculateAABB(leafs, no_elements);
 	root.count = 2;*/
-
+	
 	//I modified this a little bit, see slide 31 from lecture 2 :)
 
 	totalNoElements = no_elements;
@@ -99,10 +99,11 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 }
 
 // Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
-Collision BVH::Traverse(Ray ray, BVHNode* node)
+Collision BVH::Traverse(Ray* ray, BVHNode* node)
 {
 	Collision closest;
 	closest.t = -1;
+	ray->bvhtraversals++;
 
 		// If leaf
 		if (node->count != 0)
@@ -112,7 +113,7 @@ Collision BVH::Traverse(Ray ray, BVHNode* node)
 			// Find closest collision
 			for (int i = 0; i < node->count; i++)
 			{
-				Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(ray);
+				Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
 				{
@@ -122,14 +123,16 @@ Collision BVH::Traverse(Ray ray, BVHNode* node)
 				}
 			}
 			//printf("leaf: collision at %f \n", closest.t);
+			closest.bvhdepth = depth;
+			closest.bvhdepth = ray->bvhtraversals;
 			return closest;
 		}
 		// If node
 		else
 		{
 			// Check both children and return the closest collision if both intersected
-			AABB::AABBIntersection tleft = pool[node->leftFirst].bounds.Intersects(ray);
-			AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray);
+			AABB::AABBIntersection tleft = pool[node->leftFirst].bounds.Intersects(*ray);
+			AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(*ray);
 			
 			int flip = 0;
 			float tEntryFarNode = tright.tEntry;

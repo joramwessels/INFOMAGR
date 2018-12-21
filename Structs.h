@@ -134,6 +134,8 @@ struct Ray
 	vec3 Direction;
 	bool InObject = false;
 	float mediumRefractionIndex = 1.0f;
+	int bvhtraversals = 0;
+
 };
 
 struct Collision
@@ -143,6 +145,7 @@ struct Collision
 	vec3 Pos;
 	float t;
 	Color colorAt;
+	int bvhdepth = 0;
 };
 
 struct Light

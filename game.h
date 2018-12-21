@@ -151,6 +151,7 @@ private:
 
 	//BVH
 	BVH bvh;
+	bool bvhdebug = false;
 };
 
 }; // namespace Tmpl8

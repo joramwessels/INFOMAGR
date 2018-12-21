@@ -16,7 +16,7 @@ void Game::Init()
 	printf("Starting BVH generation... \n");
 	mytimer.reset();
 	bvh.Build(geometry, numGeometries);
-	//bvh.save("OBJ_GLASS_10bins.bvh");
+	//bvh.save("STRESSTEST_1AXIS_100BINS.bvh");
 	//bvh.load("stresstest20bins.bvh", numGeometries, geometry);
 	//bvh.load("OBJ_GLASS_10bins.bvh", numGeometries, geometry);
 	printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh.depth);
@@ -24,6 +24,7 @@ void Game::Init()
 	SSAA = false;
 	camera.DoF = false;
 	use_bvh = true;
+	bvhdebug = false;
 
 	mytimer.reset();
 }
@@ -167,7 +168,7 @@ Collision Tmpl8::Game::nearestCollision(Ray ray)
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		return bvh.Traverse(ray, bvh.root);
+		return bvh.Traverse(&ray, bvh.root);
 	}
 	else
 	{
@@ -202,6 +203,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	Color color; 
 
 	Collision collision = nearestCollision( ray );
+	if (bvhdebug) return (Color(255, 0, 0) * collision.bvhdepth) << 2;
 
 	//check if the ray collides
 	if ( collision.t != -1 )
@@ -334,7 +336,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			if (use_bvh)
 			{
-				Collision shadowcollision = bvh.Traverse(shadowray, bvh.root);
+				Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
 				if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
 			}
 			else {
