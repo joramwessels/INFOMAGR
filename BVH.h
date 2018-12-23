@@ -222,7 +222,7 @@ struct BVHNode		// 32 bytes
 		
 		
 		int chosenaxis = axis;
-		bool checkotheraxis = false;
+		bool checkotheraxis = true;
 		if (checkotheraxis) {
 
 			//loop over all axis
@@ -318,7 +318,7 @@ struct BVHNode		// 32 bytes
 			}
 
 			while (scene[orderedIndices[right]]->aabb.Midpoint()[axis] >= splitplane) {
-				if (right <= 1) {
+				if (right <= start) {
 					return 0;
 				}
 				
