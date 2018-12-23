@@ -222,7 +222,7 @@ struct BVHNode		// 32 bytes
 		
 		
 		int chosenaxis = axis;
-		bool checkotheraxis = true;
+		bool checkotheraxis = false;
 		if (checkotheraxis) {
 
 			//loop over all axis
@@ -284,11 +284,13 @@ struct BVHNode		// 32 bytes
 	float calculateSplitCost(int axis, float splitplane, BVH* bvh) {
 		int rightfirst = sortOnAxis(axis, splitplane, bvh->orderedIndices, bvh->scene);
 
+		if (rightfirst == -1) return -1;
+
 		int Nleft = rightfirst - leftFirst;
 		int Nright = count - Nleft;
 
 		//One of the leafs empty, split will never be worth it.
-		if (Nleft == 0 || Nright == 0) return -1;
+		if (Nleft <= 0 || Nright <= 0) return -1;
 
 		float Aleft = bvh->calculateAABB(bvh->orderedIndices, leftFirst, Nleft).Area();
 		float Aright = bvh->calculateAABB(bvh->orderedIndices, rightfirst, Nright).Area();
@@ -311,7 +313,7 @@ struct BVHNode		// 32 bytes
 		{
 			while (scene[orderedIndices[left]]->aabb.Midpoint()[axis] < splitplane) {
 				if (left >= (end - 1)) {
-					return 0;
+					return -1;
 				}
 				
 				left++;
@@ -319,7 +321,7 @@ struct BVHNode		// 32 bytes
 
 			while (scene[orderedIndices[right]]->aabb.Midpoint()[axis] >= splitplane) {
 				if (right <= start) {
-					return 0;
+					return -1;
 				}
 				
 				right--;
