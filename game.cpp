@@ -2,7 +2,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "lib\tinyobjloader\tiny_obj_loader.h"
 
-int frame = 0;
+float frame = 0;
 
 // -----------------------------------------------------------
 // Initialize the application
@@ -119,7 +119,7 @@ void Game::Tick( float deltaTime )
 
 	if ( animate )
 	{
-		frame++;
+		frame += deltaTime;
 		//camera.move({ 0,0,0.01 });
 		//Animate earth around mars
 		//((ParentBVH*)bvh)->doTranslateRight = true;
