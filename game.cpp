@@ -11,15 +11,27 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENES::SCENE_STRESSTEST);
+	loadscene(SCENES::SCENE_SIMPLE);
+
+	
+	Geometry** parttobemoved;
+	parttobemoved = new Geometry*[1];
+	parttobemoved[0] = new Sphere({ 0, 0, 2 }, 1, Material(0, 0, 0xffffff));
+	BVH* subbvh = new BVH;
+	subbvh->Build(parttobemoved, 1);
+	
+	BVH* staticscenebvh = new BVH;
+
 
 	printf("Starting BVH generation... \n");
 	mytimer.reset();
-	bvh.Build(geometry, numGeometries);
+	staticscenebvh->Build(geometry, numGeometries);
 	//bvh.save("STRESSTEST_1AXIS_100BINS.bvh");
 	//bvh.load("stresstest20bins.bvh", numGeometries, geometry);
 	//bvh.load("OBJ_GLASS_10bins.bvh", numGeometries, geometry);
-	printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh.depth);
+	printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), staticscenebvh->depth);
+
+	bvh.join2BVHs(staticscenebvh, subbvh);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -168,7 +180,8 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		return bvh.Traverse(ray, bvh.root);
+		return bvh.Traverse(ray);
+		//return bvh.left->Traverse(ray, bvh.left->root);
 	}
 	else
 	{
@@ -206,7 +219,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	if (bvhdebug) return (Color(255, 0, 0) * ray.bvhtraversals) << 3;
 
 	//check if the ray collides
-	if ( collision.t != -1 )
+	if ( collision.t > 0 )
 	{
 		//The ray collides.
 		if (collision.other->material.refractionIndex == 0.0f) {
@@ -336,7 +349,10 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			if (use_bvh)
 			{
-				Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
+				//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
+				Collision shadowcollision = bvh.Traverse(&shadowray);
+				//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
+
 				if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
 			}
 			else {

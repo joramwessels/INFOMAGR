@@ -17,7 +17,7 @@ public:
 	int totalNoElements = 0;
 
 	//BVH Construction
-	BVHNode* pool;
+	__declspec(align(64)) BVHNode* pool;
 	uint poolPtr;
 	uint* orderedIndices;
 
@@ -26,6 +26,17 @@ public:
 	//Final BVH
 	BVHNode* root;
 	int depth;
+};
+
+
+class ParentBVH : public BVH {
+public:
+	void join2BVHs(BVH* bvh1, BVH* bvh2);
+
+	BVH* left;
+	BVH* right;
+
+	Collision Traverse(Ray* ray);
 };
 
 struct BVHNode		// 32 bytes
@@ -188,11 +199,11 @@ struct BVHNode		// 32 bytes
 		for (size_t i = 0; i < count; i++)
 		{
 			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
-			if (mid[axis] > highest || i == 0)
+			if (i == 0 || mid[axis] > highest)
 			{
 				highest = mid[axis];
 			}
-			if (mid[axis] < smallest || i == 0)
+			if (i == 0 || mid[axis] < smallest)
 			{
 				smallest = mid[axis];
 			}

@@ -153,7 +153,7 @@ private:
 
 
 	//BVH
-	BVH bvh;
+	ParentBVH bvh;
 	bool bvhdebug = false;
 };
 

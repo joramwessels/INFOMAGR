@@ -204,3 +204,19 @@ void BVH::save(char * filename)
 	printf("BVH saved as %s \n", filename);
 
 }
+
+void ParentBVH::join2BVHs(BVH * bvh1, BVH * bvh2)
+{
+	left = bvh1;
+	right = bvh2;
+}
+
+Collision ParentBVH::Traverse(Ray * ray)
+{
+	Collision coll1 = left->Traverse(ray, left->root);
+	Collision coll2 = right->Traverse(ray, right->root);
+
+	if ((coll2.t > 0 && coll2.t < coll1.t) || coll1.t < 0) coll1 = coll2;
+
+	return coll1;
+}
