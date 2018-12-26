@@ -3,7 +3,7 @@
 #include "lib\tinyobjloader\tiny_obj_loader.h"
 
 
-bool animatecamera = true; //Move the camera forward every frame
+bool animateSphere = true; //Move the camera forward every frame
 int frame = 0;
 
 // -----------------------------------------------------------
@@ -141,7 +141,7 @@ void Game::Tick( float deltaTime )
 		camera.setFocalPoint(camera.focalpoint * 1.1);
 	}
 
-	if ( animatecamera )
+	if ( animateSphere )
 	{
 		//camera.move({ 0,0,0.01 });
 		bvh.doTranslateRight = true;
