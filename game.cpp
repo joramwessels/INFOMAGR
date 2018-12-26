@@ -766,22 +766,29 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		geometry[0] = new Plane(vec3(0, 1, 0), -2.0f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 		geometry[1] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\2k_mars.jpg")));
 
-		numLights = 3;
+		numLights = 1;
 		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
+		lights[0].position = { 0, -2.5, 5 };
 		lights[0].color = 0xffffff;
 		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lights[0].color = lights[0].color * 300;
 
-		lights[1].position = { 5, -5, 0 };
+		/*lights[0].position = { 0, 0, 4 };
+		lights[0].color = 0xffffff;
+		//light0[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 100;*/
+
+		/*
+		lights[1].position = { 2, 0, 0 };
+		lights[1].type = Light::SPOT;
+		lights[1].direction = (vec3(0, 0, 7) - vec3(2, 0, 0)).normalized();
 		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
-
-		lights[2].position = { -5, -5, 0 };
+		lights[1].color = lights[1].color * 10;*/
+		/*
+		lights[2].position = { 3, -2, 7 };
 		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lights[2].color = lights[0].color * 10;*/
+
 
 		skybox = new Skybox("assets\\skydome_stars2.jpg");
 
