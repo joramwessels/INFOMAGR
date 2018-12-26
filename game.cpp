@@ -2,8 +2,6 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "lib\tinyobjloader\tiny_obj_loader.h"
 
-
-bool animateSphere = true; //Move the camera forward every frame
 int frame = 0;
 
 // -----------------------------------------------------------
@@ -11,29 +9,7 @@ int frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	loadscene(SCENES::SCENE_SIMPLE);
-
-	
-	Geometry** parttobemoved;
-	parttobemoved = new Geometry*[1];
-	//parttobemoved[0] = new Sphere({ 0, 0, 2 }, 1, Material(0, 0, 0xffffff));
-	parttobemoved[0] = new Sphere({ 0, 0, 2 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-
-	BVH* subbvh = new BVH;
-	subbvh->Build(parttobemoved, 1);
-	
-	BVH* staticscenebvh = new BVH;
-
-
-	printf("Starting BVH generation... \n");
-	mytimer.reset();
-	staticscenebvh->Build(geometry, numGeometries);
-	//bvh.save("STRESSTEST_1AXIS_100BINS.bvh");
-	//bvh.load("stresstest20bins.bvh", numGeometries, geometry);
-	//bvh.load("OBJ_GLASS_10bins.bvh", numGeometries, geometry);
-	printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), staticscenebvh->depth);
-
-	bvh.join2BVHs(staticscenebvh, subbvh);
+	loadscene(SCENES::SCENE_ANIMATION);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -141,11 +117,12 @@ void Game::Tick( float deltaTime )
 		camera.setFocalPoint(camera.focalpoint * 1.1);
 	}
 
-	if ( animateSphere )
+	if ( animate )
 	{
+		frame++;
 		//camera.move({ 0,0,0.01 });
-		bvh.doTranslateRight = true;
-		bvh.translateRight -= {0.01, 0, 0};
+		((ParentBVH*)bvh)->doTranslateRight = true;
+		((ParentBVH*)bvh)->translateRight = {sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f};
 	}
 
 	if (mytimer.elapsed() > 1000) {
@@ -184,7 +161,7 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		return bvh.Traverse(ray);
+		return bvh->Traverse(ray, bvh->root);
 		//return bvh.left->Traverse(ray, bvh.left->root);
 	}
 	else
@@ -359,7 +336,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			if (use_bvh)
 			{
 				//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
-				Collision shadowcollision = bvh.Traverse(&shadowray);
+				Collision shadowcollision = bvh->Traverse(&shadowray, bvh->root);
 				//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
 
 				if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
@@ -455,7 +432,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[2].color = lights[2].color * 700;
 		
 		skybox = new Skybox("assets\\skybox4.jpg");
-
+		generateBVH();
 
 		break;
 	}
@@ -493,7 +470,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 
-
+		generateBVH();
 		break;
 	}
 	case SCENE_LIGHTING_SPOT:
@@ -531,7 +508,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 
-
+		generateBVH();
 		break;
 	}
 	case SCENE_OBJ_GLASS:
@@ -560,7 +537,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[2].color = lights[2].color * 700;
 
 		skybox = new Skybox("assets\\skybox4.jpg");
-
+		generateBVH();
 		break;
 	}
 	case SCENE_OBJ_HALFREFLECT:
@@ -589,6 +566,8 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[2].color = lights[2].color * 700;
 
 		skybox = new Skybox("assets\\skybox4.jpg");
+
+		generateBVH();
 		break;
 	}
 	case SCENE_LIGHTING_DIRECTIONAL:
@@ -623,6 +602,8 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[0].direction = vec3(-1, -0.5f, -1).normalized();
 
 		skybox = new Skybox("assets\\skybox4.jpg");
+
+		generateBVH();
 		break;
 	}
 	case SCENE_PERFORMANCE:
@@ -654,6 +635,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		camera.move({ -4, 0.3, 3 });
 		camera.rotate({ 0, 0.001, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
 
+		generateBVH();
 		break;
 	}
 	case SCENE_BEERS_LAW:
@@ -687,7 +669,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 
-
+		generateBVH();
 		break;
 	}
 	case SCENE_TEST_BVH:
@@ -719,6 +701,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[2].color = lights[2].color * 700;
 
 		skybox = new Skybox("assets\\skybox4.jpg");
+		generateBVH();
 		break;
 	}
 	case SCENE_STRESSTEST:
@@ -764,9 +747,65 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 
 		skybox = new Skybox("assets\\skybox4.jpg");
+		generateBVH();
 		break;
 	}
+	case SCENE_ANIMATION:
+	{
+		//Set up the scene
+		//STATIC OBJECTS
 
+		numGeometries = 2;
+
+		//geometry = new Geometry*[6];
+		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		geometry[1] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\2k_mars.jpg")));
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -5, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+		skybox = new Skybox("assets\\skybox4.jpg");
+
+		//MOVING OBJECTS
+		Geometry** earth;
+		earth = new Geometry*[1];
+		earth[0] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+
+		//BVH CREATION
+		BVH* earthbvh = new BVH;
+		earthbvh->Build(earth, 1);
+
+		BVH* staticscenebvh = new BVH;
+
+		printf("Starting BVH generation... \n");
+		mytimer.reset();
+		staticscenebvh->Build(geometry, numGeometries);
+		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), staticscenebvh->depth);
+
+		bvh = new ParentBVH;
+		((ParentBVH*)bvh)->join2BVHs(staticscenebvh, earthbvh);
+
+		((ParentBVH*)bvh)->doTranslateRight = true;
+		((ParentBVH*)bvh)->translateRight = { 0, 0, 4 };
+
+
+		animate = true;
+
+	}
 	default:
 		break;
 	}

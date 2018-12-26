@@ -211,7 +211,7 @@ void ParentBVH::join2BVHs(BVH * bvh1, BVH * bvh2)
 	right = bvh2;
 }
 
-Collision ParentBVH::Traverse(Ray * ray)
+Collision ParentBVH::Traverse(Ray* ray, BVHNode* node)
 {
 	Ray rayright = *ray;
 	Ray rayleft = *ray;

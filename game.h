@@ -134,7 +134,8 @@ private:
 		SCENE_PERFORMANCE,
 		SCENE_BEERS_LAW,
 		SCENE_TEST_BVH,
-		SCENE_STRESSTEST
+		SCENE_STRESSTEST,
+		SCENE_ANIMATION
 	};
 
 
@@ -153,8 +154,19 @@ private:
 
 
 	//BVH
-	ParentBVH bvh;
+	BVH* bvh;
 	bool bvhdebug = false;
+	void generateBVH() {
+		//BVH GENERATION
+		bvh = new BVH;
+		printf("Starting BVH generation... \n");
+		mytimer.reset();
+		bvh->Build(geometry, numGeometries);
+		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh->depth);
+	}
+
+	//Animation
+	bool animate = false;
 };
 
 }; // namespace Tmpl8

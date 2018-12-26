@@ -8,7 +8,7 @@ public:
 	BVH();
 	~BVH();
 	void Build(Geometry** scene, int no_elements);
-	Collision Traverse(Ray* ray, BVHNode* node);
+	virtual Collision Traverse(Ray* ray, BVHNode* node);
 	void load(char * filename, int totalNoElements, Geometry** scene);
 	void save(char* filename);
 
@@ -42,7 +42,7 @@ public:
 	vec3 translateLeft = { 0, 0, 0 };
 	vec3 translateRight = { 0, 0, 0 };
 
-	Collision Traverse(Ray* ray);
+	Collision Traverse(Ray* ray, BVHNode* node) override;
 };
 
 struct BVHNode		// 32 bytes
