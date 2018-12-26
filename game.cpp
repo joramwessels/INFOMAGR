@@ -121,8 +121,13 @@ void Game::Tick( float deltaTime )
 	{
 		frame++;
 		//camera.move({ 0,0,0.01 });
-		((ParentBVH*)bvh)->doTranslateRight = true;
+		//Animate earth around mars
+		//((ParentBVH*)bvh)->doTranslateRight = true;
 		((ParentBVH*)bvh)->translateRight = {sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f};
+
+		//Animate moon around earth
+		ParentBVH* moonbvh = (ParentBVH*)((ParentBVH*)bvh)->right;
+		moonbvh->translateRight = { sinf(frame * 0.5f) * 1.5f, sinf(frame * 0.5f) * 1.5f, cosf(frame * 0.5f) * 1.5f };
 	}
 
 	if (mytimer.elapsed() > 1000) {
@@ -758,7 +763,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		numGeometries = 2;
 
 		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		geometry[0] = new Plane(vec3(0, 1, 0), -2.0f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 		geometry[1] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\2k_mars.jpg")));
 
 		numLights = 3;
@@ -778,16 +783,33 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//lights[2].color = 0x11ff11;
 		lights[2].color = lights[2].color * 700;
 
-		skybox = new Skybox("assets\\skybox4.jpg");
+		skybox = new Skybox("assets\\skydome_stars2.jpg");
 
 		//MOVING OBJECTS
+
+		//EARTH
 		Geometry** earth;
 		earth = new Geometry*[1];
 		earth[0] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
 
+
+		//MOON
+		Geometry** moon;
+		moon = new Geometry*[1];
+		moon[0] = new Sphere({ 0, 0, 7 }, 0.3, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\2k_mercury.jpg")));
+
+
+
 		//BVH CREATION
 		BVH* earthbvh = new BVH;
 		earthbvh->Build(earth, 1);
+
+		BVH* moonbvh = new BVH;
+		moonbvh->Build(moon, 1);
+
+		ParentBVH* earthmoonbvh = new ParentBVH;
+		earthmoonbvh->join2BVHs(earthbvh, moonbvh);
+		earthmoonbvh->translateRight = true;
 
 		BVH* staticscenebvh = new BVH;
 
@@ -797,7 +819,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), staticscenebvh->depth);
 
 		bvh = new ParentBVH;
-		((ParentBVH*)bvh)->join2BVHs(staticscenebvh, earthbvh);
+		((ParentBVH*)bvh)->join2BVHs(staticscenebvh, earthmoonbvh);
 
 		((ParentBVH*)bvh)->doTranslateRight = true;
 		((ParentBVH*)bvh)->translateRight = { 0, 0, 4 };
