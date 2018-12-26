@@ -36,6 +36,12 @@ public:
 	BVH* left;
 	BVH* right;
 
+	bool doTranslateLeft = false;
+	bool doTranslateRight = false;
+
+	vec3 translateLeft = { 0, 0, 0 };
+	vec3 translateRight = { 0, 0, 0 };
+
 	Collision Traverse(Ray* ray);
 };
 

@@ -147,6 +147,9 @@ struct Collision
 	vec3 Pos;
 	float t;
 	Color colorAt;
+
+	//bool isTranslated;
+	//vec3 translation = { 0, 0, 0 };
 };
 
 struct Light

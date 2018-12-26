@@ -3,7 +3,7 @@
 #include "lib\tinyobjloader\tiny_obj_loader.h"
 
 
-bool animatecamera = false; //Move the camera forward every frame
+bool animatecamera = true; //Move the camera forward every frame
 int frame = 0;
 
 // -----------------------------------------------------------
@@ -16,7 +16,9 @@ void Game::Init()
 	
 	Geometry** parttobemoved;
 	parttobemoved = new Geometry*[1];
-	parttobemoved[0] = new Sphere({ 0, 0, 2 }, 1, Material(0, 0, 0xffffff));
+	//parttobemoved[0] = new Sphere({ 0, 0, 2 }, 1, Material(0, 0, 0xffffff));
+	parttobemoved[0] = new Sphere({ 0, 0, 2 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
+
 	BVH* subbvh = new BVH;
 	subbvh->Build(parttobemoved, 1);
 	
@@ -141,7 +143,9 @@ void Game::Tick( float deltaTime )
 
 	if ( animatecamera )
 	{
-		camera.move({ 0,0,0.01 });
+		//camera.move({ 0,0,0.01 });
+		bvh.doTranslateRight = true;
+		bvh.translateRight -= {0.01, 0, 0};
 	}
 
 	if (mytimer.elapsed() > 1000) {
@@ -331,6 +335,11 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			Ray shadowray;
 			shadowray.Direction = L;
 			shadowray.Origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+			/*
+			if (collision.isTranslated) {
+				shadowray.Origin -= collision.translation;
+			}*/
+			
 			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 			
 			if (lights[i].type == Light::DIRECTIONAL) {
@@ -434,17 +443,17 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		lights[0].color = 0xffffff;
 		//lights[0].color = 0xff1111;
 		lights[0].color = lights[0].color * 700;
-
+		
 		lights[1].position = { 5, -5, 0 };
 		lights[1].color = 0xffffff;
 		//lights[1].color = 0x1111ff;
 		lights[1].color = lights[1].color * 700;
-
+		
 		lights[2].position = { -5, -5, 0 };
 		lights[2].color = 0xffffff;
 		//lights[2].color = 0x11ff11;
 		lights[2].color = lights[2].color * 700;
-
+		
 		skybox = new Skybox("assets\\skybox4.jpg");
 
 

@@ -213,8 +213,21 @@ void ParentBVH::join2BVHs(BVH * bvh1, BVH * bvh2)
 
 Collision ParentBVH::Traverse(Ray * ray)
 {
-	Collision coll1 = left->Traverse(ray, left->root);
-	Collision coll2 = right->Traverse(ray, right->root);
+	Ray rayright = *ray;
+	Ray rayleft = *ray;
+
+	rayright.Origin += translateRight;
+	rayleft.Origin += translateLeft;
+
+	Collision coll1 = left->Traverse(&rayleft, left->root);
+	/*coll1.isTranslated = doTranslateLeft;
+	coll1.translation = translateLeft;*/
+	coll1.Pos -= translateLeft;
+
+	Collision coll2 = right->Traverse(&rayright, right->root);
+	/*coll2.isTranslated = doTranslateRight;
+	coll2.translation = translateRight;*/
+	coll2.Pos -= translateRight;
 
 	if ((coll2.t > 0 && coll2.t < coll1.t) || coll1.t < 0) coll1 = coll2;
 
