@@ -184,6 +184,7 @@ struct BVHNode		// 32 bytes
 		float mincost = bounds.Area() * count;
 		float bestPositionSoFar = -1;
 		
+		// Find the minimum and maximum midpoint of the child objects
 		for (size_t i = 0; i < count; i++)
 		{
 			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
@@ -202,9 +203,6 @@ struct BVHNode		// 32 bytes
 
 		float binsize = diff / (float)numbins;
 
-
-		//printf("Parent cost: %f \n", mincost);
-
 		//evaluate all split planes
 		for (size_t i = 1; i < numbins; i++)
 		{
@@ -220,14 +218,16 @@ struct BVHNode		// 32 bytes
 			}
 		}
 		
-		
 		int chosenaxis = axis;
+		
+		//Also evaluate the SAH for the other axes
 		bool checkotheraxis = true;
 		if (checkotheraxis) {
 
 			//loop over all axis
 			for (int axisi = 0; axisi < 3; axisi++)
 			{
+				if (axisi == axis) continue; //We already checked this axis
 				for (size_t i = 0; i < count; i++)
 				{
 					vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
@@ -246,20 +246,15 @@ struct BVHNode		// 32 bytes
 
 				float binsize = diff / (float)numbins;
 
-
-				//printf("Parent cost: %f \n", mincost);
-
 				//evaluate all split planes
 				for (size_t i = 1; i < numbins; i++)
 				{
 					float currentPosition = base + (i * binsize);
 					float cost = calculateSplitCost(axisi, currentPosition, bvh);
 
-					//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
-
 
 					if (cost < mincost && cost > 0) {
-						printf("Found smaller cost on axis %i instead of %i: %f instead of %f \n", axis, axisi, cost, mincost);
+						//printf("Found smaller cost on axis %i instead of %i: %f instead of %f \n", axis, axisi, cost, mincost);
 						mincost = cost;
 						bestPositionSoFar = currentPosition;
 						chosenaxis = axisi;
@@ -267,6 +262,7 @@ struct BVHNode		// 32 bytes
 				}
 			}
 		}
+
 		//Check if this split will actually help
 		if (bestPositionSoFar == -1) {
 			//printf("Not splitting. count: %i \n", count);

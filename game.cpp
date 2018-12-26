@@ -819,5 +819,5 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 			shapes[s].mesh.material_ids[f];
 		}
 	}
-	printf("Loadobj done.");
+	printf("Loadobj done. \n\n");
 }
