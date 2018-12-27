@@ -21,18 +21,6 @@ BVH::~BVH()
 // Builds a BVH tree using recursive splits given a list of geometric objects
 void BVH::Build(Geometry** scene, int no_elements)
 {
-	/*// Creating initial object indices
-	std::vector<int> v(no_elements);
-	std::iota(std::begin(v), std::end(v), 0);
-	int* indices = &v[0];
-	// Creating root node
-	BVHNode* leafs = calculateLeafNodes(scene, no_elements);
-	BVHNode root = BVHNode();
-	root.bounds = calculateAABB(leafs, no_elements);
-	root.count = 2;*/
-	
-	//I modified this a little bit, see slide 31 from lecture 2 :)
-
 	totalNoElements = no_elements;
 	this->scene = scene;
 
@@ -55,22 +43,6 @@ void BVH::Build(Geometry** scene, int no_elements)
 	root->bounds = calculateAABB(orderedIndices, root->leftFirst, root->count);
 	root->subdivide(this); 
 }
-
-/*
-// I don't think we need this -M
-// Converts a scene of geometric objects into an array of BVH leaf nodes
-BVHNode* BVH::calculateLeafNodes(Geometry* scene, int no_elements)
-{
-	BVHNode* leafs = (BVHNode*) malloc(sizeof(BVHNode) * no_elements);
-	for (int i = 0; i < no_elements; i++) {
-		leafs[i] = BVHNode();
-		leafs[i].count = 1;
-		leafs[i].leftFirst = i;
-		leafs[i].bounds = scene[i].GetAABB();
-	}
-	return leafs;
-}
-*/
 
 
 // Calculates the smallest surrounding AABB for the given array of nodes
@@ -220,13 +192,9 @@ Collision ParentBVH::Traverse(Ray* ray, BVHNode* node)
 	rayleft.Origin += translateLeft;
 
 	Collision coll1 = left->Traverse(&rayleft, left->root);
-	/*coll1.isTranslated = doTranslateLeft;
-	coll1.translation = translateLeft;*/
 	coll1.Pos -= translateLeft;
 
 	Collision coll2 = right->Traverse(&rayright, right->root);
-	/*coll2.isTranslated = doTranslateRight;
-	coll2.translation = translateRight;*/
 	coll2.Pos -= translateRight;
 
 	if ((coll2.t > 0 && coll2.t < coll1.t) || coll1.t < 0) coll1 = coll2;

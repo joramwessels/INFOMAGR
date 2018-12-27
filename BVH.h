@@ -96,8 +96,6 @@ struct BVHNode		// 32 bytes
 
 		if (debugprints) printf("First for right child: %i \n", firstForRightChild);
 
-		//int firstForRightChild = sortOnAxis(axis, splitposition, bvh->orderedIndices, bvh->scene);
-
 		int leftchild = bvh->poolPtr++;
 		int rightchild = bvh->poolPtr++; //For right child.
 
@@ -120,10 +118,10 @@ struct BVHNode		// 32 bytes
 			}
 			//Apparently the centers are too close together or something. devide equally between L / R
 			//Totally not a hack.
+			//This shouldn't happen anymore. Just here for reassurance
 			bvh->pool[leftchild].count = count / 2;
 			firstForRightChild = leftFirst + bvh->pool[leftchild].count;
 		}
-
 
 		bvh->pool[leftchild].bounds = bvh->calculateAABB(bvh->orderedIndices, bvh->pool[leftchild].leftFirst, bvh->pool[leftchild].count);
 
@@ -164,7 +162,6 @@ struct BVHNode		// 32 bytes
 		return axis;
 	}
 
-	//Currently midpoint-split. TODO: surface area heuristic or something
 	float calculateSplitPosition(int axis, BVH* bvh) {
 		
 		float diff;
@@ -173,7 +170,7 @@ struct BVHNode		// 32 bytes
 		float smallest;
 		float highest;
 
-
+//Set this to 1 to use midpointsplit
 #if 0
 		for (size_t i = 0; i < count; i++)
 		{
@@ -226,9 +223,6 @@ struct BVHNode		// 32 bytes
 			float currentPosition = base + (i * binsize);
 			float cost = calculateSplitCost(axis, currentPosition, bvh);
 
-			//printf("i %i, position %f, cost: %f \n", i, currentPosition, cost);
-
-
 			if (cost < mincost && cost > 0) {
 				mincost = cost;
 				bestPositionSoFar = currentPosition;
@@ -237,7 +231,7 @@ struct BVHNode		// 32 bytes
 		
 		int chosenaxis = axis;
 		
-		//Also evaluate the SAH for the other axes
+		//Also evaluate the SAH for the other axes. Set to false to just check the dominant axis. (Slightly faster, but the resulting bvh will be of lesser quality)
 		bool checkotheraxis = true;
 		if (checkotheraxis) {
 

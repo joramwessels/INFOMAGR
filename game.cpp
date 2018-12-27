@@ -9,6 +9,21 @@ float frame = 0;
 // -----------------------------------------------------------
 void Game::Init()
 {
+	/*
+	AVAILABLE SCENES:
+		SCENE_SIMPLE,
+		SCENE_OBJ_GLASS,
+		SCENE_OBJ_HALFREFLECT,
+		SCENE_LIGHTING_AMBIENT,
+		SCENE_LIGHTING_SPOT,
+		SCENE_LIGHTING_DIRECTIONAL,
+		SCENE_PERFORMANCE,
+		SCENE_BEERS_LAW,
+		SCENE_TEST_BVH,
+		SCENE_STRESSTEST,
+		SCENE_ANIMATION
+	*/
+
 	loadscene(SCENES::SCENE_ANIMATION);
 
 	SSAA = false;
@@ -120,9 +135,7 @@ void Game::Tick( float deltaTime )
 	if ( animate )
 	{
 		frame += deltaTime;
-		//camera.move({ 0,0,0.01 });
 		//Animate earth around mars
-		//((ParentBVH*)bvh)->doTranslateRight = true;
 		((ParentBVH*)bvh)->translateRight = {sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f};
 
 		//Animate moon around earth
@@ -146,7 +159,6 @@ void Game::Tick( float deltaTime )
 	
 	sprintf(buffer, "FPS: %i", prevsecframes);
 
-	//screen->Bar(0, 0, 150, 16, 0x000000);
 	screen->Print(buffer, 1, 10, 0xffffff);
 
 	sprintf(buffer, "Avg time (ms): %.0f", avgFrameTime);
@@ -167,7 +179,6 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 	{
 		//printf("BVH TRAVERSAL ");
 		return bvh->Traverse(ray, bvh->root);
-		//return bvh.left->Traverse(ray, bvh.left->root);
 	}
 	else
 	{
@@ -269,7 +280,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			{
 				Ray refractedray;
 				refractedray.Direction = transition * ray.Direction + collision.N * ( transition * costheta - sqrt( k ) );
-				//refractedray.Origin = collision.Pos + 0.00001f * -collision.N;
+
 				refractedray.Origin = collision.Pos + 0.00001f * refractedray.Direction;
 				refractedray.InObject = !ray.InObject;
 				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other->material.refractionIndex ); // Exiting an object defaults material to air
@@ -285,7 +296,6 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 					refraction.R *= exp(-a.x * distance);
 					refraction.G *= exp(-a.y * distance);
 					refraction.B *= exp(-a.z * distance);
-					//refraction = refraction >> 8;
 				}
 			}
 
@@ -317,10 +327,6 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			Ray shadowray;
 			shadowray.Direction = L;
 			shadowray.Origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction.
-			/*
-			if (collision.isTranslated) {
-				shadowray.Origin -= collision.translation;
-			}*/
 			
 			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 			
