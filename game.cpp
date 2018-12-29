@@ -134,7 +134,8 @@ void Game::Tick( float deltaTime )
 
 	if ( animate )
 	{
-		frame += deltaTime;
+		//frame += deltaTime;
+		frame ++;
 		//Animate earth around mars
 		((ParentBVH*)bvh)->translateRight = {sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f};
 
