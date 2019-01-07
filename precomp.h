@@ -85,6 +85,8 @@ using namespace Tmpl8;
 #include "Camera.h"
 #include "BVH.h"
 
+#include "GPUStuff.cuh"
+
 #include "game.h"
 // clang-format on
 

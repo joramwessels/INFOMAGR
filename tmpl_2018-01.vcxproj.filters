@@ -42,4 +42,8 @@
       <Filter>template code</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="GPUStuff.cu" />
+    <CudaCompile Include="GPUStuff.cuh" />
+  </ItemGroup>
 </Project>
