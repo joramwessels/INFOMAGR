@@ -4,6 +4,7 @@
 
 float frame = 0;
 
+
 // -----------------------------------------------------------
 // Initialize the application
 // -----------------------------------------------------------
@@ -25,6 +26,33 @@ void Game::Init()
 	*/
 
 	loadscene(SCENES::SCENE_ANIMATION);
+	
+	//GPU TEST STUFF START
+	float *x;
+	float *xgpu;
+
+	cudaMalloc(&xgpu, 100 * sizeof(float));
+	x = new float[100];
+	
+	for (size_t i = 0; i < 100; i++)
+	{
+		x[i] = i;
+	}
+
+	cudaMemcpy(xgpu, x, 100 * sizeof(float), cudaMemcpyHostToDevice);
+
+	testkernel << <1, 100 >> > (xgpu);
+	cudaError_t err = cudaGetLastError();
+	if (err != cudaSuccess) printf("Error: %s\n", cudaGetErrorString(err));
+
+	cudaMemcpy(x, xgpu, 100 * sizeof(float), cudaMemcpyDeviceToHost);
+
+	for (size_t i = 0; i < 100; i++)
+	{
+		printf("x[%i]: %f \n", i, x[i]);
+	}
+	//GPU TEST STUFF END
+
 
 	SSAA = false;
 	camera.DoF = false;
@@ -59,6 +87,9 @@ float random8 = RandomFloat();
 void Game::Tick( float deltaTime )
 {
 	frames++;
+
+
+
 
 	//Shoot a ray for every pixel
 #pragma omp parallel for
@@ -644,8 +675,8 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 
 		skybox = new Skybox(0x58caeb);
-		camera.move({ -4, 0.3, 3 });
-		camera.rotate({ 0, 0.001, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
+		camera.move({ -4.0f, 0.3f, 3.0f });
+		camera.rotate({ 0, 0.001f, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
 
 		generateBVH();
 		break;

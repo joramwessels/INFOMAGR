@@ -195,6 +195,8 @@ vec3 operator * ( const vec3& v, const float& s );
 vec4 operator * ( const float& s, const vec4& v );
 vec4 operator * ( const vec4& v, const float& s );
 
+//We're going the use the cuda ones
+/*
 class uint4
 {
 public:
@@ -231,7 +233,7 @@ public:
 	void operator *= ( int a ) { x *= a; y *= a; z *= a; w *= a; }
 	int& operator [] ( const int idx ) { return cell[idx]; }
 };
-
+*/
 class mat4
 {
 public:

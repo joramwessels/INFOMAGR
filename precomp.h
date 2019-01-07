@@ -85,6 +85,10 @@ using namespace Tmpl8;
 #include "Camera.h"
 #include "BVH.h"
 
+// CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include "GPUStuff.cuh"
 
 #include "game.h"
