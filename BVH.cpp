@@ -63,8 +63,8 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 		xmax = max(xmax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXX]);
 		ymin = min(ymin, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMINY]);
 		ymax = max(ymax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXY]);
-		zmin = min(zmin, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMINX]);
-		zmax = max(zmax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXX]);
+		zmin = min(zmin, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMINZ]);
+		zmax = max(zmax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXZ]);
 
 		/*
 		AABB thisGeometryAABB = scene[indices[i]]->aabb;

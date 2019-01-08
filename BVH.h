@@ -167,8 +167,8 @@ struct BVHNode		// 32 bytes
 		float diff;
 		float base;
 
-		float smallest;
-		float highest;
+		float smallest = -1;
+		float highest = -1;
 
 //Set this to 1 to use midpointsplit
 #if 1

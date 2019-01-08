@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_TRIANGLETEST);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 	
 	/*
 	//GPU TEST STUFF START
@@ -471,7 +471,9 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
-		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 2 }, Material(1.0f, 0.0f, 0xffffff));
+		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
+		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { -2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
+		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
 
 		numLights = 3;
 		lights = new Light[numLights];
