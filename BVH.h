@@ -7,13 +7,13 @@ class BVH
 public:
 	BVH();
 	~BVH();
-	void Build(Geometry** scene, int no_elements);
+	void Build(float* scene, int no_elements);
 	virtual Collision Traverse(Ray* ray, BVHNode* node);
-	void load(char * filename, int totalNoElements, Geometry** scene);
+	void load(char * filename, int totalNoElements, float* scene);
 	void save(char* filename);
 
 	//Scene information
-	Geometry** scene;
+	float* scene;
 	int totalNoElements = 0;
 
 	//BVH Construction
@@ -171,10 +171,11 @@ struct BVHNode		// 32 bytes
 		float highest;
 
 //Set this to 1 to use midpointsplit
-#if 0
+#if 1
 		for (size_t i = 0; i < count; i++)
 		{
-			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+			//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+			vec3 mid = calculateTriangleAABBMidpoint(bvh->orderedIndices[leftFirst + i], bvh->scene);
 			if (mid[axis] > highest || i == 0)
 			{
 				highest = mid[axis];
@@ -307,7 +308,7 @@ struct BVHNode		// 32 bytes
 
 	//Partitions into left right on splitplane, returns first for right node.
 	// O(n) :)
-	int sortOnAxis(int axis, float splitplane, uint* orderedIndices, Geometry** scene) {
+	int sortOnAxis(int axis, float splitplane, uint* orderedIndices, float* scene) {
 		int start = leftFirst;
 		int end = start + count;
 
@@ -318,7 +319,7 @@ struct BVHNode		// 32 bytes
 		
 		while(!sorted)
 		{
-			while (scene[orderedIndices[left]]->aabb.Midpoint()[axis] < splitplane) {
+			while (calculateTriangleAABBMidpoint(orderedIndices[left], scene)[axis] < splitplane) {
 				left++;
 				if (left >= (end - 1)) {
 					return -1;
@@ -326,7 +327,7 @@ struct BVHNode		// 32 bytes
 				
 			}
 
-			while (scene[orderedIndices[right]]->aabb.Midpoint()[axis] >= splitplane) {
+			while (calculateTriangleAABBMidpoint(orderedIndices[right], scene)[axis] >= splitplane) {
 				right--;
 				if (right <= start) {
 					return -1;

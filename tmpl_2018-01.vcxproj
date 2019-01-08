@@ -158,7 +158,6 @@
     <ClCompile Include="BVH.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="game.cpp" />
-    <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="template.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -168,7 +167,6 @@
     <ClInclude Include="BVH.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="game.h" />
-    <ClInclude Include="Geometry.h" />
     <CudaCompile Include="GPUStuff.cuh" />
     <ClInclude Include="precomp.h" />
     <ClInclude Include="Structs.h" />

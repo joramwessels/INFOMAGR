@@ -113,7 +113,7 @@ using namespace Tmpl8;
 
 // Own headers
 #include "Structs.h"
-#include "Geometry.h"
+//#include "Geometry.h"
 //#include "Sphere.h"
 //#include "Plane.h"
 //#include "Triangle.h"

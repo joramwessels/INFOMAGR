@@ -151,15 +151,16 @@ private:
 		bvh = new BVH;
 		printf("Starting BVH generation... \n");
 		mytimer.reset();
-		//bvh->Build(geometry, numGeometries);
+		bvh->Build(triangles, numGeometries);
 		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh->depth);
 	}
 
 	void initializeTriangle(int i, float* triangles);
-	Collision intersectTriangle(int i, Ray ray, float* triangles, bool isShadowRay = false);
 
 	//Animation
 	bool animate = false;
 };
 
 }; // namespace Tmpl8
+	Collision intersectTriangle(int i, Ray ray, float* triangles, bool isShadowRay = false);
+

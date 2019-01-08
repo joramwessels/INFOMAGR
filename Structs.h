@@ -1,5 +1,6 @@
 #pragma once
-class Geometry; //Forward declaration
+//Forward declaration
+vec3 calculateTriangleAABBMidpoint(int i, float * triangles);
 
 //To support intermediate results > 255, store colors as 3 uints. This is probably terrible performance wise.
 struct Color

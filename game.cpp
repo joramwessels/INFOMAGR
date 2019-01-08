@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_TRIANGLETEST);
 	
 	/*
 	//GPU TEST STUFF START
@@ -57,7 +57,7 @@ void Game::Init()
 
 	SSAA = false;
 	camera.DoF = false;
-	use_bvh = false;
+	use_bvh = true;
 	bvhdebug = false;
 
 	mytimer.reset();
@@ -467,11 +467,11 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	}
 	case SCENE_TRIANGLETEST:
 	{
-		camera.rotate({ -20, 180, 0 });
+		//camera.rotate({ -20, 180, 0 });
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
-		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(0.0f, 1.52f, 0xffffff));
+		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 2 }, Material(1.0f, 0.0f, 0xffffff));
 
 		numLights = 3;
 		lights = new Light[numLights];
@@ -720,7 +720,7 @@ void Tmpl8::Game::initializeTriangle(int i, float * triangles)
 	triangles[baseindex + T_AABBMAXZ] = (v0.z >= v1.z && v0.z >= v2.z ? v0.z : (v1.z >= v0.z && v1.z >= v2.z ? v1.z : v2.z));
 }
 
-Collision Tmpl8::Game::intersectTriangle(int i, Ray ray, float * triangles, bool isShadowRay)
+Collision intersectTriangle(int i, Ray ray, float * triangles, bool isShadowRay)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
 
@@ -787,3 +787,17 @@ Collision Tmpl8::Game::intersectTriangle(int i, Ray ray, float * triangles, bool
 	}
 	return collision;
 }
+
+vec3 calculateTriangleAABBMidpoint(int i, float * triangles)
+{
+	int baseindex = i * FLOATS_PER_TRIANGLE;
+	float xmin = triangles[baseindex + T_AABBMINX];
+	float xmax = triangles[baseindex + T_AABBMAXX];
+	float ymin = triangles[baseindex + T_AABBMINY];
+	float ymax = triangles[baseindex + T_AABBMAXY];
+	float zmin = triangles[baseindex + T_AABBMINZ];
+	float zmax = triangles[baseindex + T_AABBMAXZ];
+
+	return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
+}
+

@@ -8,7 +8,6 @@
       <Filter>template code</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="BVH.cpp" />
     <ClCompile Include="game.cpp" />
   </ItemGroup>
@@ -22,7 +21,6 @@
     </ClInclude>
     <ClInclude Include="precomp.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="Geometry.h" />
     <ClInclude Include="Structs.h" />
     <ClInclude Include="BVH.h" />
   </ItemGroup>

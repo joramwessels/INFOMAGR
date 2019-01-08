@@ -19,7 +19,7 @@ BVH::~BVH()
 }
 
 // Builds a BVH tree using recursive splits given a list of geometric objects
-void BVH::Build(Geometry** scene, int no_elements)
+void BVH::Build(float* scene, int no_elements)
 {
 	totalNoElements = no_elements;
 	this->scene = scene;
@@ -52,20 +52,28 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 		printf("This shouldn't happen! \n");
 	}
 
-	float xmin = scene[indices[start]]->aabb.xmin;
-	float xmax = scene[indices[start]]->aabb.xmax;
-	float ymin = scene[indices[start]]->aabb.ymin;
-	float ymax = scene[indices[start]]->aabb.ymax;
-	float zmin = scene[indices[start]]->aabb.zmin;
-	float zmax = scene[indices[start]]->aabb.zmax;
+	float xmin = scene[(indices[start] * FLOATS_PER_TRIANGLE) + T_AABBMINX];
+	float xmax = scene[(indices[start] * FLOATS_PER_TRIANGLE) + T_AABBMAXX];
+	float ymin = scene[(indices[start] * FLOATS_PER_TRIANGLE) + T_AABBMINY];
+	float ymax = scene[(indices[start] * FLOATS_PER_TRIANGLE) + T_AABBMAXY];
+	float zmin = scene[(indices[start] * FLOATS_PER_TRIANGLE) + T_AABBMINZ];
+	float zmax = scene[(indices[start] * FLOATS_PER_TRIANGLE) + T_AABBMAXZ];
 	for (int i = start + 1; i < (start + no_elements); i++) {
+		xmin = min(xmin, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMINX]);
+		xmax = max(xmax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXX]);
+		ymin = min(ymin, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMINY]);
+		ymax = max(ymax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXY]);
+		zmin = min(zmin, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMINX]);
+		zmax = max(zmax, scene[(indices[i] * FLOATS_PER_TRIANGLE) + T_AABBMAXX]);
+
+		/*
 		AABB thisGeometryAABB = scene[indices[i]]->aabb;
 		if (thisGeometryAABB.xmin < xmin) xmin = thisGeometryAABB.xmin;
 		if (thisGeometryAABB.xmax > xmax) xmax = thisGeometryAABB.xmax;
 		if (thisGeometryAABB.ymin < ymin) ymin = thisGeometryAABB.ymin;
 		if (thisGeometryAABB.ymax > ymax) ymax = thisGeometryAABB.ymax;
 		if (thisGeometryAABB.zmin < zmin) zmin = thisGeometryAABB.zmin;
-		if (thisGeometryAABB.zmax > zmax) zmax = thisGeometryAABB.zmax;
+		if (thisGeometryAABB.zmax > zmax) zmax = thisGeometryAABB.zmax;*/
 	}
 	return AABB(xmin, xmax, ymin, ymax, zmin, zmax);
 }
@@ -85,7 +93,8 @@ Collision BVH::Traverse(Ray* ray, BVHNode* node)
 			// Find closest collision
 			for (int i = 0; i < node->count; i++)
 			{
-				Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
+				//Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
+				Collision collision = intersectTriangle(orderedIndices[node->leftFirst + i], *ray, scene);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
 				{
@@ -130,7 +139,7 @@ Collision BVH::Traverse(Ray* ray, BVHNode* node)
 	return closest;
 }
 
-void BVH::load(char * filename, int totalNoElements, Geometry** scene)
+void BVH::load(char * filename, int totalNoElements, float* scene)
 {
 	this->totalNoElements = totalNoElements;
 	this->scene = scene;
