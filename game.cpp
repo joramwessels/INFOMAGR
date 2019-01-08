@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_STRESSTEST);
 	
 	/*
 	//GPU TEST STUFF START
@@ -527,14 +527,14 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		generateBVH();
 		break;
 	}
-	/*case SCENE_STRESSTEST:
+	case SCENE_STRESSTEST:
 	{
-		delete geometry;
-		geometry = new Geometry*[900002];
+		delete triangles;
+		triangles = new float[900002 * FLOATS_PER_TRIANGLE];
 
 		//Set up the scene
-		numGeometries = 1;
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		numGeometries = 0;
+		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		for (size_t i = 0; i < 200; i++)
 		{
@@ -572,7 +572,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();
 		break;
-	}*/
+	}
 	default:
 		break;
 	}

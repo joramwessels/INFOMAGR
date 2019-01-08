@@ -171,7 +171,7 @@ struct BVHNode		// 32 bytes
 		float highest = -1;
 
 //Set this to 1 to use midpointsplit
-#if 1
+#if 0
 		for (size_t i = 0; i < count; i++)
 		{
 			//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
@@ -202,7 +202,8 @@ struct BVHNode		// 32 bytes
 		// Find the minimum and maximum midpoint of the child objects
 		for (size_t i = 0; i < count; i++)
 		{
-			vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+			//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+			vec3 mid = calculateTriangleAABBMidpoint(bvh->orderedIndices[leftFirst + i], bvh->scene);
 			if (i == 0 || mid[axis] > highest)
 			{
 				highest = mid[axis];
@@ -242,7 +243,8 @@ struct BVHNode		// 32 bytes
 				if (axisi == axis) continue; //We already checked this axis
 				for (size_t i = 0; i < count; i++)
 				{
-					vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+					//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+					vec3 mid = calculateTriangleAABBMidpoint(bvh->orderedIndices[leftFirst + i], bvh->scene);
 					if (mid[axisi] > highest || i == 0)
 					{
 						highest = mid[axisi];
