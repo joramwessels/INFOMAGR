@@ -10,6 +10,41 @@
 #define SCRWIDTH 512
 #define SCRHEIGHT 512
 #define MAX_RECURSION_DEPTH 5
+#define FLOATS_PER_TRIANGLE 33
+
+#define T_V0X 0
+#define T_V0Y 1
+#define T_V0Z 2
+#define T_V1X 3
+#define T_V1Y 4
+#define T_V1Z 5
+#define T_V2X 6
+#define T_V2Y 7
+#define T_V2Z 8
+#define T_COLORR 9
+#define T_COLORG 10
+#define T_COLORB 11
+#define T_SPECULARITY 12
+#define T_REFRACTION 13
+#define T_E0X 14
+#define T_E0Y 15
+#define T_E0Z 16
+#define T_E1X 17
+#define T_E1Y 18
+#define T_E1Z 19
+#define T_E2X 20
+#define T_E2Y 21
+#define T_E2Z 22
+#define T_NX 23
+#define T_NY 24
+#define T_NZ 25
+#define T_D 26
+#define T_AABBMINX 27
+#define T_AABBMAXX 28
+#define T_AABBMINY 29
+#define T_AABBMAXY 30
+#define T_AABBMINZ 31
+#define T_AABBMAXZ 32
 
 #define INVPI					0.31830988618379067153776752674502872406891929148091289749533468811779359526845307018022760553250617191f
 #define INV2PI					0.15915494309189533576888376337251436203445964574045644874766734405889679763422653509011380276625308595f
@@ -79,9 +114,9 @@ using namespace Tmpl8;
 // Own headers
 #include "Structs.h"
 #include "Geometry.h"
-#include "Sphere.h"
-#include "Plane.h"
-#include "Triangle.h"
+//#include "Sphere.h"
+//#include "Plane.h"
+//#include "Triangle.h"
 #include "Camera.h"
 #include "BVH.h"
 

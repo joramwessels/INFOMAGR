@@ -25,8 +25,9 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_ANIMATION);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 	
+	/*
 	//GPU TEST STUFF START
 	float *x;
 	float *xgpu;
@@ -52,11 +53,11 @@ void Game::Init()
 		printf("x[%i]: %f \n", i, x[i]);
 	}
 	//GPU TEST STUFF END
-
+	*/
 
 	SSAA = false;
 	camera.DoF = false;
-	use_bvh = true;
+	use_bvh = false;
 	bvhdebug = false;
 
 	mytimer.reset();
@@ -87,9 +88,6 @@ float random8 = RandomFloat();
 void Game::Tick( float deltaTime )
 {
 	frames++;
-
-
-
 
 	//Shoot a ray for every pixel
 #pragma omp parallel for
@@ -221,7 +219,8 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 		//Loop over all primitives to find the closest collision
 		for (int i = 0; i < numGeometries; i++)
 		{
-			Collision collision = geometry[i]->Intersect(*ray);
+			//Collision collision = geometry[i]->Intersect(*ray);
+			Collision collision = intersectTriangle(i, *ray, triangles);
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
 			{
@@ -251,10 +250,10 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 	if ( collision.t > 0 )
 	{
 		//The ray collides.
-		if (collision.other->material.refractionIndex == 0.0f) {
+		if (collision.other[T_REFRACTION] == 0.0f) {
 			// Non-transparant objects
 			Color albedo, reflection;
-			int specularity = collision.other->material.specularity;
+			int specularity = collision.other[T_SPECULARITY];
 			if ( specularity < 256 )
 			{
 				// Diffuse aspect
@@ -275,7 +274,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			// Transparant objects
 			float n1, n2;
 			if ( ray.InObject ) n1 = ray.mediumRefractionIndex, n2 = 1.0f;
-			else				n1 = ray.mediumRefractionIndex, n2 = collision.other->material.refractionIndex;
+			else				n1 = ray.mediumRefractionIndex, n2 = collision.other[T_REFRACTION];
 			float transition = n1 / n2;
 			float costheta = dot( collision.N, -ray.Direction );
 			float k = 1 - ( transition * transition ) * ( 1.0f - ( costheta * costheta ) );
@@ -315,7 +314,7 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 
 				refractedray.Origin = collision.Pos + 0.00001f * refractedray.Direction;
 				refractedray.InObject = !ray.InObject;
-				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other->material.refractionIndex ); // Exiting an object defaults material to air
+				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other[T_REFRACTION] ); // Exiting an object defaults material to air
 				refraction = TraceRay( refractedray, recursiondepth + 1 );
 
 				// Beer's law
@@ -388,7 +387,8 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 				for (int i = 0; i < numGeometries; i++)
 				{
 					//Check if position is reachable by lightsource
-					Collision scattercollision = geometry[i]->Intersect(shadowray, true);
+					//Collision scattercollision = geometry[i]->Intersect(shadowray, true);
+					Collision scattercollision = intersectTriangle(i, shadowray,triangles, true);
 					if (scattercollision.t != -1 && scattercollision.t < maxt)
 					{
 						//Collision, so this ray does not reach the light source
@@ -432,134 +432,16 @@ vec3 Tmpl8::Game::reflect( vec3 D, vec3 N )
 
 void Tmpl8::Game::loadscene(SCENES scene)
 {
-	geometry = new Geometry*[5000];
+	triangles = new float[5000 * FLOATS_PER_TRIANGLE];
 
 	switch (scene)
 	{
-	case SCENE_SIMPLE:
-	{
-		//Set up the scene
-		numGeometries = 9;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
-		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[3] = new Sphere( vec3( 0, 1.1, 8 ), 1, Material( 0.0f, 0.0f, Material::TEXTURE, new Surface( "assets\\earthmap1k.jpg" ) ) );
-		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
-		geometry[5] = new Sphere( vec3( 2.1, 1.5, 8 ), 1, Material( 0.3f, 0.0f, 0xffffff ) );
-		geometry[6] = new Sphere( vec3( 4.2, 0, 8 ), 1, Material( 0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xffffff ) );
-
-		geometry[7] = new Sphere( vec3( 4.2, 0, 0 ), 1, Material( 0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xff0000 ) );
-		geometry[8] = new Sphere( vec3( 3, 0, -8 ), 1, Material( 0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0x00ff00 ) );
-		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
-		
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
-		
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
-		
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-
-		break;
-	}
-	case SCENE_LIGHTING_AMBIENT:
-	{
-		//Set up the scene
-		numGeometries = 9;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
-		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
-		geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(0.3f, 0.0f, 0xffffff));
-		geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xffffff));
-
-		geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xff0000));
-		geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0x00ff00));
-		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-		numLights = 1;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color;
-		lights[0].type = Light::AMBIENT;
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-
-		generateBVH();
-		break;
-	}
-	case SCENE_LIGHTING_SPOT:
-	{
-		//Set up the scene
-		numGeometries = 9;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
-		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
-		geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(0.3f, 0.0f, 0xffffff));
-		geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xffffff));
-
-		geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xff0000));
-		geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0x00ff00));
-		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-		numLights = 1;
-		lights = new Light[numLights];
-		lights[0].position = { 0, -2, -7 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 7000;
-		lights[0].type = Light::SPOT;
-		lights[0].direction = vec3(0, 0.5f, 1).normalized();
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-
-		generateBVH();
-		break;
-	}
 	case SCENE_OBJ_GLASS:
 	{
 		camera.rotate({ -20, 180, 0 });
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		numGeometries = 1;
+		numGeometries = 0;
 		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 }, Material(0.0f, 1.52f, 0xffffff));
 
 		numLights = 3;
@@ -583,12 +465,42 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		generateBVH();
 		break;
 	}
+	case SCENE_TRIANGLETEST:
+	{
+		camera.rotate({ -20, 180, 0 });
+		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+
+		numGeometries = 0;
+		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(0.0f, 1.52f, 0xffffff));
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -5, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+		skybox = new Skybox("assets\\skybox4.jpg");
+		generateBVH();
+		break;
+	}
+
 	case SCENE_OBJ_HALFREFLECT:
 	{
 		//camera.rotate({ -40, 0, 0 });
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
+		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		numGeometries = 1;
+		numGeometries = 0;
 		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 }, Material(0.5f, 0.0f, 0xffff00));
 
 		numLights = 3;
@@ -613,141 +525,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		generateBVH();
 		break;
 	}
-	case SCENE_LIGHTING_DIRECTIONAL:
-	{
-		//Set up the scene
-		numGeometries = 9;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 1.52f, 0xffffff));
-		geometry[2] = new Sphere(vec3(-2.1, 0.5, 8), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[3] = new Sphere(vec3(0, 1.1, 8), 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-		geometry[4] = new Sphere(vec3(0, -1.5, 12), 1, Material(1.0f, 0.0f, 0xffffff));
-		geometry[5] = new Sphere(vec3(2.1, 1.5, 8), 1, Material(0.3f, 0.0f, 0xffffff));
-		geometry[6] = new Sphere(vec3(4.2, 0, 8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xffffff));
-
-		geometry[7] = new Sphere(vec3(4.2, 0, 0), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0xff0000));
-		geometry[8] = new Sphere(vec3(3, 0, -8), 1, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0x000000, 0x00ff00));
-		//geometry[9] = new Sphere(vec3(-4.2, 0, 0), 1, Material(Material::DIFFUSE, Material::CHECKERBOARD, 0x000000, 0x0000ff));
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-
-		//geometry[10] = new Triangle({ -3, -1.4, 0 }, { -1, -1.4, -1 }, { -0.5, -1.4, 1 }, Material(Material::DIFFUSE, 0xff1111));
-
-		numLights = 1;
-		lights = new Light[numLights];
-		lights[0].color = 0x888888;
-		//lights[0].color = 0xff1111;
-		lights[0].type = Light::DIRECTIONAL;
-		lights[0].direction = vec3(-1, -0.5f, -1).normalized();
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-
-		generateBVH();
-		break;
-	}
-	case SCENE_PERFORMANCE:
-	{
-		//Set up the scene
-		numGeometries = 3;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(0.0f, 0.0f, Material::CHECKERBOARD, 0xff0000, 0xffff00));
-
-		geometry[1] = new Sphere(vec3(-4.2, 0, 8), 1, Material(0.0f, 0.95f, 0xffffff));
-		geometry[2] = new Sphere(vec3(-2.1, 0.5, 12), 1, Material(0.3f, 0.0f, 0xffffff));
-
-		numLights = 2;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 0 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
-
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0x333333;
-		lights[1].type = Light::AMBIENT;
-		//lights[1].color = 0x1111ff;
-		//lights[1].color = lights[1].color * 700;
-
-
-		skybox = new Skybox(0x58caeb);
-		camera.move({ -4.0f, 0.3f, 3.0f });
-		camera.rotate({ 0, 0.001f, 0 }); //Otherwise very very ugly aliasing because of the checkerboard. Now only very ugly aliasing.
-
-		generateBVH();
-		break;
-	}
-	case SCENE_BEERS_LAW:
-	{
-		//Set up the scene
-		numGeometries = 4;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		geometry[1] = new Sphere(vec3(-3, 1, 8), 0.25, Material(0.0f, 1.52f, 0xffaaaa));
-		geometry[2] = new Sphere(vec3(-1, 0.5, 8), 1, Material(0.0f, 1.52f, 0xffaaaa));
-		geometry[3] = new Sphere(vec3(3, -1.5, 8), 3, Material(0.0f, 1.52f, 0xffaaaa));
-
-		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
-
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
-
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-
-		generateBVH();
-		break;
-	}
-	case SCENE_TEST_BVH:
-	{
-		//Set up the scene
-		numGeometries = 6;
-		geometry[0] = new Sphere(vec3(-7, 0, 10), 1, Material(0.0f, 0.0f, 0xffff0f));
-		geometry[1] = new Sphere(vec3(-4, 0, 10), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[2] = new Sphere(vec3(-1, 0, 10), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[3] = new Sphere(vec3(2, 0, 10), 1, Material(0.0f, 0.0f, 0xff000f));
-		geometry[4] = new Sphere(vec3(5, 0, 10), 1, Material(0.0f, 0.0f, 0xff000f));	
-		geometry[5] = new Sphere(vec3(8, 0, 10), 1, Material(0.0f, 0.0f, 0xffff0f));
-
-		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
-
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
-
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-		break;
-	}
-	case SCENE_STRESSTEST:
+	/*case SCENE_STRESSTEST:
 	{
 		delete geometry;
 		geometry = new Geometry*[900002];
@@ -792,87 +570,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();
 		break;
-	}
-	case SCENE_ANIMATION:
-	{
-		//Set up the scene
-		//STATIC OBJECTS
-
-		numGeometries = 2;
-
-		//geometry = new Geometry*[6];
-		geometry[0] = new Plane(vec3(0, 1, 0), -2.0f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-		geometry[1] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\2k_mars.jpg")));
-
-		numLights = 1;
-		lights = new Light[numLights];
-		lights[0].position = { 0, -2.5, 5 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 300;
-
-		/*lights[0].position = { 0, 0, 4 };
-		lights[0].color = 0xffffff;
-		//light0[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 100;*/
-
-		/*
-		lights[1].position = { 2, 0, 0 };
-		lights[1].type = Light::SPOT;
-		lights[1].direction = (vec3(0, 0, 7) - vec3(2, 0, 0)).normalized();
-		lights[1].color = 0xffffff;
-		lights[1].color = lights[1].color * 10;*/
-		/*
-		lights[2].position = { 3, -2, 7 };
-		lights[2].color = 0xffffff;
-		lights[2].color = lights[0].color * 10;*/
-
-
-		skybox = new Skybox("assets\\skydome_stars2.jpg");
-
-		//MOVING OBJECTS
-
-		//EARTH
-		Geometry** earth;
-		earth = new Geometry*[1];
-		earth[0] = new Sphere({ 0, 0, 7 }, 1, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\earthmap1k.jpg")));
-
-
-		//MOON
-		Geometry** moon;
-		moon = new Geometry*[1];
-		moon[0] = new Sphere({ 0, 0, 7 }, 0.3, Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\2k_mercury.jpg")));
-
-
-
-		//BVH CREATION
-		BVH* earthbvh = new BVH;
-		earthbvh->Build(earth, 1);
-
-		BVH* moonbvh = new BVH;
-		moonbvh->Build(moon, 1);
-
-		ParentBVH* earthmoonbvh = new ParentBVH;
-		earthmoonbvh->join2BVHs(earthbvh, moonbvh);
-		earthmoonbvh->translateRight = true;
-
-		BVH* staticscenebvh = new BVH;
-
-		printf("Starting BVH generation... \n");
-		mytimer.reset();
-		staticscenebvh->Build(geometry, numGeometries);
-		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), staticscenebvh->depth);
-
-		bvh = new ParentBVH;
-		((ParentBVH*)bvh)->join2BVHs(staticscenebvh, earthmoonbvh);
-
-		((ParentBVH*)bvh)->doTranslateRight = true;
-		((ParentBVH*)bvh)->translateRight = { 0, 0, 4 };
-
-
-		animate = true;
-
-	}
+	}*/
 	default:
 		break;
 	}
@@ -911,7 +609,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) { //Only do 12 triangles for now
 			int fv = shapes[s].mesh.num_face_vertices[f];
-
+			
 			vec3 vertices[3];
 			//vec3 normals[3];
 
@@ -940,7 +638,35 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
 				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
 			}
-			geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, material);
+			//geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, material);
+
+			//The first float belonging to this triangle
+			int baseindex = startpos * FLOATS_PER_TRIANGLE;
+
+			//Vertex positions
+			triangles[baseindex + T_V0X] = vertices[0].x + translate.x; //v0.x
+			triangles[baseindex + T_V0Y] = vertices[0].y + translate.y; //v0.y
+			triangles[baseindex + T_V0Z] = vertices[0].z + translate.z; //v0.z
+			triangles[baseindex + T_V1X] = vertices[1].x + translate.x; //v1.x
+			triangles[baseindex + T_V1Y] = vertices[1].y + translate.y; //v1.y
+			triangles[baseindex + T_V1Z] = vertices[1].z + translate.z; //v1.z
+			triangles[baseindex + T_V2X] = vertices[2].x + translate.x; //v2.x
+			triangles[baseindex + T_V2Y] = vertices[2].y + translate.y; //v2.y
+			triangles[baseindex + T_V2Z] = vertices[2].z + translate.z; //v2.z
+
+			//TODO: Completely remove material class?
+			//Color
+			triangles[baseindex + T_COLORR] = material.color.R; //R
+			triangles[baseindex + T_COLORG] = material.color.G; //G
+			triangles[baseindex + T_COLORB] = material.color.B; //B
+			
+			//Material properties
+			triangles[baseindex + T_SPECULARITY] = material.specularity; //Specularity
+			triangles[baseindex + T_REFRACTION] = material.refractionIndex; //Refractionindex
+
+			//Calculate the edges, normal and D
+			initializeTriangle(startpos, triangles);
+
 			startpos++;
 			numGeometries++;
 
@@ -951,4 +677,113 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 		}
 	}
 	printf("Loadobj done. \n\n");
+}
+
+//Calculates the edges, normal, D and aabb for a triangle
+void Tmpl8::Game::initializeTriangle(int i, float * triangles)
+{
+	int baseindex = i * FLOATS_PER_TRIANGLE;
+
+	vec3 v0 = { triangles[baseindex + T_V0X],triangles[baseindex + T_V0Y],triangles[baseindex + T_V0Z] };
+	vec3 v1 = { triangles[baseindex + T_V1X],triangles[baseindex + T_V1Y],triangles[baseindex + T_V1Z] };
+	vec3 v2 = { triangles[baseindex + T_V2X],triangles[baseindex + T_V2Y],triangles[baseindex + T_V2Z] };
+
+	vec3 e0 = v1 - v0;
+	vec3 e1 = v2 - v1;
+	vec3 e2 = v0 - v2;
+
+	vec3 N = cross(e0, e1);
+	N.normalize();
+
+	float D = -dot(N, v0);
+
+	triangles[baseindex + T_E0X] = e0.x;
+	triangles[baseindex + T_E0Y] = e0.y;
+	triangles[baseindex + T_E0Z] = e0.z;
+	triangles[baseindex + T_E1X] = e1.x;
+	triangles[baseindex + T_E1Y] = e1.y;
+	triangles[baseindex + T_E1Z] = e1.z;
+	triangles[baseindex + T_E2X] = e2.x;
+	triangles[baseindex + T_E2Y] = e2.y;
+	triangles[baseindex + T_E2Z] = e2.z;
+	triangles[baseindex + T_NX] = N.x;
+	triangles[baseindex + T_NY] = N.y;
+	triangles[baseindex + T_NZ] = N.z;
+	triangles[baseindex + T_D] = D;
+
+	//AABB
+	triangles[baseindex + T_AABBMINX] = (v0.x <= v1.x && v0.x <= v2.x ? v0.x : (v1.x <= v0.x && v1.x <= v2.x ? v1.x : v2.x));
+	triangles[baseindex + T_AABBMAXX] = (v0.x >= v1.x && v0.x >= v2.x ? v0.x : (v1.x >= v0.x && v1.x >= v2.x ? v1.x : v2.x));
+	triangles[baseindex + T_AABBMINY] = (v0.y <= v1.y && v0.y <= v2.y ? v0.y : (v1.y <= v0.y && v1.y <= v2.y ? v1.y : v2.y));
+	triangles[baseindex + T_AABBMAXY] = (v0.y >= v1.y && v0.y >= v2.y ? v0.y : (v1.y >= v0.y && v1.y >= v2.y ? v1.y : v2.y));
+	triangles[baseindex + T_AABBMINZ] = (v0.z <= v1.z && v0.z <= v2.z ? v0.z : (v1.z <= v0.z && v1.z <= v2.z ? v1.z : v2.z));
+	triangles[baseindex + T_AABBMAXZ] = (v0.z >= v1.z && v0.z >= v2.z ? v0.z : (v1.z >= v0.z && v1.z >= v2.z ? v1.z : v2.z));
+}
+
+Collision Tmpl8::Game::intersectTriangle(int i, Ray ray, float * triangles, bool isShadowRay)
+{
+	int baseindex = i * FLOATS_PER_TRIANGLE;
+
+	vec3 v0 = { 
+		triangles[baseindex + T_V0X],
+		triangles[baseindex + T_V0Y],
+		triangles[baseindex + T_V0Z] };
+	vec3 v1 = { 
+		triangles[baseindex + T_V1X],
+		triangles[baseindex + T_V1Y],
+		triangles[baseindex + T_V1Z] };
+	vec3 v2 = { 
+		triangles[baseindex + T_V2X],
+		triangles[baseindex + T_V2Y],
+		triangles[baseindex + T_V2Z] };
+	vec3 e0 = { 
+		triangles[baseindex + T_E0X],
+		triangles[baseindex + T_E0Y],
+		triangles[baseindex + T_E0Z] };
+	vec3 e1 = { 
+		triangles[baseindex + T_E1X],
+		triangles[baseindex + T_E1Y],
+		triangles[baseindex + T_E1Z] };
+	vec3 e2 = { 
+		triangles[baseindex + T_E2X],
+		triangles[baseindex + T_E2Y],
+		triangles[baseindex + T_E2Z] };
+	vec3 N = { triangles[baseindex + T_NX],
+		triangles[baseindex + T_NY],
+		triangles[baseindex + T_NZ] };
+
+	float D = triangles[baseindex + T_D];
+
+
+	Collision collision;
+	collision.t = -1;
+	float NdotR = dot(ray.Direction, N);
+	if (NdotR == 0) return collision; //Ray parrallel to plane, would cause division by 0
+
+	float t = -(dot(ray.Origin, N) + D) / (NdotR);
+
+	//From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
+	if (t > 0)
+	{
+		vec3 P = ray.Origin + t * ray.Direction;
+		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
+		{
+			//Collision
+			collision.t = t;
+
+			if (isShadowRay) {
+				return collision;
+			}
+
+			collision.colorAt.R = triangles[baseindex + T_COLORR];
+			collision.colorAt.G = triangles[baseindex + T_COLORG];
+			collision.colorAt.B = triangles[baseindex + T_COLORB];
+			collision.other = triangles + baseindex;
+			if (NdotR > 0) collision.N = -N;
+			else collision.N = N;
+			collision.Pos = P;
+			return collision;
+		}
+	}
+	return collision;
 }

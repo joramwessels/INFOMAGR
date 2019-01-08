@@ -142,7 +142,7 @@ struct Ray
 
 struct Collision
 {
-	Geometry *other;
+	float *other;
 	vec3 N;
 	vec3 Pos;
 	float t;

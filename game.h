@@ -104,11 +104,8 @@ private:
 	Collision nearestCollision(Ray* ray);
 
 	Color TraceRay(Ray ray, int recursionDepth = 0);
-	Sphere* sphere;
-	Plane* plane;
-
 	int numGeometries = 0;
-	Geometry** geometry;
+	float* triangles;
 
 	Color DirectIllumination(Collision collision);
 
@@ -125,17 +122,10 @@ private:
 	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false, keyComma = false, keyPeriod = false;
 	
 	enum SCENES {
-		SCENE_SIMPLE,
 		SCENE_OBJ_GLASS,
 		SCENE_OBJ_HALFREFLECT,
-		SCENE_LIGHTING_AMBIENT,
-		SCENE_LIGHTING_SPOT,
-		SCENE_LIGHTING_DIRECTIONAL,
-		SCENE_PERFORMANCE,
-		SCENE_BEERS_LAW,
-		SCENE_TEST_BVH,
 		SCENE_STRESSTEST,
-		SCENE_ANIMATION
+		SCENE_TRIANGLETEST
 	};
 
 
@@ -161,9 +151,12 @@ private:
 		bvh = new BVH;
 		printf("Starting BVH generation... \n");
 		mytimer.reset();
-		bvh->Build(geometry, numGeometries);
+		//bvh->Build(geometry, numGeometries);
 		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh->depth);
 	}
+
+	void initializeTriangle(int i, float* triangles);
+	Collision intersectTriangle(int i, Ray ray, float* triangles, bool isShadowRay = false);
 
 	//Animation
 	bool animate = false;
