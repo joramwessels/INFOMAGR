@@ -137,6 +137,7 @@ struct Ray
 	bool InObject = false;
 	float mediumRefractionIndex = 1.0f;
 	int bvhtraversals = 0;
+	float recursiondepth;
 
 	float pixelx;
 	float pixely;

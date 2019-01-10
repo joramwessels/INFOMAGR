@@ -103,7 +103,7 @@ private:
 
 	Collision nearestCollision(Ray* ray);
 
-	Color TraceRay(Ray ray, int recursionDepth = 0);
+	void TraceRay(Ray ray);
 	int numGeometries = 0;
 	float* triangles;
 
@@ -156,6 +156,8 @@ private:
 	}
 
 	void initializeTriangle(int i, float* triangles);
+
+	Color intermediate[SCRWIDTH][SCRHEIGHT];
 
 	//Animation
 	bool animate = false;

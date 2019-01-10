@@ -234,17 +234,21 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 }
 
 //Trace the ray.
-Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
+void Tmpl8::Game::TraceRay( Ray ray )
 {
-	if ( recursiondepth > MAX_RECURSION_DEPTH )
+	if ( ray.recursiondepth > MAX_RECURSION_DEPTH )
 	{
-		return 0x000000;
+		//return 0x000000;
+		return;
 	}
 
-	Color color; 
 
 	Collision collision = nearestCollision( &ray );
-	if (bvhdebug) return (Color(255, 0, 0) * ray.bvhtraversals) << 3;
+	if (bvhdebug) {
+		intermediate[(int)ray.pixelx][(int)ray.pixely] += (Color(255, 0, 0) * ray.bvhtraversals) << 3; //Save this rays results to the intermediate 
+		//return (Color(255, 0, 0) * ray.bvhtraversals) << 3; }
+		return;
+	}
 
 	//check if the ray collides
 	if ( collision.t > 0 )
@@ -258,6 +262,10 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 			{
 				// Diffuse aspect
 				albedo = collision.colorAt * DirectIllumination(collision);
+				//screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
+				//screen->GetBuffer()[(int)ray.pixelx + (int)ray.pixely * SCRWIDTH]
+				intermediate[(int)ray.pixelx][(int)ray.pixely] += albedo * ray.energy; //Save this rays results to the intermediate result.
+				//TODO: write albedo * (1 - ray.energy) to screen
 			}
 			if ( specularity > 0 )
 			{
@@ -265,10 +273,18 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				Ray reflectedray;
 				reflectedray.Direction = reflect( ray.Direction, collision.N );
 				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
-				reflection = TraceRay( reflectedray, recursiondepth + 1 );
+				reflectedray.recursiondepth = ray.recursiondepth + 1;
+				reflectedray.energy = specularity * ray.energy;
+				reflectedray.pixelx = ray.pixelx;
+				reflectedray.pixely = ray.pixely;
+				rays[num_rays++] = reflectedray;
+				//addRayToBeTraced(reflectedray);
+				return;
+				//reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
-			printf("spec: %f \n", specularity);
-			return ( albedo * ( 1 - specularity ) + reflection * specularity ); 
+			//printf("spec: %f \n", specularity);
+			//return ( albedo * ( 1 - specularity ) + reflection * specularity ); 
+			return;
 		}
 		else
 		{
@@ -304,7 +320,12 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				reflectedray.Direction = reflect( ray.Direction, collision.N );
 				//reflectedray.Origin = collision.Pos + 0.00001f * -collision.N;
 				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
-				reflection = TraceRay( reflectedray, recursiondepth + 1 );
+				reflectedray.pixelx = ray.pixelx;
+				reflectedray.pixely = ray.pixely;
+				reflectedray.energy = ray.energy * Fr;
+				//addRayToBeTraced(reflectedray);
+				rays[num_rays++] = reflectedray;
+				//reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
 
 			// Snell refraction
@@ -316,8 +337,15 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				refractedray.Origin = collision.Pos + 0.00001f * refractedray.Direction;
 				refractedray.InObject = !ray.InObject;
 				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other[T_REFRACTION] ); // Exiting an object defaults material to air
-				refraction = TraceRay( refractedray, recursiondepth + 1 );
+				refractedray.pixelx = ray.pixelx;
+				refractedray.pixely = ray.pixely;
+				refractedray.energy = ray.energy * (1 - Fr);
+				//addRayToBeTraced(refractedray);
+				rays[num_rays++] = refractedray;
 
+				//refraction = TraceRay( refractedray, recursiondepth + 1 );
+
+				/*
 				// Beer's law
 				if (ray.mediumRefractionIndex != 1.0f && collision.colorAt.to_uint() != 0xffffff)
 				{
@@ -329,19 +357,23 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 					refraction.G *= exp(-a.y * distance);
 					refraction.B *= exp(-a.z * distance);
 				}
+				*/
 			}
-
-			return ( ( refraction * ( 1 - Fr ) + reflection * Fr ) );
+			return;
+			//return ( ( refraction * ( 1 - Fr ) + reflection * Fr ) );
 		}
 	}
 	else {
 		//There was no collision.
 		//--> skybox.
-		return skybox->ColorAt(ray.Direction) << 8;
+		//return skybox->ColorAt(ray.Direction) << 8;
+		intermediate[(int)ray.pixelx][(int)ray.pixely] += (skybox->ColorAt(ray.Direction) << 8) * ray.energy; //Save this rays results to the intermediate result.
+		return;
 	}
 
 	//Ray out of scene
-	return color;
+	//TODO
+	return;
 }
 
 //Cast a ray from the collision point towards the light, to check if light can reach the point
