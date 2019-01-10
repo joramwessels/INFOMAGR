@@ -138,6 +138,10 @@ struct Ray
 	float mediumRefractionIndex = 1.0f;
 	int bvhtraversals = 0;
 
+	float pixelx;
+	float pixely;
+	float energy; // 0 - 1
+
 };
 
 struct Collision
