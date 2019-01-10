@@ -133,7 +133,6 @@ struct Ray
 {
 	vec3 Origin = {0, 0, 0};
 	vec3 Direction;
-	vec3 invDirection;
 
 	bool InObject = false;
 	float mediumRefractionIndex = 1.0f;
