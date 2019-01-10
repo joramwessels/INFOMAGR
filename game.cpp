@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_OBJ_GLASS);
 	
 	/*
 	//GPU TEST STUFF START
@@ -62,7 +62,7 @@ void Game::Init()
 
 	//TODO: put this in header
 	int variablesInRayClass = 13;
-	int rayArraySize = 3 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
+	int rayArraySize = 100 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
 
 	delete rays;
 	rays = new Ray[rayArraySize / variablesInRayClass];
@@ -390,6 +390,7 @@ void Tmpl8::Game::TraceRay( Ray ray )
 				reflectedray.pixelx = ray.pixelx;
 				reflectedray.pixely = ray.pixely;
 				reflectedray.energy = ray.energy * Fr;
+				reflectedray.recursiondepth = ray.recursiondepth + 1;
 				//addRayToBeTraced(reflectedray);
 				rays[num_rays++] = reflectedray;
 				//reflection = TraceRay( reflectedray, recursiondepth + 1 );
@@ -406,6 +407,7 @@ void Tmpl8::Game::TraceRay( Ray ray )
 				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other[T_REFRACTION] ); // Exiting an object defaults material to air
 				refractedray.pixelx = ray.pixelx;
 				refractedray.pixely = ray.pixely;
+				refractedray.recursiondepth = ray.recursiondepth + 1;
 				refractedray.energy = ray.energy * (1 - Fr);
 				//addRayToBeTraced(refractedray);
 				rays[num_rays++] = refractedray;
