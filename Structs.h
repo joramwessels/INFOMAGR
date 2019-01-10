@@ -79,7 +79,7 @@ struct Material
 		TEXTURE
 	};
 
-	int specularity = 0; //Range 0...256
+	float specularity = 0; //Range 0...1
 	float refractionIndex = 0.0f;
 	TEXTURETYPE texturetype = COLOR;
 	Color color;  //Should be in range 0...255, to avoid problems with mirrors
@@ -89,7 +89,7 @@ struct Material
 
 	Material()
 	{
-		specularity = 256;
+		specularity = 1.0f;
 		refractionIndex = 0.0f;
 		color.from_uint( 0xffffff );
 	}
@@ -97,7 +97,7 @@ struct Material
 	Material(float specularity, float refractionIndex, Color color)
 	{
 		this->texturetype = COLOR;
-		this->specularity = specularity * 256;
+		this->specularity = specularity;
 		this->refractionIndex = refractionIndex;
 		this->color = color;
 	}
@@ -105,7 +105,7 @@ struct Material
 	Material( float specularity, float refractionIndex, uint color )
 	{
 		this->texturetype = COLOR;
-		this->specularity = specularity * 256;
+		this->specularity = specularity;
 		this->refractionIndex = refractionIndex;
 		this->color = color;
 
@@ -114,7 +114,7 @@ struct Material
 	Material( float specularity, float refractionIndex, TEXTURETYPE texturetype, uint color1, uint color2 )
 	{
 		this->texturetype = texturetype;
-		this->specularity = specularity * 256;
+		this->specularity = specularity;
 		this->refractionIndex = refractionIndex;
 		this->color = color1;
 		this->color2 = color2;
@@ -123,7 +123,7 @@ struct Material
 	Material( float specularity, float refractionIndex, TEXTURETYPE texturetype, Surface *texture )
 	{
 		this->texturetype = texturetype;
-		this->specularity = specularity * 256;
+		this->specularity = specularity;
 		this->refractionIndex = refractionIndex;
 		this->texture = texture;
 	}
@@ -133,11 +133,14 @@ struct Ray
 {
 	vec3 Origin = {0, 0, 0};
 	vec3 Direction;
-	vec3 invDirection;
 
 	bool InObject = false;
 	float mediumRefractionIndex = 1.0f;
 	int bvhtraversals = 0;
+
+	float pixelx;
+	float pixely;
+	float energy; // 0 - 1
 
 };
 

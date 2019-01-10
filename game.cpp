@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_STRESSTEST);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 	
 	/*
 	//GPU TEST STUFF START
@@ -256,8 +256,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 		if (collision.other[T_REFRACTION] == 0.0f) {
 			// Non-transparant objects
 			Color albedo, reflection;
-			int specularity = collision.other[T_SPECULARITY];
-			if ( specularity < 256 )
+			float specularity = collision.other[T_SPECULARITY];
+			if ( specularity < 1.0f )
 			{
 				// Diffuse aspect
 				albedo = collision.colorAt * DirectIllumination(collision);
@@ -270,7 +270,8 @@ Color Tmpl8::Game::TraceRay( Ray ray, int recursiondepth )
 				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
 				reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
-			return ( albedo * ( 256 - specularity ) + reflection * specularity ) >> 8; //Fixed point-math
+			printf("spec: %f \n", specularity);
+			return ( albedo * ( 1 - specularity ) + reflection * specularity ); 
 		}
 		else
 		{
