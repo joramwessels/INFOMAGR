@@ -161,7 +161,7 @@ private:
 
 	void initializeTriangle(int i, float* triangles);
 
-	Color intermediate[SCRWIDTH][SCRHEIGHT];
+	Color intermediate[SCRWIDTH * SCRHEIGHT];
 
 	//Animation
 	bool animate = false;

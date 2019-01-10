@@ -60,6 +60,14 @@ void Game::Init()
 	use_bvh = true;
 	bvhdebug = false;
 
+	//TODO: put this in header
+	int variablesInRayClass = 13;
+	int rayArraySize = 3 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
+
+	delete rays;
+	rays = new Ray[rayArraySize / variablesInRayClass];
+
+
 	mytimer.reset();
 }
 
@@ -89,13 +97,12 @@ void Game::Tick( float deltaTime )
 {
 	frames++;
 
-//#pragma omp parallel for
 
 	// Generate initial rays
 	int variablesInRayClass = 13;
 	int rayArraySize = 3 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
 	//rays = new float[rayArraySize];
-	rays = new Ray[rayArraySize / variablesInRayClass];
+//#pragma omp parallel for
 	for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
 	{
 		for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
@@ -152,16 +159,32 @@ void Game::Tick( float deltaTime )
 	}
 
 	// Tracing queued rays
+//#pragma omp parallel for
+
 	for (int i = 0; i < num_rays; i ++)
 	{
 		//float *ray_ptr = rays + i * variablesInClass * sizeof(Ray);
 		//pisitionInRaysArray += variablesInClass;
 		Ray *ray_ptr = rays + i * sizeof(Ray);
 		positionInRaysArray++;
-		TraceRay(rays[i++]);
+		TraceRay(rays[i]);
 
 	}
 
+	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++)
+	{
+		for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
+		{
+			screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
+		}
+	}
+
+	//delete rays;
+	//rays = new Ray[rayArraySize / variablesInRayClass];
+	num_rays = 0;
+	positionInRaysArray = 0;
+
+	memset(intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
 
 	//screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
 
@@ -289,7 +312,7 @@ void Tmpl8::Game::TraceRay( Ray ray )
 
 	Collision collision = nearestCollision( &ray );
 	if (bvhdebug) {
-		intermediate[(int)ray.pixelx][(int)ray.pixely] += (Color(255, 0, 0) * ray.bvhtraversals) << 3; //Save this rays results to the intermediate 
+		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (Color(255, 0, 0) * ray.bvhtraversals) << 3; //Save this rays results to the intermediate 
 		//return (Color(255, 0, 0) * ray.bvhtraversals) << 3; }
 		return;
 	}
@@ -308,7 +331,7 @@ void Tmpl8::Game::TraceRay( Ray ray )
 				albedo = collision.colorAt * DirectIllumination(collision);
 				//screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
 				//screen->GetBuffer()[(int)ray.pixelx + (int)ray.pixely * SCRWIDTH]
-				intermediate[(int)ray.pixelx][(int)ray.pixely] += albedo * ray.energy; //Save this rays results to the intermediate result.
+				intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += albedo * ray.energy; //Save this rays results to the intermediate result.
 				//TODO: write albedo * (1 - ray.energy) to screen
 			}
 			if ( specularity > 0 )
@@ -411,7 +434,7 @@ void Tmpl8::Game::TraceRay( Ray ray )
 		//There was no collision.
 		//--> skybox.
 		//return skybox->ColorAt(ray.Direction) << 8;
-		intermediate[(int)ray.pixelx][(int)ray.pixely] += (skybox->ColorAt(ray.Direction) << 8) * ray.energy; //Save this rays results to the intermediate result.
+		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (skybox->ColorAt(ray.Direction) << 8) * ray.energy; //Save this rays results to the intermediate result.
 		return;
 	}
 
