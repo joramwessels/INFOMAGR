@@ -10,6 +10,10 @@ public:
 	void Init();
 	void Shutdown();
 	void Tick( float deltaTime );
+	//float *rays;
+	Ray *rays;
+	int num_rays = 0;
+	int positionInRaysArray = 0;
 	void MouseUp( int button ) { /* implement if you want to detect mouse button presses */ }
 	void MouseDown( int button ) { /* implement if you want to detect mouse button presses */ }
 	void MouseMove(int x, int y);

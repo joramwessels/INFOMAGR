@@ -89,8 +89,13 @@ void Game::Tick( float deltaTime )
 {
 	frames++;
 
-	//Shoot a ray for every pixel
-#pragma omp parallel for
+//#pragma omp parallel for
+
+	// Generate initial rays
+	int variablesInRayClass = 13;
+	int rayArraySize = 3 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
+	//rays = new float[rayArraySize];
+	rays = new Ray[rayArraySize / variablesInRayClass];
 	for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
 	{
 		for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
@@ -98,28 +103,67 @@ void Game::Tick( float deltaTime )
 			Color result;
 
 			if (SSAA) {
-				//Generate 4 rays
-				Ray ray = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
-				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
-				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
-				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
 
-				//Average the result
-				result = (TraceRay(ray) + TraceRay(ray2) + TraceRay(ray3) + TraceRay(ray4)) >> 2;
+				//Generate 4 rays
+				Ray ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
+				ray1.energy = 0.25;
+				ray1.pixelx = pixelx;
+				ray1.pixely = pixely;
+				//ray1.addFloatsToArray(rays, num_rays);
+				//num_rays += variablesInRayClass;
+				rays[num_rays++] = ray1;
+
+				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
+				ray2.energy = 0.25;
+				ray2.pixelx = pixelx;
+				ray2.pixely = pixely;
+				//ray2.addFloatsToArray(rays, num_rays);
+				//num_rays += variablesInRayClass;
+				rays[num_rays++] = ray2;
+
+				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
+				ray3.energy = 0.25;
+				ray3.pixelx = pixelx;
+				ray3.pixely = pixely;
+				//ray3.addFloatsToArray(rays, num_rays);
+				//num_rays += variablesInRayClass;
+				rays[num_rays++] = ray3;
+
+				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
+				ray4.energy = 0.25;
+				ray4.pixelx = pixelx;
+				ray4.pixely = pixely;
+				//ray4.addFloatsToArray(rays, num_rays);
+				//num_rays += variablesInRayClass;
+				rays[num_rays++] = ray4;
 			}
 			else {
+
 				//Generate the ray
 				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-
-				//Trace the ray, and plot the result to the screen
-				int hdrscale = 255;
-				result = TraceRay(ray);
+				ray.energy = 1.0f;
+				ray.pixelx = pixelx;
+				ray.pixely = pixely;
+				//ray.addFloatsToArray(rays, num_rays);
+				//num_rays += variablesInRayClass;
+				rays[num_rays++] = ray;
 			}
-			
-			screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
-			
 		}
 	}
+
+	// Tracing queued rays
+	for (int i = 0; i < num_rays; i ++)
+	{
+		//float *ray_ptr = rays + i * variablesInClass * sizeof(Ray);
+		//pisitionInRaysArray += variablesInClass;
+		Ray *ray_ptr = rays + i * sizeof(Ray);
+		positionInRaysArray++;
+		TraceRay(rays[i++]);
+
+	}
+
+
+	//screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
 
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.1f);

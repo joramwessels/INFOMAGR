@@ -137,11 +137,28 @@ struct Ray
 	bool InObject = false;
 	float mediumRefractionIndex = 1.0f;
 	int bvhtraversals = 0;
-	float recursiondepth;
+	float recursiondepth = 0;
+
 
 	float pixelx;
 	float pixely;
 	float energy; // 0 - 1
+
+	void addFloatsToArray(float* array, int index) {
+		array[index + 0] = Origin.x;
+		array[index + 1] = Origin.y;
+		array[index + 2] = Origin.z;
+		array[index + 3] = Direction.x;
+		array[index + 4] = Direction.y;
+		array[index + 5] = Direction.z;
+		array[index + 6] = (float)InObject;
+		array[index + 7] = mediumRefractionIndex;
+		array[index + 8] = bvhtraversals;
+		array[index + 9] = recursiondepth;
+		array[index +10] = pixelx;
+		array[index +11] = pixely;
+		array[index +12] = energy;
+	}
 
 };
 
