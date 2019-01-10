@@ -89,8 +89,11 @@ void Game::Tick( float deltaTime )
 {
 	frames++;
 
-	//Shoot a ray for every pixel
-#pragma omp parallel for
+//#pragma omp parallel for
+
+	// Generate initial rays
+	int variablesInRayClass = 7;
+	rays = new float[3 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass];
 	for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
 	{
 		for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
