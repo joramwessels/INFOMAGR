@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_GLASS);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 	
 	/*
 	//GPU TEST STUFF START
@@ -60,11 +60,6 @@ void Game::Init()
 	use_bvh = true;
 	bvhdebug = false;
 
-	// rays array contains rays as series of 13 consecutive floats, ordered as in the Ray struct
-	delete rays;
-	rays = new float[rayQueueSize];
-
-
 	mytimer.reset();
 }
 
@@ -73,7 +68,7 @@ void Game::Init()
 // -----------------------------------------------------------
 void Game::Shutdown()
 {
-	
+
 }
 
 //Random positions for the SSAA
@@ -102,48 +97,45 @@ void Game::Tick( float deltaTime )
 
 	// Generate initial rays
 //#pragma omp parallel for
-	for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
+	for (int pixely = 0; pixely < SCRHEIGHT; pixely++) for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
 	{
-		for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
-		{
-			Color result;
+		Color result;
 
-			if (SSAA) {
+		if (SSAA) {
 
-				//Generate 4 rays
-				Ray ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
-				ray1.energy = 0.25;
-				ray1.pixelx = pixelx;
-				ray1.pixely = pixely;
-				addRayToQueue(ray1);
+			//Generate 4 rays
+			Ray ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
+			ray1.energy = 0.25;
+			ray1.pixelx = pixelx;
+			ray1.pixely = pixely;
+			addRayToQueue(ray1);
 
-				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
-				ray2.energy = 0.25;
-				ray2.pixelx = pixelx;
-				ray2.pixely = pixely;
-				addRayToQueue(ray2);
+			Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
+			ray2.energy = 0.25;
+			ray2.pixelx = pixelx;
+			ray2.pixely = pixely;
+			addRayToQueue(ray2);
 
-				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
-				ray3.energy = 0.25;
-				ray3.pixelx = pixelx;
-				ray3.pixely = pixely;
-				addRayToQueue(ray3);
+			Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
+			ray3.energy = 0.25;
+			ray3.pixelx = pixelx;
+			ray3.pixely = pixely;
+			addRayToQueue(ray3);
 
-				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
-				ray4.energy = 0.25;
-				ray4.pixelx = pixelx;
-				ray4.pixely = pixely;
-				addRayToQueue(ray4);
-			}
-			else {
+			Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
+			ray4.energy = 0.25;
+			ray4.pixelx = pixelx;
+			ray4.pixely = pixely;
+			addRayToQueue(ray4);
+		}
+		else {
 
-				//Generate the ray
-				Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-				ray.energy = 1.0f;
-				ray.pixelx = pixelx;
-				ray.pixely = pixely;
-				addRayToQueue(ray);
-			}
+			//Generate the ray
+			Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
+			ray.energy = 1.0f;
+			ray.pixelx = pixelx;
+			ray.pixely = pixely;
+			addRayToQueue(ray);
 		}
 	}
 
@@ -156,12 +148,9 @@ void Game::Tick( float deltaTime )
 	}
 
 	// Plotting intermediate screen buffer to screen
-	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++)
+	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++) for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
 	{
-		for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
-		{
-			screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
-		}
+		screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
 	}
 
 	memset(intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
@@ -169,39 +158,30 @@ void Game::Tick( float deltaTime )
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.1f);
 	}
-	
 	if (keyS) {
 		camera.move(camera.getDirection() * -0.1f);
 	}
-
 	if (keyD) {
 		camera.move(camera.getLeft() * 0.1f);
 	}
-
 	if (keyA) {
 		camera.move(camera.getLeft() * -0.1f);
 	}
-	
 	if (keyQ) {
 		camera.move(camera.getUp() * 0.1f);
 	}
-
 	if (keyE) {
 		camera.move(camera.getUp() * -0.1f);
 	}
-
 	if (keyplus) {
 		camera.setZoom(camera.zoom * 1.1);
 	}
-
 	if (keymin) {
 		camera.setZoom(camera.zoom / 1.1);
 	}
-
 	if (keyComma) {
 		camera.setFocalPoint(camera.focalpoint / 1.1);
 	}
-
 	if (keyPeriod) {
 		camera.setFocalPoint(camera.focalpoint * 1.1);
 	}
@@ -232,25 +212,15 @@ void Game::Tick( float deltaTime )
 	screen->Bar(0, 0, 150, 40, 0x000000);
 	char buffer[64];
 	sprintf(buffer, "No. primitives: %i", numGeometries);
-
 	screen->Print(buffer, 1, 2, 0xffffff);
-	
 	sprintf(buffer, "FPS: %i", prevsecframes);
-
 	screen->Print(buffer, 1, 10, 0xffffff);
-
 	sprintf(buffer, "Avg time (ms): %.0f", avgFrameTime);
-
 	screen->Print(buffer, 1, 18, 0xffffff);
-
 	sprintf(buffer, "Rays/pixel: %.1f", raysPerPixel);
-
 	screen->Print(buffer, 1, 26, 0xffffff);
-
 	sprintf(buffer, "Rays/second: %i", raysPerSecond);
-
 	screen->Print(buffer, 1, 34, 0xffffff);
-
 }
 
 void Tmpl8::Game::MouseMove( int x, int y )
@@ -304,7 +274,7 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 	// Collision detection
 	Collision collision = nearestCollision( &ray );
 	if (bvhdebug) {
-		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (Color(255, 0, 0) * ray.bvhtraversals) << 3; //Save this ray's results to the intermediate 
+		addToIntermediate(ray.pixelx, ray.pixely, (Color(255, 0, 0) * ray.bvhtraversals) << 3);
 		return;
 	}
 
@@ -321,27 +291,27 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 			if ( specularity < 1.0f )
 			{
 				albedo = collision.colorAt * DirectIllumination(collision);
-				intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += albedo * ray.energy; //Save this rays results to the intermediate result.
+				addToIntermediate(ray.pixelx, ray.pixely, albedo * ray.energy * (1 - specularity));
 				//TODO: write albedo * (1 - ray.energy) to screen
 			}
 
 			// specular aspect
 			if ( specularity > 0 )
 			{
-				Ray reflectedray;
-				reflectedray.Direction = reflect( ray.Direction, collision.N );
-				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
-				reflectedray.recursiondepth = ray.recursiondepth + 1;
-				reflectedray.energy = specularity * ray.energy;
-				reflectedray.pixelx = ray.pixelx;
-				reflectedray.pixely = ray.pixely;
-				
-				addRayToQueue(reflectedray);
-				return;
+				vec3 direction = reflect(ray.Direction, collision.N);
+
+				addRayToQueue(
+					collision.Pos + 0.00001f * direction, // collision.Pos + 0.00001f * -collision.N
+					direction,
+					ray.InObject,
+					ray.mediumRefractionIndex,
+					0,
+					ray.recursiondepth + 1,
+					ray.pixelx,
+					ray.pixely,
+					ray.energy * specularity
+				);
 			}
-			//printf("spec: %f \n", specularity);
-			//return ( albedo * ( 1 - specularity ) + reflection * specularity );
-			return;
 		}
 		// if transparent
 		else
@@ -359,12 +329,11 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 				// total internal reflection
 				Fr = 1;
 			}
-			else {
-
+			else
+			{
 				float ndiff = n1 - n2;
 				float nsumm = n1 + n2;
 				float temp = ndiff / nsumm;
-
 				float R0 = temp * temp;
 				Fr = R0 + ( 1.0f - R0 ) * powf( 1.0f - costheta, 5.0f );
 			}
@@ -373,35 +342,39 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 			Color reflection, refraction;
 			if ( Fr > 0.0f )
 			{
-				Ray reflectedray;
-				reflectedray.Direction = reflect( ray.Direction, collision.N );
-				//reflectedray.Origin = collision.Pos + 0.00001f * -collision.N;
-				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
-				reflectedray.pixelx = ray.pixelx;
-				reflectedray.pixely = ray.pixely;
-				reflectedray.energy = ray.energy * Fr;
-				reflectedray.recursiondepth = ray.recursiondepth + 1;
-				
-				addRayToQueue(reflectedray);
+				vec3 direction = reflect(ray.Direction, collision.N);
+
+				addRayToQueue(
+					collision.Pos + 0.00001f * direction, // collision.Pos + 0.00001f * -collision.N
+					direction,
+					ray.InObject,
+					ray.mediumRefractionIndex,
+					0,
+					ray.recursiondepth + 1,
+					ray.pixelx,
+					ray.pixely,
+					ray.energy * Fr
+				);
 			}
 
 			// Snell refraction
 			if ( Fr < 1.0f )
 			{
-				Ray refractedray;
-				refractedray.Direction = transition * ray.Direction + collision.N * ( transition * costheta - sqrt( k ) );
+				vec3 direction = transition * ray.Direction + collision.N * (transition * costheta - sqrt(k));
 
-				refractedray.Origin = collision.Pos + 0.00001f * refractedray.Direction;
-				refractedray.InObject = !ray.InObject;
-				refractedray.mediumRefractionIndex = ( ray.InObject ? 1.0f : collision.other[T_REFRACTION] ); // Exiting an object defaults material to air
-				refractedray.pixelx = ray.pixelx;
-				refractedray.pixely = ray.pixely;
-				refractedray.recursiondepth = ray.recursiondepth + 1;
-				refractedray.energy = ray.energy * (1 - Fr);
+				addRayToQueue(
+					collision.Pos + 0.00001f * direction,
+					direction,
+					!ray.InObject,
+					(ray.InObject ? 1.0f : collision.other[T_REFRACTION]),
+					0,
+					ray.recursiondepth + 1,
+					ray.pixelx,
+					ray.pixely,
+					ray.energy * (1 - Fr)
+				);
 
-				addRayToQueue(refractedray);
-
-				/*
+				/* // TODO: Beer's law (and mirror albedo) requires ray.energy to be a Color rather than a float
 				// Beer's law
 				if (ray.mediumRefractionIndex != 1.0f && collision.colorAt.to_uint() != 0xffffff)
 				{
@@ -415,15 +388,12 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 				}
 				*/
 			}
-			return;
-			//return ( ( refraction * ( 1 - Fr ) + reflection * Fr ) );
 		}
 	}
 	// if no collision
 	else
 	{
-		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (skybox->ColorAt(ray.Direction) << 8) * ray.energy; //Save this rays results to the intermediate result.
-		return;
+		addToIntermediate(ray.pixelx, ray.pixely, (skybox->ColorAt(ray.Direction) << 8) * ray.energy);
 	}
 }
 
@@ -780,7 +750,44 @@ void Tmpl8::Game::addRayToQueue(Ray ray)
 		endOfRaysQueue = 0;
 		foldedQueue = true;
 	}
-	ray.addFloatsToArray(rays, endOfRaysQueue * variablesInRay);
+	ray.addFloatsToArray(rayQueue, endOfRaysQueue * variablesInRay);
+	endOfRaysQueue++;
+	raysPerFrame++;
+	no_rays++;
+}
+
+// Adds new ray to the ray queue
+void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy)
+{
+	// checking for folding overflow
+	if (foldedQueue && (endOfRaysQueue + 1) >= positionInRaysQueue)
+	{
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / variablesInRay);
+	}
+
+	// folding to start of array
+	if (endOfRaysQueue > rayQueueSize / variablesInRay)
+	{
+		endOfRaysQueue = 0;
+		foldedQueue = true;
+	}
+
+	// adding ray to array
+	int index = endOfRaysQueue * variablesInRay;
+	rayQueue[index + 0] = (float)ori.x;
+	rayQueue[index + 1] = (float)ori.y;
+	rayQueue[index + 2] = (float)ori.z;
+	rayQueue[index + 3] = (float)dir.x;
+	rayQueue[index + 4] = (float)dir.y;
+	rayQueue[index + 5] = (float)dir.z;
+	rayQueue[index + 6] = (float)inObj;
+	rayQueue[index + 7] = refrInd;
+	rayQueue[index + 8] = (float)bvhTr;
+	rayQueue[index + 9] = depth;
+	rayQueue[index + 10] = x;
+	rayQueue[index + 11] = y;
+	rayQueue[index + 12] = energy;
+
 	endOfRaysQueue++;
 	raysPerFrame++;
 	no_rays++;
@@ -801,7 +808,7 @@ float* Tmpl8::Game::getRayQueuePosition()
 		positionInRaysQueue = 0;
 		foldedQueue = false;
 	}
-	float *ray_ptr = rays + positionInRaysQueue * variablesInRay;
+	float *ray_ptr = rayQueue + positionInRaysQueue * variablesInRay;
 	positionInRaysQueue++;
 	return ray_ptr;
 }

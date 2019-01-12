@@ -162,17 +162,20 @@ private:
 	}
 
 	// Ray queue
-	float *rays;						// array of rays, represented as consecutive series of floats
 	int endOfRaysQueue = 0;				// the number of rays in the floats array
 	int positionInRaysQueue = 0;		// the next ray index to be traced (multiply with variablesInRay)
 	bool foldedQueue = false;			// if true, the position index is supposed to be higher than the end index
 	const int variablesInRay = 13;		// the number of float variables in the Ray struct
 	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
 	const int rayQueueSize = rayQueueScreens * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRay;
+	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	void addRayToQueue(Ray ray);
+	void addRayToQueue(vec3, vec3, bool, float, int, int, int, int, float );
 	float* getRayQueuePosition();
 
+	// Intermediate screen buffer
 	Color intermediate[SCRWIDTH * SCRHEIGHT];	// intermediate screen buffer to add individual rays together
+	void Tmpl8::Game::addToIntermediate(float x, float y, Color color) { intermediate[(int)x + ((int)y * SCRWIDTH)] += color; }; // adds color to intermediate screen buffer
 
 	//Animation
 	bool animate = false;
