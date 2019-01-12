@@ -143,44 +143,23 @@ struct Ray
 	float pixely; // the screen pixel it will contribute to
 	float energy; // the percentage it contributes (0 - 1)
 
-	Ray() {
-		this->Origin = { 0, 0, 0 };
-	}
-
-	// Initializes this ray given the location of a series of floats
-	Ray(float* ray_ptr) {
-		this->Origin.x =	(double)	*(ray_ptr + 0);
-		this->Origin.y =	(double)	*(ray_ptr + 1);
-		this->Origin.z =	(double)	*(ray_ptr + 2);
-		this->Direction.x = (double)	*(ray_ptr + 3);
-		this->Direction.y = (double)	*(ray_ptr + 4);
-		this->Direction.z = (double)	*(ray_ptr + 5);
-		this->InObject =	(bool)		*(ray_ptr + 6);
-		this->mediumRefractionIndex =	*(ray_ptr + 7);
-		this->bvhtraversals = (int)		*(ray_ptr + 8);
-		this->recursiondepth =			*(ray_ptr + 9);
-		this->pixelx =					*(ray_ptr + 10);
-		this->pixely =					*(ray_ptr + 11);
-		this->energy =					*(ray_ptr + 12);
-	} // changed  "ray_ptr + sizeof(float) * x"  to  "ray_ptr + x"
-
-	// Adds this ray as a series of floats to the given float array
-	void addFloatsToArray(float* array, int index) {
-		array[index + 0] = (float) Origin.x;
-		array[index + 1] = (float) Origin.y;
-		array[index + 2] = (float) Origin.z;
-		array[index + 3] = (float) Direction.x;
-		array[index + 4] = (float) Direction.y;
-		array[index + 5] = (float) Direction.z;
-		array[index + 6] = (float) InObject;
-		array[index + 7] = mediumRefractionIndex;
-		array[index + 8] = (float) bvhtraversals;
-		array[index + 9] = recursiondepth;
-		array[index +10] = pixelx;
-		array[index +11] = pixely;
-		array[index +12] = energy;
-	}
-
+	// The location of the ray elements in the ray pointer
+	static enum {
+		OX = 0,
+		OY = 1,
+		OZ = 2,
+		DX = 3,
+		DY = 4,
+		DZ = 5,
+		INOBJ = 6,
+		REFRIND = 7,
+		BVHTRA = 8,
+		DEPTH = 9,
+		PIXX = 10,
+		PIXY = 11,
+		ENERGY = 12,
+		SIZE = 13
+	};
 };
 
 struct Collision
@@ -315,7 +294,7 @@ struct AABB		// 6*4 = 24 bytes
 
 	// Ray-AABB intersection algorithm found at:
 	//		https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
-	AABBIntersection Intersects(Ray ray)
+	AABBIntersection Intersects(vec3 origin, vec3 direction)
 	{
 		/*// Intersect with the extended box edges
 		float t0x = (xmin - ray.Origin.x) / ray.Direction.x;
@@ -340,15 +319,15 @@ struct AABB		// 6*4 = 24 bytes
 		
 		return {true, t0};*/
 
-		float invDirX = 1 / ray.Direction.x;
-		float tmin = (xmin - ray.Origin.x) * invDirX;
-		float tmax = (xmax - ray.Origin.x) * invDirX;
+		float invDirX = 1 / direction.x;
+		float tmin = (xmin - origin.x) * invDirX;
+		float tmax = (xmax - origin.x) * invDirX;
 
 		if (tmin > tmax) swap(tmin, tmax);
 
-		float invDirY = 1 / ray.Direction.y;
-		float tymin = (ymin - ray.Origin.y) * invDirY;
-		float tymax = (ymax - ray.Origin.y) * invDirY;
+		float invDirY = 1 / direction.y;
+		float tymin = (ymin - origin.y) * invDirY;
+		float tymax = (ymax - origin.y) * invDirY;
 
 		if (tymin > tymax) swap(tymin, tymax);
 
@@ -358,9 +337,9 @@ struct AABB		// 6*4 = 24 bytes
 		tmin = max(tmin, tymin);
 		tmax = min(tymax, tmax);
 
-		float invDirZ = 1 / ray.Direction.z;
-		float tzmin = (zmin - ray.Origin.z) * invDirZ;
-		float tzmax = (zmax - ray.Origin.z) * invDirZ;
+		float invDirZ = 1 / direction.z;
+		float tzmin = (zmin - origin.z) * invDirZ;
+		float tzmax = (zmax - origin.z) * invDirZ;
 
 		if (tzmin > tzmax) swap(tzmin, tzmax);
 

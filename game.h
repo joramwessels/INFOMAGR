@@ -102,7 +102,7 @@ private:
 	Surface* screen;
 	Camera camera;
 
-	Collision nearestCollision(Ray* ray);
+	Collision nearestCollision(float* ray_ptr);
 
 	void TraceRay(float* ray_ptr);
 	int numGeometries = 0;
@@ -165,9 +165,8 @@ private:
 	int endOfRaysQueue = 0;				// the number of rays in the floats array
 	int positionInRaysQueue = 0;		// the next ray index to be traced (multiply with variablesInRay)
 	bool foldedQueue = false;			// if true, the position index is supposed to be higher than the end index
-	const int variablesInRay = 13;		// the number of float variables in the Ray struct
 	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
-	const int rayQueueSize = rayQueueScreens * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRay;
+	const int rayQueueSize = rayQueueScreens * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * Ray::SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	void addRayToQueue(Ray ray);
 	void addRayToQueue(vec3, vec3, bool, float, int, int, int, int, float );
@@ -182,5 +181,5 @@ private:
 };
 
 }; // namespace Tmpl8
-	Collision intersectTriangle(int i, Ray ray, float* triangles, bool isShadowRay = false);
+	Collision intersectTriangle(int i, vec3 origin, vec3 direction, float* triangles, bool isShadowRay = false);
 

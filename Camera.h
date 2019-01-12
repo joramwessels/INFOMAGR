@@ -7,7 +7,7 @@ public:
 	Camera(vec3 position = { 0,0,0 }, vec3 direction = { 0,0,1 }, float virtualScreenDistance = 3);
 	~Camera();
 
-	Ray generateRayTroughVirtualScreen(float pixelx, float pixely);
+	float* generateRayTroughVirtualScreen(float pixelx, float pixely);
 
 	//void setPosDir(vec3 position, vec3 direction);
 	//void lookAt(vec3 direction);

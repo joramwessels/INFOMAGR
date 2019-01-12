@@ -79,11 +79,16 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 }
 
 // Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
-Collision BVH::Traverse(Ray* ray, BVHNode* node)
+Collision BVH::Traverse(float* ray_ptr, BVHNode* node)
 {
 	Collision closest;
 	closest.t = -1;
-	ray->bvhtraversals++;
+
+	float* ray_bvh_depth = ray_ptr + Ray::BVHTRA;
+	(*ray_bvh_depth)++;
+
+	vec3 ray_origin =    { *(ray_ptr + Ray::OX), *(ray_ptr + Ray::OY), *(ray_ptr + Ray::OZ) };
+	vec3 ray_direction = { *(ray_ptr + Ray::DX), *(ray_ptr + Ray::DY), *(ray_ptr + Ray::DZ) };
 
 		// If leaf
 		if (node->count != 0)
@@ -94,7 +99,7 @@ Collision BVH::Traverse(Ray* ray, BVHNode* node)
 			for (int i = 0; i < node->count; i++)
 			{
 				//Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
-				Collision collision = intersectTriangle(orderedIndices[node->leftFirst + i], *ray, scene);
+				Collision collision = intersectTriangle(orderedIndices[node->leftFirst + i], ray_origin, ray_direction, scene);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
 				{
@@ -110,8 +115,8 @@ Collision BVH::Traverse(Ray* ray, BVHNode* node)
 		else
 		{
 			// Check both children and return the closest collision if both intersected
-			AABB::AABBIntersection tleft = pool[node->leftFirst].bounds.Intersects(*ray);
-			AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(*ray);
+			AABB::AABBIntersection tleft = pool[node->leftFirst].bounds.Intersects(ray_origin, ray_direction);
+			AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray_origin, ray_direction);
 			
 			int flip = 0;
 			float tEntryFarNode = tright.tEntry;
@@ -122,13 +127,13 @@ Collision BVH::Traverse(Ray* ray, BVHNode* node)
 			colfar.t = -1;
 
 			if ((tleft.intersects && !flip) || (flip && tright.intersects)) {
-				colclose = Traverse(ray, &(pool[node->leftFirst + flip]));
+				colclose = Traverse(ray_ptr, &(pool[node->leftFirst + flip]));
 				if (colclose.t < tEntryFarNode && colclose.t > 0) {
 					return colclose;
 				}
 			}
 			if ((tright.intersects && !flip) || (tleft.intersects && flip)) {
-				colfar = Traverse(ray, &(pool[node->leftFirst + (1 - flip)]));
+				colfar = Traverse(ray_ptr, &(pool[node->leftFirst + (1 - flip)]));
 			}
 
 			if (colfar.t == -1) return colclose;
@@ -192,18 +197,23 @@ void ParentBVH::join2BVHs(BVH * bvh1, BVH * bvh2)
 	right = bvh2;
 }
 
-Collision ParentBVH::Traverse(Ray* ray, BVHNode* node)
+Collision ParentBVH::Traverse(float* ray_ptr, BVHNode* node)
 {
-	Ray rayright = *ray;
-	Ray rayleft = *ray;
+	float *rayright, *rayleft;
+	memcpy(rayright, ray_ptr, sizeof(float) * Ray::SIZE);
+	memcpy(rayleft, ray_ptr, sizeof(float) * Ray::SIZE);
 
-	rayright.Origin += translateRight;
-	rayleft.Origin += translateLeft;
+	*(rayright + Ray::OX) += translateRight.x;
+	*(rayright + Ray::OY) += translateRight.y;
+	*(rayright + Ray::OZ) += translateRight.z;
+	*(rayleft + Ray::OX) += translateLeft.x;
+	*(rayleft + Ray::OY) += translateLeft.y;
+	*(rayleft + Ray::OZ) += translateLeft.z;
 
-	Collision coll1 = left->Traverse(&rayleft, left->root);
+	Collision coll1 = left->Traverse(rayleft, left->root);
 	coll1.Pos -= translateLeft;
 
-	Collision coll2 = right->Traverse(&rayright, right->root);
+	Collision coll2 = right->Traverse(rayright, right->root);
 	coll2.Pos -= translateRight;
 
 	if ((coll2.t > 0 && coll2.t < coll1.t) || coll1.t < 0) coll1 = coll2;

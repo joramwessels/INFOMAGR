@@ -16,7 +16,7 @@ Camera::~Camera()
 }
 
 //Generate a ray from the camera through a pixel in the virtual screen
-Ray Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
+float* Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 {
 	vec2 pixelPosScaled;
 	pixelPosScaled.x = pixelx / SCRWIDTH; //Scale the pixel position to be in the range 0..1
@@ -25,12 +25,11 @@ Ray Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 	vec3 DofRandomness = { 0, 0, 0 };
 	if (DoF) DofRandomness = vec3((RandomFloat() * 0.1 - 0.05), (RandomFloat() * 0.1 - 0.05), 0); //TODO: make random and maybe 7-gon instead of square?
 
-	Ray ray;
-	ray.Origin = position + DofRandomness;
-
+	vec3 origin = position + DofRandomness;
 	vec3 positionOnVirtualScreen = virtualScreenCornerTL + pixelPosScaled.x * (virtualScreenCornerTR - virtualScreenCornerTL) + pixelPosScaled.y * (virtualScreenCornerBL - virtualScreenCornerTL);
-	ray.Direction = (positionOnVirtualScreen - ray.Origin).normalized();
+	vec3 direction = (positionOnVirtualScreen - origin).normalized();
 
+	float ray[6] = { origin.x, origin.y, origin.z, direction.x, direction.y, direction.z };
 	return ray;
 }
 

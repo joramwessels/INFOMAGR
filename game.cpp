@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_OBJ_GLASS);
 	
 	/*
 	//GPU TEST STUFF START
@@ -104,38 +104,38 @@ void Game::Tick( float deltaTime )
 		if (SSAA) {
 
 			//Generate 4 rays
-			Ray ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
-			ray1.energy = 0.25;
-			ray1.pixelx = pixelx;
-			ray1.pixely = pixely;
-			addRayToQueue(ray1);
+			float* ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
+			addRayToQueue(
+				vec3 { ray1[0], ray1[1], ray1[2] }, vec3 { ray1[3], ray1[4], ray1[5] },
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+			);
 
-			Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
-			ray2.energy = 0.25;
-			ray2.pixelx = pixelx;
-			ray2.pixely = pixely;
-			addRayToQueue(ray2);
+			float* ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
+			addRayToQueue(
+				vec3{ ray2[0], ray2[1], ray2[2] }, vec3{ ray2[3], ray2[4], ray2[5] },
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+			);
 
-			Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
-			ray3.energy = 0.25;
-			ray3.pixelx = pixelx;
-			ray3.pixely = pixely;
-			addRayToQueue(ray3);
+			float* ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
+			addRayToQueue(
+				vec3{ ray3[0], ray3[1], ray3[2] }, vec3{ ray3[3], ray3[4], ray3[5] },
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+			);
 
-			Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
-			ray4.energy = 0.25;
-			ray4.pixelx = pixelx;
-			ray4.pixely = pixely;
-			addRayToQueue(ray4);
+			float* ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
+			addRayToQueue(
+				vec3{ ray4[0], ray4[1], ray4[2] }, vec3{ ray4[3], ray4[4], ray4[5] },
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+			);
 		}
 		else {
 
 			//Generate the ray
-			Ray ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-			ray.energy = 1.0f;
-			ray.pixelx = pixelx;
-			ray.pixely = pixely;
-			addRayToQueue(ray);
+			float* ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
+			addRayToQueue(
+				vec3{ ray[0], ray[1], ray[2] }, vec3{ ray[3], ray[4], ray[5] },
+				false, 1.0f, 0, 0, pixelx, pixely, 1.0f
+			);
 		}
 	}
 
@@ -229,12 +229,12 @@ void Tmpl8::Game::MouseMove( int x, int y )
 }
 
 //Find the nearest collision along the ray
-Collision Tmpl8::Game::nearestCollision(Ray* ray)
+Collision Tmpl8::Game::nearestCollision(float* ray_ptr)
 {
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		return bvh->Traverse(ray, bvh->root);
+		return bvh->Traverse(ray_ptr, bvh->root);
 	}
 	else
 	{
@@ -246,7 +246,9 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 		for (int i = 0; i < numGeometries; i++)
 		{
 			//Collision collision = geometry[i]->Intersect(*ray);
-			Collision collision = intersectTriangle(i, *ray, triangles);
+			vec3 ray_origin =    { *(ray_ptr + Ray::OX), *(ray_ptr + Ray::OY), *(ray_ptr + Ray::OZ) };
+			vec3 ray_direction = { *(ray_ptr + Ray::DX), *(ray_ptr + Ray::DY), *(ray_ptr + Ray::DZ) };
+			Collision collision = intersectTriangle(i, ray_origin, ray_direction, triangles);
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
 			{
@@ -262,19 +264,26 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 //Trace the ray.
 void Tmpl8::Game::TraceRay( float* ray_ptr )
 {
-	Ray ray = Ray(ray_ptr);
+	// unpacking ray pointer
+	vec3 direction = { *(ray_ptr + Ray::DX), *(ray_ptr + Ray::DY), *(ray_ptr + Ray::DZ) };
+	bool inobj =   *(ray_ptr + Ray::INOBJ);
+	float refind = *(ray_ptr + Ray::REFRIND);
+	float rdepth = *(ray_ptr + Ray::DEPTH);
+	float pixelx = *(ray_ptr + Ray::PIXX);
+	float pixely = *(ray_ptr + Ray::PIXY);
+	float energy = *(ray_ptr + Ray::ENERGY);
 
 	// Basecase
-	if ( ray.recursiondepth > MAX_RECURSION_DEPTH )
+	if ( *(ray_ptr + Ray::DEPTH) > MAX_RECURSION_DEPTH )
 	{
 		//return 0x000000;
 		return;
 	}
 
 	// Collision detection
-	Collision collision = nearestCollision( &ray );
+	Collision collision = nearestCollision(ray_ptr);
 	if (bvhdebug) {
-		addToIntermediate(ray.pixelx, ray.pixely, (Color(255, 0, 0) * ray.bvhtraversals) << 3);
+		addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * *(ray_ptr + Ray::BVHTRA)) << 3);
 		return;
 	}
 
@@ -291,25 +300,25 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 			if ( specularity < 1.0f )
 			{
 				albedo = collision.colorAt * DirectIllumination(collision);
-				addToIntermediate(ray.pixelx, ray.pixely, albedo * ray.energy * (1 - specularity));
+				addToIntermediate(pixelx, pixely, albedo * energy * (1 - specularity));
 				//TODO: write albedo * (1 - ray.energy) to screen
 			}
 
 			// specular aspect
 			if ( specularity > 0 )
 			{
-				vec3 direction = reflect(ray.Direction, collision.N);
+				vec3 newdirection = reflect(direction, collision.N);
 
 				addRayToQueue(
-					collision.Pos + 0.00001f * direction, // collision.Pos + 0.00001f * -collision.N
-					direction,
-					ray.InObject,
-					ray.mediumRefractionIndex,
+					collision.Pos + 0.00001f * newdirection, // collision.Pos + 0.00001f * -collision.N
+					newdirection,
+					inobj,
+					refind,
 					0,
-					ray.recursiondepth + 1,
-					ray.pixelx,
-					ray.pixely,
-					ray.energy * specularity
+					rdepth + 1,
+					pixelx,
+					pixely,
+					energy * specularity
 				);
 			}
 		}
@@ -317,10 +326,10 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 		else
 		{
 			float n1, n2;
-			if ( ray.InObject ) n1 = ray.mediumRefractionIndex, n2 = 1.0f;
-			else				n1 = ray.mediumRefractionIndex, n2 = collision.other[T_REFRACTION];
+			if ( inobj ) n1 = refind, n2 = 1.0f;
+			else				n1 = refind, n2 = collision.other[T_REFRACTION];
 			float transition = n1 / n2;
-			float costheta = dot( collision.N, -ray.Direction );
+			float costheta = dot( collision.N, -direction );
 			float k = 1 - ( transition * transition ) * ( 1.0f - ( costheta * costheta ) );
 
 			float Fr;
@@ -342,36 +351,36 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 			Color reflection, refraction;
 			if ( Fr > 0.0f )
 			{
-				vec3 direction = reflect(ray.Direction, collision.N);
+				vec3 newdirection = reflect(direction, collision.N);
 
 				addRayToQueue(
-					collision.Pos + 0.00001f * direction, // collision.Pos + 0.00001f * -collision.N
-					direction,
-					ray.InObject,
-					ray.mediumRefractionIndex,
+					collision.Pos + 0.00001f * newdirection, // collision.Pos + 0.00001f * -collision.N
+					newdirection,
+					inobj,
+					refind,
 					0,
-					ray.recursiondepth + 1,
-					ray.pixelx,
-					ray.pixely,
-					ray.energy * Fr
+					rdepth + 1,
+					pixelx,
+					pixely,
+					energy * Fr
 				);
 			}
 
 			// Snell refraction
 			if ( Fr < 1.0f )
 			{
-				vec3 direction = transition * ray.Direction + collision.N * (transition * costheta - sqrt(k));
+				vec3 newdirection = transition * direction + collision.N * (transition * costheta - sqrt(k));
 
 				addRayToQueue(
-					collision.Pos + 0.00001f * direction,
-					direction,
-					!ray.InObject,
-					(ray.InObject ? 1.0f : collision.other[T_REFRACTION]),
+					collision.Pos + 0.00001f * newdirection,
+					newdirection,
+					!inobj,
+					(inobj ? 1.0f : collision.other[T_REFRACTION]),
 					0,
-					ray.recursiondepth + 1,
-					ray.pixelx,
-					ray.pixely,
-					ray.energy * (1 - Fr)
+					rdepth + 1,
+					pixelx,
+					pixely,
+					energy * (1 - Fr)
 				);
 
 				/* // TODO: Beer's law (and mirror albedo) requires ray.energy to be a Color rather than a float
@@ -393,7 +402,7 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 	// if no collision
 	else
 	{
-		addToIntermediate(ray.pixelx, ray.pixely, (skybox->ColorAt(ray.Direction) << 8) * ray.energy);
+		addToIntermediate(pixelx, pixely, (skybox->ColorAt(direction) << 8) * energy);
 	}
 }
 
@@ -407,16 +416,13 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 		if (lights[i].type != Light::AMBIENT)
 		{
 			vec3 L = (lights[i].position - collision.Pos).normalized();
-
-
-			Ray shadowray;
-			shadowray.Direction = L;
-			shadowray.Origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+			vec3 origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+			vec3 direction = L;
 			
 			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 			
 			if (lights[i].type == Light::DIRECTIONAL) {
-				shadowray.Direction = lights[i].direction;
+				direction = lights[i].direction;
 				maxt = 5000;
 			}
 
@@ -431,8 +437,9 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			if (use_bvh)
 			{
+				float ray_ptr[Ray::SIZE] = { origin.x, origin.y, origin.z, L.x, L.y, L.z};
 				//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
-				Collision shadowcollision = bvh->Traverse(&shadowray, bvh->root);
+				Collision shadowcollision = bvh->Traverse(ray_ptr, bvh->root);
 				//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
 
 				if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
@@ -442,7 +449,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 				{
 					//Check if position is reachable by lightsource
 					//Collision scattercollision = geometry[i]->Intersect(shadowray, true);
-					Collision scattercollision = intersectTriangle(i, shadowray,triangles, true);
+					Collision scattercollision = intersectTriangle(i, origin, direction, triangles, true);
 					if (scattercollision.t != -1 && scattercollision.t < maxt)
 					{
 						//Collision, so this ray does not reach the light source
@@ -738,22 +745,17 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 // Adds new ray to the queue of rays to be traced
 void Tmpl8::Game::addRayToQueue(Ray ray)
 {
-	// checking for folding overflow
-	if (foldedQueue && (endOfRaysQueue + 1) >= positionInRaysQueue)
-	{
-		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / variablesInRay);
-	}
-
-	// folding to start of array
-	if (endOfRaysQueue > rayQueueSize / variablesInRay)
-	{
-		endOfRaysQueue = 0;
-		foldedQueue = true;
-	}
-	ray.addFloatsToArray(rayQueue, endOfRaysQueue * variablesInRay);
-	endOfRaysQueue++;
-	raysPerFrame++;
-	no_rays++;
+	addRayToQueue(
+		ray.Origin,
+		ray.Direction,
+		ray.InObject,
+		ray.mediumRefractionIndex,
+		ray.bvhtraversals,
+		ray.recursiondepth,
+		ray.pixelx,
+		ray.pixely,
+		ray.energy
+	);
 }
 
 // Adds new ray to the ray queue
@@ -762,31 +764,31 @@ void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, i
 	// checking for folding overflow
 	if (foldedQueue && (endOfRaysQueue + 1) >= positionInRaysQueue)
 	{
-		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / variablesInRay);
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / Ray::SIZE);
 	}
 
 	// folding to start of array
-	if (endOfRaysQueue > rayQueueSize / variablesInRay)
+	if (endOfRaysQueue > rayQueueSize / Ray::SIZE)
 	{
 		endOfRaysQueue = 0;
 		foldedQueue = true;
 	}
 
 	// adding ray to array
-	int index = endOfRaysQueue * variablesInRay;
-	rayQueue[index + 0] = (float)ori.x;
-	rayQueue[index + 1] = (float)ori.y;
-	rayQueue[index + 2] = (float)ori.z;
-	rayQueue[index + 3] = (float)dir.x;
-	rayQueue[index + 4] = (float)dir.y;
-	rayQueue[index + 5] = (float)dir.z;
-	rayQueue[index + 6] = (float)inObj;
-	rayQueue[index + 7] = refrInd;
-	rayQueue[index + 8] = (float)bvhTr;
-	rayQueue[index + 9] = depth;
-	rayQueue[index + 10] = x;
-	rayQueue[index + 11] = y;
-	rayQueue[index + 12] = energy;
+	int index = endOfRaysQueue * Ray::SIZE;
+	rayQueue[index + Ray::OX] = (float)ori.x;
+	rayQueue[index + Ray::OY] = (float)ori.y;
+	rayQueue[index + Ray::OZ] = (float)ori.z;
+	rayQueue[index + Ray::DX] = (float)dir.x;
+	rayQueue[index + Ray::DY] = (float)dir.y;
+	rayQueue[index + Ray::DZ] = (float)dir.z;
+	rayQueue[index + Ray::INOBJ] = (float)inObj;
+	rayQueue[index + Ray::REFRIND] = refrInd;
+	rayQueue[index + Ray::BVHTRA] = (float)bvhTr;
+	rayQueue[index + Ray::DEPTH] = depth;
+	rayQueue[index + Ray::PIXX] = x;
+	rayQueue[index + Ray::PIXY] = y;
+	rayQueue[index + Ray::ENERGY] = energy;
 
 	endOfRaysQueue++;
 	raysPerFrame++;
@@ -803,12 +805,12 @@ float* Tmpl8::Game::getRayQueuePosition()
 	}
 
 	// folding to start of array
-	if (positionInRaysQueue >= rayQueueSize / variablesInRay)
+	if (positionInRaysQueue >= rayQueueSize / Ray::SIZE)
 	{
 		positionInRaysQueue = 0;
 		foldedQueue = false;
 	}
-	float *ray_ptr = rayQueue + positionInRaysQueue * variablesInRay;
+	float *ray_ptr = rayQueue + positionInRaysQueue * Ray::SIZE;
 	positionInRaysQueue++;
 	return ray_ptr;
 }
@@ -854,7 +856,7 @@ void Tmpl8::Game::initializeTriangle(int i, float * triangles)
 	triangles[baseindex + T_AABBMAXZ] = (v0.z >= v1.z && v0.z >= v2.z ? v0.z : (v1.z >= v0.z && v1.z >= v2.z ? v1.z : v2.z));
 }
 
-Collision intersectTriangle(int i, Ray ray, float * triangles, bool isShadowRay)
+Collision intersectTriangle(int i, vec3 origin, vec3 direction, float * triangles, bool isShadowRay)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
 
@@ -891,15 +893,15 @@ Collision intersectTriangle(int i, Ray ray, float * triangles, bool isShadowRay)
 
 	Collision collision;
 	collision.t = -1;
-	float NdotR = dot(ray.Direction, N);
+	float NdotR = dot(direction, N);
 	if (NdotR == 0) return collision; //Ray parrallel to plane, would cause division by 0
 
-	float t = -(dot(ray.Origin, N) + D) / (NdotR);
+	float t = -(dot(origin, N) + D) / (NdotR);
 
 	//From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
 	if (t > 0)
 	{
-		vec3 P = ray.Origin + t * ray.Direction;
+		vec3 P = origin + t * direction;
 		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
 		{
 			//Collision
