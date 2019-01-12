@@ -60,12 +60,9 @@ void Game::Init()
 	use_bvh = true;
 	bvhdebug = false;
 
-	//TODO: put this in header
-	int variablesInRayClass = 13;
-	int rayArraySize = 100 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
-
+	// rays array contains rays as series of 13 consecutive floats, ordered as in the Ray struct
 	delete rays;
-	rays = new Ray[rayArraySize / variablesInRayClass];
+	rays = new float[rayQueueSize];
 
 
 	mytimer.reset();
@@ -96,12 +93,14 @@ float random8 = RandomFloat();
 void Game::Tick( float deltaTime )
 {
 	frames++;
+	raysPerFrame = 0;
 
+	if (positionInRaysQueue != endOfRaysQueue)
+	{
+		printf("ERROR: positionInRaysQueue and endOfRaysQueue did not start tick at the same index.\n");
+	}
 
 	// Generate initial rays
-	int variablesInRayClass = 13;
-	int rayArraySize = 3 * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRayClass;
-	//rays = new float[rayArraySize];
 //#pragma omp parallel for
 	for (int pixely = 0; pixely < SCRHEIGHT; pixely++)
 	{
@@ -116,33 +115,25 @@ void Game::Tick( float deltaTime )
 				ray1.energy = 0.25;
 				ray1.pixelx = pixelx;
 				ray1.pixely = pixely;
-				//ray1.addFloatsToArray(rays, num_rays);
-				//num_rays += variablesInRayClass;
-				rays[num_rays++] = ray1;
+				addRayToQueue(ray1);
 
 				Ray ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
 				ray2.energy = 0.25;
 				ray2.pixelx = pixelx;
 				ray2.pixely = pixely;
-				//ray2.addFloatsToArray(rays, num_rays);
-				//num_rays += variablesInRayClass;
-				rays[num_rays++] = ray2;
+				addRayToQueue(ray2);
 
 				Ray ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
 				ray3.energy = 0.25;
 				ray3.pixelx = pixelx;
 				ray3.pixely = pixely;
-				//ray3.addFloatsToArray(rays, num_rays);
-				//num_rays += variablesInRayClass;
-				rays[num_rays++] = ray3;
+				addRayToQueue(ray3);
 
 				Ray ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
 				ray4.energy = 0.25;
 				ray4.pixelx = pixelx;
 				ray4.pixely = pixely;
-				//ray4.addFloatsToArray(rays, num_rays);
-				//num_rays += variablesInRayClass;
-				rays[num_rays++] = ray4;
+				addRayToQueue(ray4);
 			}
 			else {
 
@@ -151,26 +142,20 @@ void Game::Tick( float deltaTime )
 				ray.energy = 1.0f;
 				ray.pixelx = pixelx;
 				ray.pixely = pixely;
-				//ray.addFloatsToArray(rays, num_rays);
-				//num_rays += variablesInRayClass;
-				rays[num_rays++] = ray;
+				addRayToQueue(ray);
 			}
 		}
 	}
 
 	// Tracing queued rays
 //#pragma omp parallel for
-
-	for (int i = 0; i < num_rays; i ++)
+	//for (int i = 0; i < num_rays; i ++)
+	while( (!foldedQueue && positionInRaysQueue < endOfRaysQueue) || foldedQueue )
 	{
-		//float *ray_ptr = rays + i * variablesInClass * sizeof(Ray);
-		//pisitionInRaysArray += variablesInClass;
-		Ray *ray_ptr = rays + i * sizeof(Ray);
-		positionInRaysArray++;
-		TraceRay(rays[i]);
-
+		TraceRay(getRayQueuePosition());
 	}
 
+	// Plotting intermediate screen buffer to screen
 	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++)
 	{
 		for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
@@ -179,14 +164,7 @@ void Game::Tick( float deltaTime )
 		}
 	}
 
-	//delete rays;
-	//rays = new Ray[rayArraySize / variablesInRayClass];
-	num_rays = 0;
-	positionInRaysArray = 0;
-
 	memset(intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
-
-	//screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
 
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.1f);
@@ -242,13 +220,16 @@ void Game::Tick( float deltaTime )
 
 	if (mytimer.elapsed() > 1000) {
 		prevsecframes = frames;
+		raysPerSecond = no_rays;
 		avgFrameTime = mytimer.elapsed() / (float)frames;
 
 		frames = 0;
+		no_rays = 0;
 		mytimer.reset();
 	}
+	float raysPerPixel = raysPerFrame / (SCRWIDTH * SCRHEIGHT);
 
-	screen->Bar(0, 0, 150, 24, 0x000000);
+	screen->Bar(0, 0, 150, 40, 0x000000);
 	char buffer[64];
 	sprintf(buffer, "No. primitives: %i", numGeometries);
 
@@ -261,6 +242,14 @@ void Game::Tick( float deltaTime )
 	sprintf(buffer, "Avg time (ms): %.0f", avgFrameTime);
 
 	screen->Print(buffer, 1, 18, 0xffffff);
+
+	sprintf(buffer, "Rays/pixel: %.1f", raysPerPixel);
+
+	screen->Print(buffer, 1, 26, 0xffffff);
+
+	sprintf(buffer, "Rays/second: %i", raysPerSecond);
+
+	screen->Print(buffer, 1, 34, 0xffffff);
 
 }
 
@@ -301,42 +290,44 @@ Collision Tmpl8::Game::nearestCollision(Ray* ray)
 }
 
 //Trace the ray.
-void Tmpl8::Game::TraceRay( Ray ray )
+void Tmpl8::Game::TraceRay( float* ray_ptr )
 {
+	Ray ray = Ray(ray_ptr);
+
+	// Basecase
 	if ( ray.recursiondepth > MAX_RECURSION_DEPTH )
 	{
 		//return 0x000000;
 		return;
 	}
 
-
+	// Collision detection
 	Collision collision = nearestCollision( &ray );
 	if (bvhdebug) {
-		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (Color(255, 0, 0) * ray.bvhtraversals) << 3; //Save this rays results to the intermediate 
-		//return (Color(255, 0, 0) * ray.bvhtraversals) << 3; }
+		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (Color(255, 0, 0) * ray.bvhtraversals) << 3; //Save this ray's results to the intermediate 
 		return;
 	}
 
-	//check if the ray collides
+	// if ray collides
 	if ( collision.t > 0 )
 	{
-		//The ray collides.
-		if (collision.other[T_REFRACTION] == 0.0f) {
-			// Non-transparant objects
+		// if opaque
+		if (collision.other[T_REFRACTION] == 0.0f)
+		{
 			Color albedo, reflection;
 			float specularity = collision.other[T_SPECULARITY];
+
+			// diffuse aspect
 			if ( specularity < 1.0f )
 			{
-				// Diffuse aspect
 				albedo = collision.colorAt * DirectIllumination(collision);
-				//screen->Plot(pixelx, pixely, (result >> 8).to_uint_safe());
-				//screen->GetBuffer()[(int)ray.pixelx + (int)ray.pixely * SCRWIDTH]
 				intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += albedo * ray.energy; //Save this rays results to the intermediate result.
 				//TODO: write albedo * (1 - ray.energy) to screen
 			}
+
+			// specular aspect
 			if ( specularity > 0 )
 			{
-				// Reflective aspect
 				Ray reflectedray;
 				reflectedray.Direction = reflect( ray.Direction, collision.N );
 				reflectedray.Origin = collision.Pos + 0.00001f * reflectedray.Direction;
@@ -344,18 +335,17 @@ void Tmpl8::Game::TraceRay( Ray ray )
 				reflectedray.energy = specularity * ray.energy;
 				reflectedray.pixelx = ray.pixelx;
 				reflectedray.pixely = ray.pixely;
-				rays[num_rays++] = reflectedray;
-				//addRayToBeTraced(reflectedray);
+				
+				addRayToQueue(reflectedray);
 				return;
-				//reflection = TraceRay( reflectedray, recursiondepth + 1 );
 			}
 			//printf("spec: %f \n", specularity);
-			//return ( albedo * ( 1 - specularity ) + reflection * specularity ); 
+			//return ( albedo * ( 1 - specularity ) + reflection * specularity );
 			return;
 		}
+		// if transparent
 		else
 		{
-			// Transparant objects
 			float n1, n2;
 			if ( ray.InObject ) n1 = ray.mediumRefractionIndex, n2 = 1.0f;
 			else				n1 = ray.mediumRefractionIndex, n2 = collision.other[T_REFRACTION];
@@ -391,9 +381,8 @@ void Tmpl8::Game::TraceRay( Ray ray )
 				reflectedray.pixely = ray.pixely;
 				reflectedray.energy = ray.energy * Fr;
 				reflectedray.recursiondepth = ray.recursiondepth + 1;
-				//addRayToBeTraced(reflectedray);
-				rays[num_rays++] = reflectedray;
-				//reflection = TraceRay( reflectedray, recursiondepth + 1 );
+				
+				addRayToQueue(reflectedray);
 			}
 
 			// Snell refraction
@@ -409,10 +398,8 @@ void Tmpl8::Game::TraceRay( Ray ray )
 				refractedray.pixely = ray.pixely;
 				refractedray.recursiondepth = ray.recursiondepth + 1;
 				refractedray.energy = ray.energy * (1 - Fr);
-				//addRayToBeTraced(refractedray);
-				rays[num_rays++] = refractedray;
 
-				//refraction = TraceRay( refractedray, recursiondepth + 1 );
+				addRayToQueue(refractedray);
 
 				/*
 				// Beer's law
@@ -432,17 +419,12 @@ void Tmpl8::Game::TraceRay( Ray ray )
 			//return ( ( refraction * ( 1 - Fr ) + reflection * Fr ) );
 		}
 	}
-	else {
-		//There was no collision.
-		//--> skybox.
-		//return skybox->ColorAt(ray.Direction) << 8;
+	// if no collision
+	else
+	{
 		intermediate[(int)ray.pixelx + ((int)ray.pixely * SCRWIDTH)] += (skybox->ColorAt(ray.Direction) << 8) * ray.energy; //Save this rays results to the intermediate result.
 		return;
 	}
-
-	//Ray out of scene
-	//TODO
-	return;
 }
 
 //Cast a ray from the collision point towards the light, to check if light can reach the point
@@ -783,7 +765,48 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 	printf("Loadobj done. \n\n");
 }
 
-//Calculates the edges, normal, D and aabb for a triangle
+// Adds new ray to the queue of rays to be traced
+void Tmpl8::Game::addRayToQueue(Ray ray)
+{
+	// checking for folding overflow
+	if (foldedQueue && (endOfRaysQueue + 1) >= positionInRaysQueue)
+	{
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / variablesInRay);
+	}
+
+	// folding to start of array
+	if (endOfRaysQueue > rayQueueSize / variablesInRay)
+	{
+		endOfRaysQueue = 0;
+		foldedQueue = true;
+	}
+	ray.addFloatsToArray(rays, endOfRaysQueue * variablesInRay);
+	endOfRaysQueue++;
+	raysPerFrame++;
+	no_rays++;
+}
+
+// Returns the next ray to be traced, and updates the queue position
+float* Tmpl8::Game::getRayQueuePosition()
+{
+	// checking for folding overflow
+	if (foldedQueue && positionInRaysQueue < endOfRaysQueue)
+	{
+		printf("ERROR: positionInRaysQueue is somehow ahead of endOfRaysQueue.\n");
+	}
+
+	// folding to start of array
+	if (positionInRaysQueue >= rayQueueSize / variablesInRay)
+	{
+		positionInRaysQueue = 0;
+		foldedQueue = false;
+	}
+	float *ray_ptr = rays + positionInRaysQueue * variablesInRay;
+	positionInRaysQueue++;
+	return ray_ptr;
+}
+
+// Calculates the edges, normal, D and aabb for a triangle
 void Tmpl8::Game::initializeTriangle(int i, float * triangles)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;

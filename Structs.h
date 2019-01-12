@@ -134,26 +134,47 @@ struct Ray
 	vec3 Origin = {0, 0, 0};
 	vec3 Direction;
 
-	bool InObject = false;
-	float mediumRefractionIndex = 1.0f;
+	bool InObject = false;				// assumes the camera isn't in an object
+	float mediumRefractionIndex = 1.0f; // assumes camera to be in air (vaccum)
 	int bvhtraversals = 0;
 	float recursiondepth = 0;
 
+	float pixelx; // the screen pixel it will contribute to
+	float pixely; // the screen pixel it will contribute to
+	float energy; // the percentage it contributes (0 - 1)
 
-	float pixelx;
-	float pixely;
-	float energy; // 0 - 1
+	Ray() {
+		this->Origin = { 0, 0, 0 };
+	}
 
+	// Initializes this ray given the location of a series of floats
+	Ray(float* ray_ptr) {
+		this->Origin.x =	(double)	*(ray_ptr + 0);
+		this->Origin.y =	(double)	*(ray_ptr + 1);
+		this->Origin.z =	(double)	*(ray_ptr + 2);
+		this->Direction.x = (double)	*(ray_ptr + 3);
+		this->Direction.y = (double)	*(ray_ptr + 4);
+		this->Direction.z = (double)	*(ray_ptr + 5);
+		this->InObject =	(bool)		*(ray_ptr + 6);
+		this->mediumRefractionIndex =	*(ray_ptr + 7);
+		this->bvhtraversals = (int)		*(ray_ptr + 8);
+		this->recursiondepth =			*(ray_ptr + 9);
+		this->pixelx =					*(ray_ptr + 10);
+		this->pixely =					*(ray_ptr + 11);
+		this->energy =					*(ray_ptr + 12);
+	} // changed  "ray_ptr + sizeof(float) * x"  to  "ray_ptr + x"
+
+	// Adds this ray as a series of floats to the given float array
 	void addFloatsToArray(float* array, int index) {
-		array[index + 0] = Origin.x;
-		array[index + 1] = Origin.y;
-		array[index + 2] = Origin.z;
-		array[index + 3] = Direction.x;
-		array[index + 4] = Direction.y;
-		array[index + 5] = Direction.z;
-		array[index + 6] = (float)InObject;
+		array[index + 0] = (float) Origin.x;
+		array[index + 1] = (float) Origin.y;
+		array[index + 2] = (float) Origin.z;
+		array[index + 3] = (float) Direction.x;
+		array[index + 4] = (float) Direction.y;
+		array[index + 5] = (float) Direction.z;
+		array[index + 6] = (float) InObject;
 		array[index + 7] = mediumRefractionIndex;
-		array[index + 8] = bvhtraversals;
+		array[index + 8] = (float) bvhtraversals;
 		array[index + 9] = recursiondepth;
 		array[index +10] = pixelx;
 		array[index +11] = pixely;

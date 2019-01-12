@@ -10,10 +10,7 @@ public:
 	void Init();
 	void Shutdown();
 	void Tick( float deltaTime );
-	//float *rays;
-	Ray *rays;
-	int num_rays = 0;
-	int positionInRaysArray = 0;
+
 	void MouseUp( int button ) { /* implement if you want to detect mouse button presses */ }
 	void MouseDown( int button ) { /* implement if you want to detect mouse button presses */ }
 	void MouseMove(int x, int y);
@@ -107,7 +104,7 @@ private:
 
 	Collision nearestCollision(Ray* ray);
 
-	void TraceRay(Ray ray);
+	void TraceRay(float* ray_ptr);
 	int numGeometries = 0;
 	float* triangles;
 
@@ -136,18 +133,23 @@ private:
 	void loadscene(SCENES scene);
 	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
 
+	void initializeTriangle(int i, float* triangles);
+
 	bool SSAA;
 	bool DoF = false;
 	bool use_bvh = false;
 
 	//fps counter
 	int frames = 0;
+	int no_rays = 0;
 	int prevsecframes = 0;
 	timer mytimer;
 	float avgFrameTime;
+	float raysPerFrame = 0;
+	int raysPerSecond = 0;
 
 
-	//BVH
+	// BVH
 	BVH* bvh;
 	bool bvhdebug = false;
 	void generateBVH() {
@@ -159,9 +161,18 @@ private:
 		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh->depth);
 	}
 
-	void initializeTriangle(int i, float* triangles);
+	// Ray queue
+	float *rays;						// array of rays, represented as consecutive series of floats
+	int endOfRaysQueue = 0;				// the number of rays in the floats array
+	int positionInRaysQueue = 0;		// the next ray index to be traced (multiply with variablesInRay)
+	bool foldedQueue = false;			// if true, the position index is supposed to be higher than the end index
+	const int variablesInRay = 13;		// the number of float variables in the Ray struct
+	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
+	const int rayQueueSize = rayQueueScreens * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * variablesInRay;
+	void addRayToQueue(Ray ray);
+	float* getRayQueuePosition();
 
-	Color intermediate[SCRWIDTH * SCRHEIGHT];
+	Color intermediate[SCRWIDTH * SCRHEIGHT];	// intermediate screen buffer to add individual rays together
 
 	//Animation
 	bool animate = false;
