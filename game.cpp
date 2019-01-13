@@ -246,8 +246,8 @@ Collision Tmpl8::Game::nearestCollision(float* ray_ptr)
 		for (int i = 0; i < numGeometries; i++)
 		{
 			//Collision collision = geometry[i]->Intersect(*ray);
-			vec3 ray_origin =    { *(ray_ptr + Ray::OX), *(ray_ptr + Ray::OY), *(ray_ptr + Ray::OZ) };
-			vec3 ray_direction = { *(ray_ptr + Ray::DX), *(ray_ptr + Ray::DY), *(ray_ptr + Ray::DZ) };
+			vec3 ray_origin =    { ray_ptr[Ray::OX], ray_ptr[Ray::OY], ray_ptr[Ray::OZ] };
+			vec3 ray_direction = { ray_ptr[Ray::DX], ray_ptr[Ray::DY], ray_ptr[Ray::DZ] };
 			Collision collision = intersectTriangle(i, ray_origin, ray_direction, triangles);
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
@@ -265,16 +265,16 @@ Collision Tmpl8::Game::nearestCollision(float* ray_ptr)
 void Tmpl8::Game::TraceRay( float* ray_ptr )
 {
 	// unpacking ray pointer
-	vec3 direction = { *(ray_ptr + Ray::DX), *(ray_ptr + Ray::DY), *(ray_ptr + Ray::DZ) };
-	bool inobj =   *(ray_ptr + Ray::INOBJ);
-	float refind = *(ray_ptr + Ray::REFRIND);
-	float rdepth = *(ray_ptr + Ray::DEPTH);
-	float pixelx = *(ray_ptr + Ray::PIXX);
-	float pixely = *(ray_ptr + Ray::PIXY);
-	float energy = *(ray_ptr + Ray::ENERGY);
+	vec3 direction = { ray_ptr[Ray::DX], ray_ptr[Ray::DY], ray_ptr[Ray::DZ] };
+	bool inobj =   ray_ptr[Ray::INOBJ];
+	float refind = ray_ptr[Ray::REFRIND];
+	float rdepth = ray_ptr[Ray::DEPTH];
+	float pixelx = ray_ptr[Ray::PIXX];
+	float pixely = ray_ptr[Ray::PIXY];
+	float energy = ray_ptr[Ray::ENERGY];
 
 	// Basecase
-	if ( *(ray_ptr + Ray::DEPTH) > MAX_RECURSION_DEPTH )
+	if ( ray_ptr[Ray::DEPTH] > MAX_RECURSION_DEPTH )
 	{
 		//return 0x000000;
 		return;
@@ -283,7 +283,7 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 	// Collision detection
 	Collision collision = nearestCollision(ray_ptr);
 	if (bvhdebug) {
-		addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * *(ray_ptr + Ray::BVHTRA)) << 3);
+		addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * ray_ptr[Ray::BVHTRA]) << 3);
 		return;
 	}
 

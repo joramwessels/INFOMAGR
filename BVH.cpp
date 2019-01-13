@@ -84,11 +84,10 @@ Collision BVH::Traverse(float* ray_ptr, BVHNode* node)
 	Collision closest;
 	closest.t = -1;
 
-	float* ray_bvh_depth = ray_ptr + Ray::BVHTRA;
-	(*ray_bvh_depth)++;
+	ray_ptr[Ray::BVHTRA]++;
 
-	vec3 ray_origin =    { *(ray_ptr + Ray::OX), *(ray_ptr + Ray::OY), *(ray_ptr + Ray::OZ) };
-	vec3 ray_direction = { *(ray_ptr + Ray::DX), *(ray_ptr + Ray::DY), *(ray_ptr + Ray::DZ) };
+	vec3 ray_origin =    { ray_ptr[Ray::OX], ray_ptr[Ray::OY], ray_ptr[Ray::OZ] };
+	vec3 ray_direction = { ray_ptr[Ray::DX], ray_ptr[Ray::DY], ray_ptr[Ray::DZ] };
 
 		// If leaf
 		if (node->count != 0)
@@ -200,15 +199,18 @@ void ParentBVH::join2BVHs(BVH * bvh1, BVH * bvh2)
 Collision ParentBVH::Traverse(float* ray_ptr, BVHNode* node)
 {
 	float *rayright, *rayleft;
+	rayright = new float[Ray::SIZE]; 
+	rayleft = new float[Ray::SIZE];
+
 	memcpy(rayright, ray_ptr, sizeof(float) * Ray::SIZE);
 	memcpy(rayleft, ray_ptr, sizeof(float) * Ray::SIZE);
 
-	*(rayright + Ray::OX) += translateRight.x;
-	*(rayright + Ray::OY) += translateRight.y;
-	*(rayright + Ray::OZ) += translateRight.z;
-	*(rayleft + Ray::OX) += translateLeft.x;
-	*(rayleft + Ray::OY) += translateLeft.y;
-	*(rayleft + Ray::OZ) += translateLeft.z;
+	rayright[Ray::OX] += translateRight.x;
+	rayright[Ray::OY] += translateRight.y;
+	rayright[Ray::OZ] += translateRight.z;
+	rayleft[Ray::OX] += translateLeft.x;
+	rayleft[Ray::OY] += translateLeft.y;
+	rayleft[Ray::OZ] += translateLeft.z;
 
 	Collision coll1 = left->Traverse(rayleft, left->root);
 	coll1.Pos -= translateLeft;
