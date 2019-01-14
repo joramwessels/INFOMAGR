@@ -136,7 +136,7 @@ private:
 
 	void loadscene(SCENES scene);
 	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
-	void createfloor();
+	void createfloor(Material material);
 
 	void initializeTriangle(int i, float* triangles);
 
@@ -178,7 +178,8 @@ private:
 	Collision* collisions = new Collision[rayQueueSize];
 	
 	void addRayToQueue(Ray ray);
-	void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
+	void addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
+	void addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue);
 	int getRayQueuePosition();
 
 	//Extend

@@ -489,9 +489,9 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			if (use_bvh)
 			{
-				float ray_ptr[Ray::SIZE] = { origin.x, origin.y, origin.z, L.x, L.y, L.z};
+				float shadowray[Ray::SIZE] = { origin.x, origin.y, origin.z, L.x, L.y, L.z};
 				//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
-				Collision shadowcollision = bvh->Traverse(ray_ptr, bvh->root);
+				Collision shadowcollision = bvh->Traverse(shadowray, bvh->root);
 				//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
 
 				if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
@@ -555,7 +555,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
-		createfloor();
+		createfloor(Material(1.0f, 0.0f, 0xffffff));
 		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 }, Material(0.0f, 1.52f, 0xffffff));
 
 		numLights = 3;
@@ -585,7 +585,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
-		createfloor();
+		createfloor(Material(0.0f, 0.0f, 0xffffff));
 
 		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
 		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { -2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
@@ -619,7 +619,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
-		createfloor();
+		createfloor(Material(0.0f, 0.0f, 0xffffff));
 
 		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 }, Material(0.5f, 0.0f, 0xffff00));
 
@@ -652,7 +652,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 
 		//Set up the scene
 		numGeometries = 0;
-		createfloor();
+		createfloor(Material(0.0f, 0.0f, 0xffffff));
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		for (size_t i = 0; i < 200; i++)
@@ -800,7 +800,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 	printf("Loadobj done. \n\n");
 }
 
-void Tmpl8::Game::createfloor()
+void Game::createfloor(Material material)
 {
 	numGeometries = 2;
 
@@ -819,13 +819,13 @@ void Tmpl8::Game::createfloor()
 
 	//TODO: Completely remove material class?
 	//Color
-	triangles[0 + T_COLORR] = 0.0f; //R
-	triangles[0 + T_COLORG] = 255.0f; //G
-	triangles[0 + T_COLORB] = 0.0f; //B
+	triangles[0 + T_COLORR] = material.color.R; //R
+	triangles[0 + T_COLORG] = material.color.G; //G
+	triangles[0 + T_COLORB] = material.color.B; //B
 
 	//Material properties
-	triangles[0 + T_SPECULARITY] = 1.0f; //Specularity
-	triangles[0 + T_REFRACTION] = 0.0f; //Refractionindex
+	triangles[0 + T_SPECULARITY] = material.specularity; //Specularity
+	triangles[0 + T_REFRACTION] = material.refractionIndex; //Refractionindex
 
 	//Calculate the edges, normal and D
 	initializeTriangle(0, triangles);
@@ -847,13 +847,13 @@ void Tmpl8::Game::createfloor()
 
 	//TODO: Completely remove material class?
 	//Color
-	triangles[FLOATS_PER_TRIANGLE + T_COLORR] = 0.0f; //R
-	triangles[FLOATS_PER_TRIANGLE + T_COLORG] = 255.0f; //G
-	triangles[FLOATS_PER_TRIANGLE + T_COLORB] = 0.0f; //B
+	triangles[FLOATS_PER_TRIANGLE + T_COLORR] = material.color.R;//R
+	triangles[FLOATS_PER_TRIANGLE + T_COLORG] = material.color.G; //G
+	triangles[FLOATS_PER_TRIANGLE + T_COLORB] = material.color.B;//B
 
 	//Material properties
-	triangles[FLOATS_PER_TRIANGLE + T_SPECULARITY] = 1.0f; //Specularity
-	triangles[FLOATS_PER_TRIANGLE + T_REFRACTION] = 0.0f; //Refractionindex
+	triangles[FLOATS_PER_TRIANGLE + T_SPECULARITY] = material.specularity; //Specularity
+	triangles[FLOATS_PER_TRIANGLE + T_REFRACTION] = material.refractionIndex; //Refractionindex
 
 	//Calculate the edges, normal and D
 	initializeTriangle(1, triangles);
@@ -918,6 +918,46 @@ void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, i
 	raysPerFrame++;
 	//no_rays++;
 }
+
+void Game::addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue)
+{
+	int queuesize = ((int*)queue)[0];
+	int currentCount = ((int*)queue)[1];
+	//printf("Currentcount i: %i", currentCount);
+	//printf(" queue size %i \n", queuesize);
+
+	/*if (currentCount == 0) {
+		((int*)queue)[1] = 1;
+		currentCount = 1; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
+	}*/
+
+	// array if full
+	if (currentCount + 1 > queuesize / SR_SIZE)
+	{
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / Ray::SIZE);
+	}
+
+
+	// adding ray to array
+	int index = (currentCount + 1) * SR_SIZE; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
+	queue[index + SR_OX] = (float)ori.x;
+	queue[index + SR_OY] = (float)ori.y;
+	queue[index + SR_OZ] = (float)ori.z;
+	queue[index + SR_DX] = (float)dir.x;
+	queue[index + SR_DY] = (float)dir.y;
+	queue[index + SR_DZ] = (float)dir.z;
+	queue[index + SR_R] = R;
+	queue[index + SR_G] = G;
+	queue[index + SR_B] = B;
+	queue[index + SR_MAXT] = maxt;
+	queue[index + SR_PIXX] = pixelX;
+	queue[index + SR_PIXY] = pixelY;
+
+	((int*)queue)[1]++; //Current count++
+	raysPerFrame++;
+	//no_rays++;
+}
+
 
 // Returns the next ray to be traced, and updates the queue position
 int Game::getRayQueuePosition()
