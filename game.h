@@ -173,6 +173,10 @@ private:
 	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
 	const int rayQueueSize = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * Ray::SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
+	float* newRays = new float[rayQueueSize];
+	float* shadowRays = new float[rayQueueSize];
+	Collision* collisions = new Collision[rayQueueSize];
+	
 	void addRayToQueue(Ray ray);
 	void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
 	int getRayQueuePosition();

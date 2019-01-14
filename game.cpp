@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_GLASS);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 	
 	/*
 	//GPU TEST STUFF START
@@ -61,6 +61,14 @@ void Game::Init()
 	bvhdebug = false;
 
 	mytimer.reset();
+
+	((int*)rayQueue)[0] = rayQueueSize; //queue size
+	((int*)rayQueue)[1] = 0; //current count
+	((int*)newRays)[0] = rayQueueSize; //queue size
+	((int*)newRays)[1] = 0; //current count
+	((int*)shadowRays)[0] = rayQueueSize; //queue size
+	((int*)shadowRays)[1] = 0; //current count
+
 }
 
 // -----------------------------------------------------------
@@ -144,17 +152,6 @@ void Game::Tick(float deltaTime)
 
 	// Tracing queued rays
 //#pragma omp parallel for
-	//for (int i = 0; i < num_rays; i ++)
-	Collision* collisions = new Collision[((int*)rayQueue)[1] + 1];
-
-
-	float* newRays = new float[SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE];
-	((int*)newRays)[0] = SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE; //queue size
-	((int*)newRays)[1] = 0; //current count
-
-	float* shadowRays = new float[SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE];
-	((int*)shadowRays)[0] = SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE; //queue size
-	((int*)shadowRays)[1] = 0; //current count
 
 	bool finished = false;
 
@@ -162,14 +159,14 @@ void Game::Tick(float deltaTime)
 		int numRays = ((int*)rayQueue)[1];
 		findCollisions(rayQueue, numRays, collisions); //Find all collisions
 
-		for (size_t i = 1; i <= numRays; i++)
+		//#pragma omp parallel for
+		for (int i = 1; i <= numRays; i++)
 		{
 			TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
 		}
-		printf("New rays generated: %i \n", numRays);
+		//printf("New rays generated: %i \n", numRays);
 
 		if (numRays > 0){
-			printf("flipping \n");
 			float* temp = rayQueue; //Flip arrays
 			rayQueue = newRays;
 			newRays = temp;
@@ -179,14 +176,6 @@ void Game::Tick(float deltaTime)
 			finished = true;
 		}
 	}
-	//TODO: Clean everything up. This is a mess..
-	//TODO: Generate the shadowrays in the buffer
-	//TODO: Repeat traceray for newly generated rays
-
-	delete collisions;
-	delete shadowRays;
-	
-	delete newRays;
 
 	// Plotting intermediate screen buffer to screen
 	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++) for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
