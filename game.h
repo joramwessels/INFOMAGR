@@ -112,7 +112,8 @@ private:
 	int numGeometries = 0;
 	float* triangles;
 
-	Color DirectIllumination(Collision collision);
+	//Color DirectIllumination(Collision collision);
+	void TraceShadowRay(float* shadowrays, int rayIndex);
 
 	int numLights = 2;
 	Light* lights;
@@ -174,7 +175,7 @@ private:
 	const int rayQueueSize = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * Ray::SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	float* newRays = new float[rayQueueSize];
-	float* shadowRays = new float[rayQueueSize];
+	float* shadowRays = new float[rayQueueSize * 2];
 	Collision* collisions = new Collision[rayQueueSize];
 	
 	void addRayToQueue(Ray ray);

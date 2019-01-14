@@ -62,11 +62,11 @@ void Game::Init()
 
 	mytimer.reset();
 
-	((int*)rayQueue)[0] = rayQueueSize; //queue size
+	((int*)rayQueue)[0] = rayQueueSize; //queue size, there can be at most just as many rays as we have pixels
 	((int*)rayQueue)[1] = 0; //current count
 	((int*)newRays)[0] = rayQueueSize; //queue size
 	((int*)newRays)[1] = 0; //current count
-	((int*)shadowRays)[0] = rayQueueSize; //queue size
+	((int*)shadowRays)[0] = rayQueueSize * 2; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
 }
@@ -166,11 +166,18 @@ void Game::Tick(float deltaTime)
 		}
 		//printf("New rays generated: %i \n", numRays);
 
+		int numShadowRays = ((int*)shadowRays)[1];
+		for (int i = 0; i < numShadowRays; i++)
+		{
+			TraceShadowRay(shadowRays, i);
+		}
+
 		if (numRays > 0){
 			float* temp = rayQueue; //Flip arrays
 			rayQueue = newRays;
 			newRays = temp;
 			((int*)newRays)[1] = 0; //set new ray count to 0
+			((int*)shadowRays)[1] = 0; //set new shadowray count to 0
 		}
 		else {
 			finished = true;
@@ -347,9 +354,15 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 			// diffuse aspect
 			if ( specularity < 1.0f )
 			{
-				albedo = collision.colorAt * DirectIllumination(collision);
-				addToIntermediate(pixelx, pixely, albedo * energy * (1 - specularity));
-				//TODO: write albedo * (1 - ray.energy) to screen
+				//Generate shadow rays
+				for (int light = 0; light < numLights; light++)
+				{
+					vec3 direction = (lights[light].position - collision.Pos).normalized();
+					vec3 origin = collision.Pos + (0.00025f * direction); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+					float maxt = (lights[light].position.x - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
+					Color shadowRayEnergy = collision.colorAt * energy * (1 - specularity) * lights[light].color * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lights[light].position - collision.Pos).sqrLentgh()));
+					addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
+				}
 			}
 
 			// specular aspect
@@ -458,6 +471,57 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 	}
 }
 
+void Game::TraceShadowRay(float* shadowrays, int rayIndex)
+{
+	int baseIndex = rayIndex * SR_SIZE;
+	float maxt = shadowrays[baseIndex + SR_MAXT];
+
+	bool collided = false;
+
+	if (use_bvh)
+	{
+		float shadowray[Ray::SIZE] = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ], shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
+		//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
+		Collision shadowcollision = bvh->Traverse(shadowray, bvh->root);
+		//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
+
+		if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
+	}
+	else {
+		for (int i = 0; i < numGeometries; i++)
+		{
+			vec3 origin = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ] };
+			vec3 direction = { shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
+
+			//Check if position is reachable by lightsource
+			//Collision scattercollision = geometry[i]->Intersect(shadowray, true);
+			Collision shadowcollision = intersectTriangle(i, origin, direction, triangles, true);
+			if (shadowcollision.t != -1 && shadowcollision.t < maxt)
+			{
+				//Collision, so this ray does not reach the light source
+				collided = true;
+				break;
+			}
+		}
+
+	}
+
+
+	if (collided)
+	{
+		return;
+	}
+
+	Color toadd;
+	toadd.R = shadowrays[baseIndex + SR_R];
+	toadd.G = shadowrays[baseIndex + SR_G];
+	toadd.B = shadowrays[baseIndex + SR_B];
+
+	addToIntermediate(shadowrays[baseIndex + SR_PIXX], shadowrays[baseIndex + SR_PIXY], toadd);
+}
+
+//We don't need this function anymore, but I kept it here in case we want the other lighttypes back sometime
+/*
 //Cast a ray from the collision point towards the light, to check if light can reach the point
 Color Tmpl8::Game::DirectIllumination( Collision collision )
 {
@@ -536,7 +600,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 		}
 	}
 	return result;
-}
+}*/
 
 vec3 Tmpl8::Game::reflect( vec3 D, vec3 N )
 {
