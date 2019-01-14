@@ -175,7 +175,7 @@ private:
 	const int rayQueueSize = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * Ray::SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	float* newRays = new float[rayQueueSize];
-	float* shadowRays = new float[rayQueueSize * 2];
+	float* shadowRays = new float[rayQueueSize * 5];
 	Collision* collisions = new Collision[rayQueueSize];
 	
 	void addRayToQueue(Ray ray);
