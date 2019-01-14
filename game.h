@@ -104,7 +104,11 @@ private:
 
 	Collision nearestCollision(float* ray_ptr);
 
-	void TraceRay(float* ray_ptr);
+	int numNewRays = 0;
+	int numShadowrays = 0;
+
+	void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
+
 	int numGeometries = 0;
 	float* triangles;
 
@@ -166,11 +170,14 @@ private:
 	int positionInRaysQueue = 0;		// the next ray index to be traced (multiply with variablesInRay)
 	bool foldedQueue = false;			// if true, the position index is supposed to be higher than the end index
 	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
-	const int rayQueueSize = rayQueueScreens * SCRHEIGHT * SCRWIDTH * (SSAA ? 4 : 1) * Ray::SIZE;
+	const int rayQueueSize = SCRHEIGHT * SCRWIDTH * 4 * Ray::SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	void addRayToQueue(Ray ray);
-	void addRayToQueue(vec3, vec3, bool, float, int, int, int, int, float );
-	float* getRayQueuePosition();
+	void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
+	int getRayQueuePosition();
+
+	//Extend
+	void findCollisions(float* rays, int numrays, Collision* collisions);
 
 	// Intermediate screen buffer
 	Color intermediate[SCRWIDTH * SCRHEIGHT];	// intermediate screen buffer to add individual rays together

@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_GLASS);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 	
 	/*
 	//GPU TEST STUFF START
@@ -87,6 +87,9 @@ float random8 = RandomFloat();
 // -----------------------------------------------------------
 void Game::Tick( float deltaTime )
 {
+	((int*)rayQueue)[0] = SCRHEIGHT * SCRWIDTH * 4 * Ray::SIZE; //Size of array
+	((int*)rayQueue)[1] = 0; //num rays in queue
+
 	frames++;
 	raysPerFrame = 0;
 
@@ -107,25 +110,25 @@ void Game::Tick( float deltaTime )
 			float* ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
 			addRayToQueue(
 				vec3 { ray1[0], ray1[1], ray1[2] }, vec3 { ray1[3], ray1[4], ray1[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
 
 			float* ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
 			addRayToQueue(
 				vec3{ ray2[0], ray2[1], ray2[2] }, vec3{ ray2[3], ray2[4], ray2[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
 
 			float* ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
 			addRayToQueue(
 				vec3{ ray3[0], ray3[1], ray3[2] }, vec3{ ray3[3], ray3[4], ray3[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
 
 			float* ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
 			addRayToQueue(
 				vec3{ ray4[0], ray4[1], ray4[2] }, vec3{ ray4[3], ray4[4], ray4[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f
+				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
 		}
 		else {
@@ -134,7 +137,7 @@ void Game::Tick( float deltaTime )
 			float* ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
 			addRayToQueue(
 				vec3{ ray[0], ray[1], ray[2] }, vec3{ ray[3], ray[4], ray[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 1.0f
+				false, 1.0f, 0, 0, pixelx, pixely, 1.0f, rayQueue
 			);
 		}
 	}
@@ -142,10 +145,34 @@ void Game::Tick( float deltaTime )
 	// Tracing queued rays
 //#pragma omp parallel for
 	//for (int i = 0; i < num_rays; i ++)
-	while( (!foldedQueue && positionInRaysQueue < endOfRaysQueue) || foldedQueue )
+	int numRays = ((int*)rayQueue)[1];
+	Collision* collisions = new Collision[numRays + 1];
+	findCollisions(rayQueue, numRays, collisions); //Find all collisions
+
+	
+	float* newRays = new float[SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE];
+	((int*)newRays)[0] = SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE; //queue size
+	((int*)newRays)[1] = 0; //current count
+	
+	float* shadowRays = new float[SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE];
+	((int*)shadowRays)[0] = SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE; //queue size
+	((int*)shadowRays)[1] = 0; //current count
+	
+	
+	for (size_t i = 1; i <= numRays; i++)
 	{
-		TraceRay(getRayQueuePosition());
+		TraceRay(rayQueue, i, no_rays, collisions, newRays, shadowRays); //Trace all rays
 	}
+	printf("New rays generated: %i \n", ((int*)newRays)[1]);
+	
+	//TODO: Clean everything up. This is a mess..
+	//TODO: Generate the shadowrays in the buffer
+	//TODO: Repeat traceray for newly generated rays
+
+	delete collisions;
+	delete shadowRays;
+	
+	delete newRays;
 
 	// Plotting intermediate screen buffer to screen
 	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++) for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
@@ -221,6 +248,10 @@ void Game::Tick( float deltaTime )
 	screen->Print(buffer, 1, 26, 0xffffff);
 	sprintf(buffer, "Rays/second: %i", raysPerSecond);
 	screen->Print(buffer, 1, 34, 0xffffff);
+	no_rays = 0;
+	positionInRaysQueue = 0;
+	numNewRays = 0;
+	numShadowrays = 0;
 }
 
 void Tmpl8::Game::MouseMove( int x, int y )
@@ -261,9 +292,23 @@ Collision Tmpl8::Game::nearestCollision(float* ray_ptr)
 	}
 }
 
-//Trace the ray.
-void Tmpl8::Game::TraceRay( float* ray_ptr )
+void Game::findCollisions(float* rays, int numrays, Collision* collisions)
 {
+	for (size_t i = 1; i <= numrays; i++)
+	{
+		float* rayptr = rays + (i * Ray::SIZE);
+		Collision collision = nearestCollision(rayptr);
+		collisions[i] = collision;
+		int c = 3;
+	}
+}
+
+//Trace the ray.
+void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays )
+{
+	//printf("traceray");
+
+	float* ray_ptr = rays + (ray * Ray::SIZE);
 	// unpacking ray pointer
 	vec3 direction = { ray_ptr[Ray::DX], ray_ptr[Ray::DY], ray_ptr[Ray::DZ] };
 	bool inobj =   ray_ptr[Ray::INOBJ];
@@ -281,7 +326,7 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 	}
 
 	// Collision detection
-	Collision collision = nearestCollision(ray_ptr);
+	Collision collision = collisions[ray];
 	if (bvhdebug) {
 		addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * ray_ptr[Ray::BVHTRA]) << 3);
 		return;
@@ -308,7 +353,6 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 			if ( specularity > 0 )
 			{
 				vec3 newdirection = reflect(direction, collision.N);
-
 				addRayToQueue(
 					collision.Pos + 0.00001f * newdirection, // collision.Pos + 0.00001f * -collision.N
 					newdirection,
@@ -318,7 +362,8 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 					rdepth + 1,
 					pixelx,
 					pixely,
-					energy * specularity
+					energy * specularity,
+					newRays
 				);
 			}
 		}
@@ -352,6 +397,7 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 			if ( Fr > 0.0f )
 			{
 				vec3 newdirection = reflect(direction, collision.N);
+				//printf("a");
 
 				addRayToQueue(
 					collision.Pos + 0.00001f * newdirection, // collision.Pos + 0.00001f * -collision.N
@@ -362,7 +408,8 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 					rdepth + 1,
 					pixelx,
 					pixely,
-					energy * Fr
+					energy * Fr,
+					newRays
 				);
 			}
 
@@ -380,7 +427,8 @@ void Tmpl8::Game::TraceRay( float* ray_ptr )
 					rdepth + 1,
 					pixelx,
 					pixely,
-					energy * (1 - Fr)
+					energy * (1 - Fr),
+					newRays
 				);
 
 				/* // TODO: Beer's law (and mirror albedo) requires ray.energy to be a Color rather than a float
@@ -745,6 +793,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 // Adds new ray to the queue of rays to be traced
 void Tmpl8::Game::addRayToQueue(Ray ray)
 {
+	printf("hoi");
 	addRayToQueue(
 		ray.Origin,
 		ray.Direction,
@@ -754,49 +803,54 @@ void Tmpl8::Game::addRayToQueue(Ray ray)
 		ray.recursiondepth,
 		ray.pixelx,
 		ray.pixely,
-		ray.energy
+		ray.energy,
+		rayQueue
 	);
 }
 
 // Adds new ray to the ray queue
-void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy)
+void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue)
 {
-	// checking for folding overflow
-	if (foldedQueue && (endOfRaysQueue + 1) >= positionInRaysQueue)
+	int queuesize = ((int*)queue)[0];
+	int currentCount = ((int*)queue)[1];
+	//printf("Currentcount i: %i", currentCount);
+	//printf(" queue size %i \n", queuesize);
+
+	/*if (currentCount == 0) {
+		((int*)queue)[1] = 1;
+		currentCount = 1; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
+	}*/
+
+	// array if full
+	if (currentCount + 1 > queuesize / Ray::SIZE)
 	{
 		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / Ray::SIZE);
 	}
 
-	// folding to start of array
-	if (endOfRaysQueue > rayQueueSize / Ray::SIZE)
-	{
-		endOfRaysQueue = 0;
-		foldedQueue = true;
-	}
 
 	// adding ray to array
-	int index = endOfRaysQueue * Ray::SIZE;
-	rayQueue[index + Ray::OX] = (float)ori.x;
-	rayQueue[index + Ray::OY] = (float)ori.y;
-	rayQueue[index + Ray::OZ] = (float)ori.z;
-	rayQueue[index + Ray::DX] = (float)dir.x;
-	rayQueue[index + Ray::DY] = (float)dir.y;
-	rayQueue[index + Ray::DZ] = (float)dir.z;
-	rayQueue[index + Ray::INOBJ] = (float)inObj;
-	rayQueue[index + Ray::REFRIND] = refrInd;
-	rayQueue[index + Ray::BVHTRA] = (float)bvhTr;
-	rayQueue[index + Ray::DEPTH] = depth;
-	rayQueue[index + Ray::PIXX] = x;
-	rayQueue[index + Ray::PIXY] = y;
-	rayQueue[index + Ray::ENERGY] = energy;
+	int index = (currentCount + 1) * Ray::SIZE; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
+	queue[index + Ray::OX] = (float)ori.x;
+	queue[index + Ray::OY] = (float)ori.y;
+	queue[index + Ray::OZ] = (float)ori.z;
+	queue[index + Ray::DX] = (float)dir.x;
+	queue[index + Ray::DY] = (float)dir.y;
+	queue[index + Ray::DZ] = (float)dir.z;
+	queue[index + Ray::INOBJ] = (float)inObj;
+	queue[index + Ray::REFRIND] = refrInd;
+	queue[index + Ray::BVHTRA] = (float)bvhTr;
+	queue[index + Ray::DEPTH] = depth;
+	queue[index + Ray::PIXX] = x;
+	queue[index + Ray::PIXY] = y;
+	queue[index + Ray::ENERGY] = energy;
 
-	endOfRaysQueue++;
+	((int*)queue)[1]++; //Current count++
 	raysPerFrame++;
-	no_rays++;
+	//no_rays++;
 }
 
 // Returns the next ray to be traced, and updates the queue position
-float* Tmpl8::Game::getRayQueuePosition()
+int Game::getRayQueuePosition()
 {
 	// checking for folding overflow
 	if (foldedQueue && positionInRaysQueue < endOfRaysQueue)
@@ -804,15 +858,10 @@ float* Tmpl8::Game::getRayQueuePosition()
 		printf("ERROR: positionInRaysQueue is somehow ahead of endOfRaysQueue.\n");
 	}
 
-	// folding to start of array
-	if (positionInRaysQueue >= rayQueueSize / Ray::SIZE)
-	{
-		positionInRaysQueue = 0;
-		foldedQueue = false;
-	}
+
 	float *ray_ptr = rayQueue + positionInRaysQueue * Ray::SIZE;
 	positionInRaysQueue++;
-	return ray_ptr;
+	return (positionInRaysQueue);
 }
 
 // Calculates the edges, normal, D and aabb for a triangle
