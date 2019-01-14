@@ -25,7 +25,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_OBJ_GLASS);
 	
 	/*
 	//GPU TEST STUFF START
@@ -85,9 +85,9 @@ float random8 = RandomFloat();
 // -----------------------------------------------------------
 // Main application tick function
 // -----------------------------------------------------------
-void Game::Tick( float deltaTime )
+void Game::Tick(float deltaTime)
 {
-	((int*)rayQueue)[0] = SCRHEIGHT * SCRWIDTH * 4 * Ray::SIZE; //Size of array
+	((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * Ray::SIZE; //Size of array
 	((int*)rayQueue)[1] = 0; //num rays in queue
 
 	frames++;
@@ -109,7 +109,7 @@ void Game::Tick( float deltaTime )
 			//Generate 4 rays
 			float* ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
 			addRayToQueue(
-				vec3 { ray1[0], ray1[1], ray1[2] }, vec3 { ray1[3], ray1[4], ray1[5] },
+				vec3{ ray1[0], ray1[1], ray1[2] }, vec3{ ray1[3], ray1[4], ray1[5] },
 				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
 
@@ -145,26 +145,40 @@ void Game::Tick( float deltaTime )
 	// Tracing queued rays
 //#pragma omp parallel for
 	//for (int i = 0; i < num_rays; i ++)
-	int numRays = ((int*)rayQueue)[1];
-	Collision* collisions = new Collision[numRays + 1];
-	findCollisions(rayQueue, numRays, collisions); //Find all collisions
+	Collision* collisions = new Collision[((int*)rayQueue)[1] + 1];
 
-	
+
 	float* newRays = new float[SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE];
 	((int*)newRays)[0] = SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE; //queue size
 	((int*)newRays)[1] = 0; //current count
-	
+
 	float* shadowRays = new float[SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE];
 	((int*)shadowRays)[0] = SCRWIDTH * SCRHEIGHT * 20 * Ray::SIZE; //queue size
 	((int*)shadowRays)[1] = 0; //current count
-	
-	
-	for (size_t i = 1; i <= numRays; i++)
-	{
-		TraceRay(rayQueue, i, no_rays, collisions, newRays, shadowRays); //Trace all rays
+
+	bool finished = false;
+
+	while (!finished) {
+		int numRays = ((int*)rayQueue)[1];
+		findCollisions(rayQueue, numRays, collisions); //Find all collisions
+
+		for (size_t i = 1; i <= numRays; i++)
+		{
+			TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
+		}
+		printf("New rays generated: %i \n", numRays);
+
+		if (numRays > 0){
+			printf("flipping \n");
+			float* temp = rayQueue; //Flip arrays
+			rayQueue = newRays;
+			newRays = temp;
+			((int*)newRays)[1] = 0; //set new ray count to 0
+		}
+		else {
+			finished = true;
+		}
 	}
-	printf("New rays generated: %i \n", ((int*)newRays)[1]);
-	
 	//TODO: Clean everything up. This is a mess..
 	//TODO: Generate the shadowrays in the buffer
 	//TODO: Repeat traceray for newly generated rays
@@ -451,6 +465,7 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 	else
 	{
 		addToIntermediate(pixelx, pixely, (skybox->ColorAt(direction) << 8) * energy);
+		//addToIntermediate(pixelx, pixely, (Color(255, 0, 0) << 8) * energy);
 	}
 }
 
@@ -551,6 +566,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
+		createfloor();
 		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 }, Material(0.0f, 1.52f, 0xffffff));
 
 		numLights = 3;
@@ -580,6 +596,8 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
+		createfloor();
+
 		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
 		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { -2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
 		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
@@ -612,6 +630,8 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
+		createfloor();
+
 		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 }, Material(0.5f, 0.0f, 0xffff00));
 
 		numLights = 3;
@@ -639,10 +659,11 @@ void Tmpl8::Game::loadscene(SCENES scene)
 	case SCENE_STRESSTEST:
 	{
 		delete triangles;
-		triangles = new float[900002 * FLOATS_PER_TRIANGLE];
+		triangles = new float[900004 * FLOATS_PER_TRIANGLE];
 
 		//Set up the scene
 		numGeometries = 0;
+		createfloor();
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		for (size_t i = 0; i < 200; i++)
@@ -788,6 +809,66 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 		}
 	}
 	printf("Loadobj done. \n\n");
+}
+
+void Tmpl8::Game::createfloor()
+{
+	numGeometries = 2;
+
+	//Vertex positions
+	triangles[0 + T_V0X] = -10.0f; //v0.x
+	triangles[0 + T_V0Y] = 1.5f; //v0.y
+	triangles[0 + T_V0Z] = 10.0f; //v0.z
+
+	triangles[0 + T_V1X] = -10.0f; //v1.x
+	triangles[0 + T_V1Y] = 1.5f; //v1.y
+	triangles[0 + T_V1Z] = -10.0f; //v1.z
+
+	triangles[0 + T_V2X] = 10.0f; //v2.x
+	triangles[0 + T_V2Y] = 1.5f; //v2.y
+	triangles[0 + T_V2Z] = 10.0f; //v2.z
+
+	//TODO: Completely remove material class?
+	//Color
+	triangles[0 + T_COLORR] = 0.0f; //R
+	triangles[0 + T_COLORG] = 255.0f; //G
+	triangles[0 + T_COLORB] = 0.0f; //B
+
+	//Material properties
+	triangles[0 + T_SPECULARITY] = 1.0f; //Specularity
+	triangles[0 + T_REFRACTION] = 0.0f; //Refractionindex
+
+	//Calculate the edges, normal and D
+	initializeTriangle(0, triangles);
+
+
+	
+	//Vertex positions
+	triangles[FLOATS_PER_TRIANGLE + T_V0X] = 10.0f; //v0.x
+	triangles[FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
+	triangles[FLOATS_PER_TRIANGLE + T_V0Z] = -10.0f; //v0.z
+
+	triangles[FLOATS_PER_TRIANGLE + T_V1X] = -10.0f; //v1.x
+	triangles[FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
+	triangles[FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
+
+	triangles[FLOATS_PER_TRIANGLE + T_V2X] = 10.0f; //v2.x
+	triangles[FLOATS_PER_TRIANGLE + T_V2Y] = 1.5f; //v2.y
+	triangles[FLOATS_PER_TRIANGLE + T_V2Z] = 10.0f; //v2.z
+
+	//TODO: Completely remove material class?
+	//Color
+	triangles[FLOATS_PER_TRIANGLE + T_COLORR] = 0.0f; //R
+	triangles[FLOATS_PER_TRIANGLE + T_COLORG] = 255.0f; //G
+	triangles[FLOATS_PER_TRIANGLE + T_COLORB] = 0.0f; //B
+
+	//Material properties
+	triangles[FLOATS_PER_TRIANGLE + T_SPECULARITY] = 1.0f; //Specularity
+	triangles[FLOATS_PER_TRIANGLE + T_REFRACTION] = 0.0f; //Refractionindex
+
+	//Calculate the edges, normal and D
+	initializeTriangle(1, triangles);
+
 }
 
 // Adds new ray to the queue of rays to be traced

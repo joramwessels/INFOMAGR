@@ -136,6 +136,7 @@ private:
 
 	void loadscene(SCENES scene);
 	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
+	void createfloor();
 
 	void initializeTriangle(int i, float* triangles);
 
@@ -170,7 +171,7 @@ private:
 	int positionInRaysQueue = 0;		// the next ray index to be traced (multiply with variablesInRay)
 	bool foldedQueue = false;			// if true, the position index is supposed to be higher than the end index
 	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
-	const int rayQueueSize = SCRHEIGHT * SCRWIDTH * 4 * Ray::SIZE;
+	const int rayQueueSize = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * Ray::SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	void addRayToQueue(Ray ray);
 	void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
