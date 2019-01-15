@@ -36,8 +36,9 @@ public:
 
 	bool DoF = false;
 
-private:
 	vec3 position;
+	vec3 virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL;
+private:
 	vec3 left;
 	vec3 up;
 
@@ -45,7 +46,6 @@ private:
 
 	vec3 virtualScreenCenter;
 
-	vec3 virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL;
 
 	float xsize = SCRWIDTH / 800.0f;
 	float ysize = SCRHEIGHT / 800.0f;

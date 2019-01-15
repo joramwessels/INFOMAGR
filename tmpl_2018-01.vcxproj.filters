@@ -9,7 +9,6 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BVH.cpp" />
-    <ClCompile Include="game.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="surface.h">
@@ -37,5 +36,6 @@
   <ItemGroup>
     <CudaCompile Include="GPUStuff.cu" />
     <CudaCompile Include="GPUStuff.cuh" />
+    <CudaCompile Include="game.cpp" />
   </ItemGroup>
 </Project>

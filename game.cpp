@@ -62,6 +62,18 @@ float random6 = RandomFloat();
 float random7 = RandomFloat();
 float random8 = RandomFloat();
 
+inline void CheckCudaError()
+{
+	cudaError_t error = cudaGetLastError();
+	if (error != cudaSuccess)
+	{
+		// print the CUDA error message and exit
+		printf("3 CUDA error: %s\n", cudaGetErrorString(error));
+		printf("exiting...");
+		std::cin.get(); exit(-1);;
+	}
+}
+
 
 // -----------------------------------------------------------
 // Main application tick function
@@ -70,6 +82,8 @@ void Game::Tick(float deltaTime)
 {
 	((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE; //Size of array
 	((int*)rayQueue)[1] = 0; //num rays in queue
+
+	cudaMemset(g_rayQueue + 1, 0, sizeof(uint));
 
 	frames++;
 	raysPerFrame = 0;
@@ -81,7 +95,7 @@ void Game::Tick(float deltaTime)
 
 	// Generate initial rays
 //#pragma omp parallel for
-	for (int pixely = 0; pixely < SCRHEIGHT; pixely++) for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
+	/*for (int pixely = 0; pixely < SCRHEIGHT; pixely++) for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
 	{
 		Color result;
 
@@ -126,8 +140,23 @@ void Game::Tick(float deltaTime)
 			delete ray;
 		}
 	}
+	*/
+	float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
+	float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
+	float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
+	float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
+	
+	
+	GeneratePrimaryRay <<<SCRWIDTH, SCRHEIGHT >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
+	CheckCudaError();
 
-	//testkernel << <1, 1 >> > (float* rayQueue, bool DoF, gpu::vec3 position, gpu::vec3 virtualScreenCornerTL, gpu::vec3 virtualScreenCornerTR, gpu::vec3 virtualScreenCornerBL, bool SSAA);
+	cudaDeviceSynchronize();
+	CheckCudaError();
+	cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+	CheckCudaError();
+	cudaDeviceSynchronize();
+	CheckCudaError();
+	printf("Num rays: %i \n", ((int*)rayQueue)[1]);
 
 	// Tracing queued rays
 //#pragma omp parallel for
@@ -143,7 +172,7 @@ void Game::Tick(float deltaTime)
 		{
 			TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
 		}
-		printf("New rays generated: %i \n", numRays);
+		//printf("New rays generated: %i \n", numRays);
 
 		int numShadowRays = ((int*)shadowRays)[1];
 		for (int i = 0; i < numShadowRays; i++)

@@ -63,10 +63,14 @@ __device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, boo
 
 __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA)
 {
-	int pixelx = threadIdx.x;
-	int pixely = threadIdx.y;
+	int pixelx = blockIdx.x;
+	int pixely = threadIdx.x;
 
 	if (pixelx > SCRWIDTH || pixely > SCRHEIGHT) return;
+
+	if (pixelx == 0 & pixely == 0) {
+		((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
+	}
 
 	//Generate the ray
 	float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
@@ -87,7 +91,7 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 	rayQueue[baseIndex + R_PIXY] = pixely;
 	rayQueue[baseIndex + R_ENERGY] = 1.0f;
 
-	atomicInc(((uint*)rayQueue), 0xffffffff);
+	atomicInc(((uint*)rayQueue) + 1, 0xffffffff);
 
 
 	delete ray;
