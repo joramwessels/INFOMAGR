@@ -148,7 +148,7 @@
       <FastMath>true</FastMath>
     </CudaCompile>
     <CudaCompile>
-      <Optimization>O2</Optimization>
+      <Optimization>O3</Optimization>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <AdditionalOptions>-Xcompiler -openmp %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
@@ -157,7 +157,7 @@
   <ItemGroup>
     <ClCompile Include="BVH.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="game.cpp" />
+    <CudaCompile Include="game.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="template.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>

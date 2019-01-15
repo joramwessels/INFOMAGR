@@ -9,10 +9,8 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BVH.cpp" />
-    <ClCompile Include="game.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="game.h" />
     <ClInclude Include="surface.h">
       <Filter>template code</Filter>
     </ClInclude>
@@ -23,6 +21,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Structs.h" />
     <ClInclude Include="BVH.h" />
+    <ClInclude Include="game.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">
@@ -37,5 +36,6 @@
   <ItemGroup>
     <CudaCompile Include="GPUStuff.cu" />
     <CudaCompile Include="GPUStuff.cuh" />
+    <CudaCompile Include="game.cpp" />
   </ItemGroup>
 </Project>

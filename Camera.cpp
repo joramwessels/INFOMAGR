@@ -26,10 +26,20 @@ float* Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 	if (DoF) DofRandomness = vec3((RandomFloat() * 0.1 - 0.05), (RandomFloat() * 0.1 - 0.05), 0); //TODO: make random and maybe 7-gon instead of square?
 
 	vec3 origin = position + DofRandomness;
+	//printf("ray origin: %f, %f, %f", origin.x, origin.y, origin.z);
+
 	vec3 positionOnVirtualScreen = virtualScreenCornerTL + pixelPosScaled.x * (virtualScreenCornerTR - virtualScreenCornerTL) + pixelPosScaled.y * (virtualScreenCornerBL - virtualScreenCornerTL);
 	vec3 direction = (positionOnVirtualScreen - origin).normalized();
 
-	float ray[6] = { origin.x, origin.y, origin.z, direction.x, direction.y, direction.z };
+	float* ray = new float[6];
+	ray[0] = origin.x;
+	ray[1] = origin.y;
+	ray[2] = origin.z;
+	ray[3] = direction.x;
+	ray[4] = direction.y;
+	ray[5] = direction.z;
+	//float ray[6] = { origin.x, origin.y, origin.z, direction.x, direction.y, direction.z };
+
 	return ray;
 }
 
