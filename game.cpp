@@ -26,34 +26,6 @@ void Game::Init()
 	*/
 
 	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
-	
-	/*
-	//GPU TEST STUFF START
-	float *x;
-	float *xgpu;
-
-	cudaMalloc(&xgpu, 100 * sizeof(float));
-	x = new float[100];
-	
-	for (size_t i = 0; i < 100; i++)
-	{
-		x[i] = i;
-	}
-
-	cudaMemcpy(xgpu, x, 100 * sizeof(float), cudaMemcpyHostToDevice);
-
-	testkernel << <1, 100 >> > (xgpu);
-	cudaError_t err = cudaGetLastError();
-	if (err != cudaSuccess) printf("Error: %s\n", cudaGetErrorString(err));
-
-	cudaMemcpy(x, xgpu, 100 * sizeof(float), cudaMemcpyDeviceToHost);
-
-	for (size_t i = 0; i < 100; i++)
-	{
-		printf("x[%i]: %f \n", i, x[i]);
-	}
-	//GPU TEST STUFF END
-	*/
 
 	SSAA = false;
 	camera.DoF = false;
@@ -69,6 +41,7 @@ void Game::Init()
 	((int*)shadowRays)[0] = rayQueueSize * 5; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
+	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
 }
 
 // -----------------------------------------------------------
@@ -95,7 +68,7 @@ float random8 = RandomFloat();
 // -----------------------------------------------------------
 void Game::Tick(float deltaTime)
 {
-	((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * Ray::SIZE; //Size of array
+	((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE; //Size of array
 	((int*)rayQueue)[1] = 0; //num rays in queue
 
 	frames++;
@@ -132,7 +105,6 @@ void Game::Tick(float deltaTime)
 				vec3{ ray3[0], ray3[1], ray3[2] }, vec3{ ray3[3], ray3[4], ray3[5] },
 				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
-
 			float* ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
 			addRayToQueue(
 				vec3{ ray4[0], ray4[1], ray4[2] }, vec3{ ray4[3], ray4[4], ray4[5] },
@@ -155,6 +127,8 @@ void Game::Tick(float deltaTime)
 		}
 	}
 
+	//testkernel << <1, 1 >> > (float* rayQueue, bool DoF, gpu::vec3 position, gpu::vec3 virtualScreenCornerTL, gpu::vec3 virtualScreenCornerTR, gpu::vec3 virtualScreenCornerBL, bool SSAA);
+
 	// Tracing queued rays
 //#pragma omp parallel for
 
@@ -169,7 +143,7 @@ void Game::Tick(float deltaTime)
 		{
 			TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
 		}
-		//printf("New rays generated: %i \n", numRays);
+		printf("New rays generated: %i \n", numRays);
 
 		int numShadowRays = ((int*)shadowRays)[1];
 		for (int i = 0; i < numShadowRays; i++)
@@ -178,13 +152,13 @@ void Game::Tick(float deltaTime)
 		}
 
 		//Flip the arrays
-		float* temp = rayQueue; 
+		float* temp = rayQueue;
 		rayQueue = newRays;
 		newRays = temp;
 
 		((int*)newRays)[1] = 0; //set new ray count to 0
 		((int*)shadowRays)[1] = 0; //set new shadowray count to 0
-		
+
 		if (((int*)rayQueue)[1] == 0) finished = true;
 	}
 
@@ -227,12 +201,12 @@ void Game::Tick(float deltaTime)
 		camera.setFocalPoint(camera.focalpoint * 1.1);
 	}
 
-	if ( animate )
+	if (animate)
 	{
 		//frame += deltaTime;
-		frame ++;
+		frame++;
 		//Animate earth around mars
-		((ParentBVH*)bvh)->translateRight = {sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f};
+		((ParentBVH*)bvh)->translateRight = { sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f };
 
 		//Animate moon around earth
 		ParentBVH* moonbvh = (ParentBVH*)((ParentBVH*)bvh)->right;
@@ -268,13 +242,13 @@ void Game::Tick(float deltaTime)
 	numShadowrays = 0;
 }
 
-void Tmpl8::Game::MouseMove( int x, int y )
+void Game::MouseMove(int x, int y)
 {
 	camera.rotate({ (float)y, (float)x, 0 });
 }
 
 //Find the nearest collision along the ray
-Collision Tmpl8::Game::nearestCollision(float* ray_ptr)
+Collision Game::nearestCollision(float* ray_ptr)
 {
 	if (use_bvh)
 	{
@@ -291,8 +265,8 @@ Collision Tmpl8::Game::nearestCollision(float* ray_ptr)
 		for (int i = 0; i < numGeometries; i++)
 		{
 			//Collision collision = geometry[i]->Intersect(*ray);
-			vec3 ray_origin =    { ray_ptr[Ray::OX], ray_ptr[Ray::OY], ray_ptr[Ray::OZ] };
-			vec3 ray_direction = { ray_ptr[Ray::DX], ray_ptr[Ray::DY], ray_ptr[Ray::DZ] };
+			vec3 ray_origin = { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
+			vec3 ray_direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
 			Collision collision = intersectTriangle(i, ray_origin, ray_direction, triangles);
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
@@ -310,7 +284,7 @@ void Game::findCollisions(float* rays, int numrays, Collision* collisions)
 {
 	for (size_t i = 1; i <= numrays; i++)
 	{
-		float* rayptr = rays + (i * Ray::SIZE);
+		float* rayptr = rays + (i * R_SIZE);
 		Collision collision = nearestCollision(rayptr);
 		collisions[i] = collision;
 		int c = 3;
@@ -318,22 +292,22 @@ void Game::findCollisions(float* rays, int numrays, Collision* collisions)
 }
 
 //Trace the ray.
-void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays )
+void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays)
 {
 	//printf("traceray");
 
-	float* ray_ptr = rays + (ray * Ray::SIZE);
+	float* ray_ptr = rays + (ray * R_SIZE);
 	// unpacking ray pointer
-	vec3 direction = { ray_ptr[Ray::DX], ray_ptr[Ray::DY], ray_ptr[Ray::DZ] };
-	bool inobj =   ray_ptr[Ray::INOBJ];
-	float refind = ray_ptr[Ray::REFRIND];
-	float rdepth = ray_ptr[Ray::DEPTH];
-	float pixelx = ray_ptr[Ray::PIXX];
-	float pixely = ray_ptr[Ray::PIXY];
-	float energy = ray_ptr[Ray::ENERGY];
+	vec3 direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
+	bool inobj = ray_ptr[R_INOBJ];
+	float refind = ray_ptr[R_REFRIND];
+	float rdepth = ray_ptr[R_DEPTH];
+	float pixelx = ray_ptr[R_PIXX];
+	float pixely = ray_ptr[R_PIXY];
+	float energy = ray_ptr[R_ENERGY];
 
 	// Basecase
-	if ( ray_ptr[Ray::DEPTH] > MAX_RECURSION_DEPTH )
+	if (ray_ptr[R_DEPTH] > MAX_RECURSION_DEPTH)
 	{
 		//return 0x000000;
 		return;
@@ -342,12 +316,12 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 	// Collision detection
 	Collision collision = collisions[ray];
 	if (bvhdebug) {
-		addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * ray_ptr[Ray::BVHTRA]) << 3);
+		addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * ray_ptr[R_BVHTRA]) << 3);
 		return;
 	}
 
 	// if ray collides
-	if ( collision.t > 0 )
+	if (collision.t > 0)
 	{
 		// if opaque
 		if (collision.other[T_REFRACTION] == 0.0f)
@@ -356,7 +330,7 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 			float specularity = collision.other[T_SPECULARITY];
 
 			// diffuse aspect
-			if ( specularity < 1.0f )
+			if (specularity < 1.0f)
 			{
 				//Generate shadow rays
 				for (int light = 0; light < numLights; light++)
@@ -370,7 +344,7 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 			}
 
 			// specular aspect
-			if ( specularity > 0 )
+			if (specularity > 0)
 			{
 				vec3 newdirection = reflect(direction, collision.N);
 				addRayToQueue(
@@ -391,14 +365,14 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 		else
 		{
 			float n1, n2;
-			if ( inobj ) n1 = refind, n2 = 1.0f;
+			if (inobj) n1 = refind, n2 = 1.0f;
 			else				n1 = refind, n2 = collision.other[T_REFRACTION];
 			float transition = n1 / n2;
-			float costheta = dot( collision.N, -direction );
-			float k = 1 - ( transition * transition ) * ( 1.0f - ( costheta * costheta ) );
+			float costheta = dot(collision.N, -direction);
+			float k = 1 - (transition * transition) * (1.0f - (costheta * costheta));
 
 			float Fr;
-			if ( k < 0 )
+			if (k < 0)
 			{
 				// total internal reflection
 				Fr = 1;
@@ -409,12 +383,12 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 				float nsumm = n1 + n2;
 				float temp = ndiff / nsumm;
 				float R0 = temp * temp;
-				Fr = R0 + ( 1.0f - R0 ) * powf( 1.0f - costheta, 5.0f );
+				Fr = R0 + (1.0f - R0) * powf(1.0f - costheta, 5.0f);
 			}
 
 			// Fresnel reflection (Schlick's approximation)
 			Color reflection, refraction;
-			if ( Fr > 0.0f )
+			if (Fr > 0.0f)
 			{
 				vec3 newdirection = reflect(direction, collision.N);
 				//printf("a");
@@ -434,7 +408,7 @@ void Game::TraceRay( float* rays, int ray, int numrays, Collision* collisions, f
 			}
 
 			// Snell refraction
-			if ( Fr < 1.0f )
+			if (Fr < 1.0f)
 			{
 				vec3 newdirection = transition * direction + collision.N * (transition * costheta - sqrt(k));
 
@@ -484,7 +458,7 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 
 	if (use_bvh)
 	{
-		float shadowray[Ray::SIZE] = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ], shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
+		float shadowray[R_SIZE] = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ], shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
 		//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
 		Collision shadowcollision = bvh->Traverse(shadowray, bvh->root);
 		//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
@@ -538,9 +512,9 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 			vec3 L = (lights[i].position - collision.Pos).normalized();
 			vec3 origin = collision.Pos + (0.00025f * L); //move away a little bit from the surface, to avoid self-collision in the outward direction.
 			vec3 direction = L;
-			
+
 			float maxt = (lights[i].position.x - collision.Pos.x) / L.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
-			
+
 			if (lights[i].type == Light::DIRECTIONAL) {
 				direction = lights[i].direction;
 				maxt = 5000;
@@ -557,7 +531,7 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 
 			if (use_bvh)
 			{
-				float shadowray[Ray::SIZE] = { origin.x, origin.y, origin.z, L.x, L.y, L.z};
+				float shadowray[R_SIZE] = { origin.x, origin.y, origin.z, L.x, L.y, L.z};
 				//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
 				Collision shadowcollision = bvh->Traverse(shadowray, bvh->root);
 				//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
@@ -606,12 +580,12 @@ Color Tmpl8::Game::DirectIllumination( Collision collision )
 	return result;
 }*/
 
-vec3 Tmpl8::Game::reflect( vec3 D, vec3 N )
+vec3 Game::reflect(vec3 D, vec3 N)
 {
-	return D - 2 * ( dot( D, N ) ) * N;
+	return D - 2 * (dot(D, N)) * N;
 }
 
-void Tmpl8::Game::loadscene(SCENES scene)
+void Game::loadscene(SCENES scene)
 {
 	triangles = new float[5000 * FLOATS_PER_TRIANGLE];
 
@@ -727,7 +701,7 @@ void Tmpl8::Game::loadscene(SCENES scene)
 		{
 			float ix = i % 14;
 			float iy = i / 14;
-			
+
 
 			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
 			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -2.0f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
@@ -798,7 +772,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) { //Only do 12 triangles for now
 			int fv = shapes[s].mesh.num_face_vertices[f];
-			
+
 			vec3 vertices[3];
 			//vec3 normals[3];
 
@@ -848,7 +822,7 @@ void Game::loadobj(string filename, vec3 scale, vec3 translate, Material materia
 			triangles[baseindex + T_COLORR] = material.color.R; //R
 			triangles[baseindex + T_COLORG] = material.color.G; //G
 			triangles[baseindex + T_COLORB] = material.color.B; //B
-			
+
 			//Material properties
 			triangles[baseindex + T_SPECULARITY] = material.specularity; //Specularity
 			triangles[baseindex + T_REFRACTION] = material.refractionIndex; //Refractionindex
@@ -899,7 +873,7 @@ void Game::createfloor(Material material)
 	initializeTriangle(0, triangles);
 
 
-	
+
 	//Vertex positions
 	triangles[FLOATS_PER_TRIANGLE + T_V0X] = 10.0f; //v0.x
 	triangles[FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
@@ -929,7 +903,7 @@ void Game::createfloor(Material material)
 }
 
 // Adds new ray to the queue of rays to be traced
-void Tmpl8::Game::addRayToQueue(Ray ray)
+void Game::addRayToQueue(Ray ray)
 {
 	printf("hoi");
 	addRayToQueue(
@@ -947,7 +921,7 @@ void Tmpl8::Game::addRayToQueue(Ray ray)
 }
 
 // Adds new ray to the ray queue
-void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue)
+void Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue)
 {
 	int queuesize = ((int*)queue)[0];
 	int currentCount = ((int*)queue)[1];
@@ -960,27 +934,27 @@ void Tmpl8::Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, i
 	}*/
 
 	// array if full
-	if (currentCount + 1 > queuesize / Ray::SIZE)
+	if (currentCount + 1 > queuesize / R_SIZE)
 	{
-		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / Ray::SIZE);
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / R_SIZE);
 	}
 
 
 	// adding ray to array
-	int index = (currentCount + 1) * Ray::SIZE; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
-	queue[index + Ray::OX] = (float)ori.x;
-	queue[index + Ray::OY] = (float)ori.y;
-	queue[index + Ray::OZ] = (float)ori.z;
-	queue[index + Ray::DX] = (float)dir.x;
-	queue[index + Ray::DY] = (float)dir.y;
-	queue[index + Ray::DZ] = (float)dir.z;
-	queue[index + Ray::INOBJ] = (float)inObj;
-	queue[index + Ray::REFRIND] = refrInd;
-	queue[index + Ray::BVHTRA] = (float)bvhTr;
-	queue[index + Ray::DEPTH] = depth;
-	queue[index + Ray::PIXX] = x;
-	queue[index + Ray::PIXY] = y;
-	queue[index + Ray::ENERGY] = energy;
+	int index = (currentCount + 1) * R_SIZE; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
+	queue[index + R_OX] = (float)ori.x;
+	queue[index + R_OY] = (float)ori.y;
+	queue[index + R_OZ] = (float)ori.z;
+	queue[index + R_DX] = (float)dir.x;
+	queue[index + R_DY] = (float)dir.y;
+	queue[index + R_DZ] = (float)dir.z;
+	queue[index + R_INOBJ] = (float)inObj;
+	queue[index + R_REFRIND] = refrInd;
+	queue[index + R_BVHTRA] = (float)bvhTr;
+	queue[index + R_DEPTH] = depth;
+	queue[index + R_PIXX] = x;
+	queue[index + R_PIXY] = y;
+	queue[index + R_ENERGY] = energy;
 
 	((int*)queue)[1]++; //Current count++
 	raysPerFrame++;
@@ -1002,7 +976,7 @@ void Game::addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, fl
 	// array if full
 	if (currentCount + 1 > queuesize / SR_SIZE)
 	{
-		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / Ray::SIZE);
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", rayQueueSize / R_SIZE);
 	}
 
 
@@ -1037,13 +1011,13 @@ int Game::getRayQueuePosition()
 	}
 
 
-	float *ray_ptr = rayQueue + positionInRaysQueue * Ray::SIZE;
+	float *ray_ptr = rayQueue + positionInRaysQueue * R_SIZE;
 	positionInRaysQueue++;
 	return (positionInRaysQueue);
 }
 
 // Calculates the edges, normal, D and aabb for a triangle
-void Tmpl8::Game::initializeTriangle(int i, float * triangles)
+void Game::initializeTriangle(int i, float * triangles)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
 
@@ -1087,27 +1061,27 @@ Collision intersectTriangle(int i, vec3 origin, vec3 direction, float * triangle
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
 
-	vec3 v0 = { 
+	vec3 v0 = {
 		triangles[baseindex + T_V0X],
 		triangles[baseindex + T_V0Y],
 		triangles[baseindex + T_V0Z] };
-	vec3 v1 = { 
+	vec3 v1 = {
 		triangles[baseindex + T_V1X],
 		triangles[baseindex + T_V1Y],
 		triangles[baseindex + T_V1Z] };
-	vec3 v2 = { 
+	vec3 v2 = {
 		triangles[baseindex + T_V2X],
 		triangles[baseindex + T_V2Y],
 		triangles[baseindex + T_V2Z] };
-	vec3 e0 = { 
+	vec3 e0 = {
 		triangles[baseindex + T_E0X],
 		triangles[baseindex + T_E0Y],
 		triangles[baseindex + T_E0Z] };
-	vec3 e1 = { 
+	vec3 e1 = {
 		triangles[baseindex + T_E1X],
 		triangles[baseindex + T_E1Y],
 		triangles[baseindex + T_E1Z] };
-	vec3 e2 = { 
+	vec3 e2 = {
 		triangles[baseindex + T_E2X],
 		triangles[baseindex + T_E2Y],
 		triangles[baseindex + T_E2Z] };

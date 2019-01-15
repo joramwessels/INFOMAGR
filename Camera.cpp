@@ -21,7 +21,7 @@ float* Camera::generateRayTroughVirtualScreen(float pixelx, float pixely)
 	vec2 pixelPosScaled;
 	pixelPosScaled.x = pixelx / SCRWIDTH; //Scale the pixel position to be in the range 0..1
 	pixelPosScaled.y = pixely / SCRHEIGHT;
-
+	
 	vec3 DofRandomness = { 0, 0, 0 };
 	if (DoF) DofRandomness = vec3((RandomFloat() * 0.1 - 0.05), (RandomFloat() * 0.1 - 0.05), 0); //TODO: make random and maybe 7-gon instead of square?
 

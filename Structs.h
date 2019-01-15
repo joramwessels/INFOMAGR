@@ -144,22 +144,6 @@ struct Ray
 	float energy; // the percentage it contributes (0 - 1)
 
 	// The location of the ray elements in the ray pointer
-	static enum {
-		OX = 0,
-		OY = 1,
-		OZ = 2,
-		DX = 3,
-		DY = 4,
-		DZ = 5,
-		INOBJ = 6,
-		REFRIND = 7,
-		BVHTRA = 8,
-		DEPTH = 9,
-		PIXX = 10,
-		PIXY = 11,
-		ENERGY = 12,
-		SIZE = 13
-	};
 };
 
 struct Collision
