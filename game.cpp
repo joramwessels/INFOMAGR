@@ -138,6 +138,10 @@ void Game::Tick(float deltaTime)
 				vec3{ ray4[0], ray4[1], ray4[2] }, vec3{ ray4[3], ray4[4], ray4[5] },
 				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
 			);
+			delete ray1;
+			delete ray2;
+			delete ray3;
+			delete ray4;
 		}
 		else {
 
@@ -147,6 +151,7 @@ void Game::Tick(float deltaTime)
 				vec3{ ray[0], ray[1], ray[2] }, vec3{ ray[3], ray[4], ray[5] },
 				false, 1.0f, 0, 0, pixelx, pixely, 1.0f, rayQueue
 			);
+			delete ray;
 		}
 	}
 
