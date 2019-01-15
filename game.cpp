@@ -177,16 +177,15 @@ void Game::Tick(float deltaTime)
 			TraceShadowRay(shadowRays, i);
 		}
 
-		if (((int*)newRays)[1] > 0){
-			float* temp = rayQueue; //Flip arrays
-			rayQueue = newRays;
-			newRays = temp;
-			((int*)newRays)[1] = 0; //set new ray count to 0
-			((int*)shadowRays)[1] = 0; //set new shadowray count to 0
-		}
-		else {
-			finished = true;
-		}
+		//Flip the arrays
+		float* temp = rayQueue; 
+		rayQueue = newRays;
+		newRays = temp;
+
+		((int*)newRays)[1] = 0; //set new ray count to 0
+		((int*)shadowRays)[1] = 0; //set new shadowray count to 0
+		
+		if (((int*)rayQueue)[1] == 0) finished = true;
 	}
 
 	// Plotting intermediate screen buffer to screen
