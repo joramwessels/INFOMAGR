@@ -172,7 +172,7 @@ void Game::Tick(float deltaTime)
 			TraceShadowRay(shadowRays, i);
 		}
 
-		if (numRays > 0){
+		if (((int*)newRays)[1] > 0){
 			float* temp = rayQueue; //Flip arrays
 			rayQueue = newRays;
 			newRays = temp;
