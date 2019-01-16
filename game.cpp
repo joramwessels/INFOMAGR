@@ -4,6 +4,16 @@
 
 float frame = 0;
 
+//Random positions for the SSAA
+float random1 = RandomFloat();
+float random2 = RandomFloat();
+float random3 = RandomFloat();
+float random4 = RandomFloat();
+float random5 = RandomFloat();
+float random6 = RandomFloat();
+float random7 = RandomFloat();
+float random8 = RandomFloat();
+
 
 // -----------------------------------------------------------
 // Initialize the application
@@ -42,6 +52,16 @@ void Game::Init()
 	((int*)shadowRays)[1] = 0; //current count
 
 	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
+
+	printf("rand: %f \n", random1);
+	printf("rand: %f \n", random2);
+	printf("rand: %f \n", random3);
+	printf("rand: %f \n", random4);
+	printf("rand: %f \n", random5);
+	printf("rand: %f \n", random6);
+	printf("rand: %f \n", random7);
+	printf("rand: %f \n", random8);
+
 }
 
 // -----------------------------------------------------------
@@ -52,15 +72,7 @@ void Game::Shutdown()
 
 }
 
-//Random positions for the SSAA
-float random1 = RandomFloat();
-float random2 = RandomFloat();
-float random3 = RandomFloat();
-float random4 = RandomFloat();
-float random5 = RandomFloat();
-float random6 = RandomFloat();
-float random7 = RandomFloat();
-float random8 = RandomFloat();
+
 
 inline void CheckCudaError()
 {

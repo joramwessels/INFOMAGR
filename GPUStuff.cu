@@ -19,7 +19,16 @@ __device__ float3 operator*(const float3 &a, const float &b) {
 __device__ uint g_seed = 0x12345678;
 __device__ inline uint g_RandomUInt() { g_seed ^= g_seed << 13; g_seed ^= g_seed >> 17; g_seed ^= g_seed << 5; return g_seed; }
 __device__ inline float g_RandomFloat() { return g_RandomUInt() * 2.3283064365387e-10f; }
- 
+
+__device__ float g_random1 = 0.529669f;
+__device__ float g_random2 = 0.083422f;
+__device__ float g_random3 = 0.281753f;
+__device__ float g_random4 = 0.506648f;
+__device__ float g_random5 = 0.438385f;
+__device__ float g_random6 = 0.162733f;
+__device__ float g_random7 = 0.538243f;
+__device__ float g_random8 = 0.769904f;
+
 
 __device__ float3 normalize(float3 in) {
 	float mag = 1 / sqrtf(in.x * in.x + in.y * in.y + in.z*in.z);
@@ -98,18 +107,74 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 	if (pixelx == 0 & pixely == 0) {
 		((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
 	}
-
+	
 	//Generate the ray
-	float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+	if(SSAA){
+		float* ray1 = generateRayTroughVirtualScreen((float)pixelx + g_random1, (float)pixely + g_random2, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
 
-	ray[R_INOBJ] = 0;
-	ray[R_REFRIND] = 1.0f;
-	ray[R_BVHTRA] = 0;
-	ray[R_DEPTH] = 0;
-	ray[R_PIXX] = pixelx;
-	ray[R_PIXY] = pixely;
-	ray[R_ENERGY] = 1.0f;
+		ray1[R_INOBJ] = 0;
+		ray1[R_REFRIND] = 1.0f;
+		ray1[R_BVHTRA] = 0;
+		ray1[R_DEPTH] = 0;
+		ray1[R_PIXX] = pixelx;
+		ray1[R_PIXY] = pixely;
+		ray1[R_ENERGY] = 0.25f;
 
-	addRayToQueue(ray, rayQueue);
-	delete ray;
+		addRayToQueue(ray1, rayQueue);
+		delete ray1;
+		
+		float* ray2 = generateRayTroughVirtualScreen((float)pixelx + g_random3, (float)pixely + g_random4, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+		ray2[R_INOBJ] = 0;
+		ray2[R_REFRIND] = 1.0f;
+		ray2[R_BVHTRA] = 0;
+		ray2[R_DEPTH] = 0;
+		ray2[R_PIXX] = pixelx;
+		ray2[R_PIXY] = pixely;
+		ray2[R_ENERGY] = 0.25f;
+
+		addRayToQueue(ray2, rayQueue);
+		delete ray2;
+		
+		float* ray3 = generateRayTroughVirtualScreen((float)pixelx + g_random5, (float)pixely + g_random6, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+		ray3[R_INOBJ] = 0;
+		ray3[R_REFRIND] = 1.0f;
+		ray3[R_BVHTRA] = 0;
+		ray3[R_DEPTH] = 0;
+		ray3[R_PIXX] = pixelx;
+		ray3[R_PIXY] = pixely;
+		ray3[R_ENERGY] = 0.25f;
+
+		addRayToQueue(ray3, rayQueue);
+		delete ray3;
+		
+		float* ray4 = generateRayTroughVirtualScreen((float)pixelx + g_random7, (float)pixely + g_random8, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+		ray4[R_INOBJ] = 0;
+		ray4[R_REFRIND] = 1.0f;
+		ray4[R_BVHTRA] = 0;
+		ray4[R_DEPTH] = 0;
+		ray4[R_PIXX] = pixelx;
+		ray4[R_PIXY] = pixely;
+		ray4[R_ENERGY] = 0.25f;
+
+		addRayToQueue(ray4, rayQueue);
+		delete ray4;
+		
+	}
+	else {
+		float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+		ray[R_INOBJ] = 0;
+		ray[R_REFRIND] = 1.0f;
+		ray[R_BVHTRA] = 0;
+		ray[R_DEPTH] = 0;
+		ray[R_PIXX] = pixelx;
+		ray[R_PIXY] = pixely;
+		ray[R_ENERGY] = 1.0f;
+
+		addRayToQueue(ray, rayQueue);
+		delete ray;
+	}
 }
