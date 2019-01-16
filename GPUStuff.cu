@@ -49,7 +49,7 @@ __device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, boo
 	float3 positionOnVirtualScreen = virtualScreenCornerTL + (virtualScreenCornerTR - virtualScreenCornerTL) * pixelPosScaled.x + (virtualScreenCornerBL - virtualScreenCornerTL) * pixelPosScaled.y;
 	float3 direction = normalize(positionOnVirtualScreen - origin);
 
-	float* ray = new float[6];
+	float* ray = new float[R_SIZE];
 	ray[0] = origin.x;
 	ray[1] = origin.y;
 	ray[2] = origin.z;
@@ -59,6 +59,33 @@ __device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, boo
 	//float ray[6] = { origin.x, origin.y, origin.z, direction.x, direction.y, direction.z };
 
 	return ray;
+}
+
+__device__ void addRayToQueue(float* ray, float* queue)
+{
+	int id = atomicInc(((uint*)queue) + 1, 0xffffffff) + 1;
+	int queuesize = ((uint*)queue)[0];
+
+	if (id > queuesize / R_SIZE)
+	{
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", queuesize / R_SIZE);
+	}
+
+	int baseIndex = id * R_SIZE;
+
+	queue[baseIndex + R_OX] = ray[0];
+	queue[baseIndex + R_OY] = ray[1];
+	queue[baseIndex + R_OZ] = ray[2];
+	queue[baseIndex + R_DX] = ray[3];
+	queue[baseIndex + R_DY] = ray[4];
+	queue[baseIndex + R_DZ] = ray[5];
+	queue[baseIndex + R_INOBJ] = ray[6];
+	queue[baseIndex + R_REFRIND] = ray[7];
+	queue[baseIndex + R_BVHTRA] = ray[8];
+	queue[baseIndex + R_DEPTH] = ray[9];
+	queue[baseIndex + R_PIXX] = ray[10];
+	queue[baseIndex + R_PIXY] = ray[11];
+	queue[baseIndex + R_ENERGY] = ray[12];
 }
 
 __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA)
@@ -75,25 +102,14 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 	//Generate the ray
 	float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
 
-	int baseIndex = ((pixelx + SCRWIDTH * pixely) + 1) * R_SIZE;
+	ray[R_INOBJ] = 0;
+	ray[R_REFRIND] = 1.0f;
+	ray[R_BVHTRA] = 0;
+	ray[R_DEPTH] = 0;
+	ray[R_PIXX] = pixelx;
+	ray[R_PIXY] = pixely;
+	ray[R_ENERGY] = 1.0f;
 
-	rayQueue[baseIndex + R_OX] = ray[0];
-	rayQueue[baseIndex + R_OY] = ray[1];
-	rayQueue[baseIndex + R_OZ] = ray[2];
-	rayQueue[baseIndex + R_DX] = ray[3];
-	rayQueue[baseIndex + R_DY] = ray[4];
-	rayQueue[baseIndex + R_DZ] = ray[5];
-	rayQueue[baseIndex + R_INOBJ] = 0;
-	rayQueue[baseIndex + R_REFRIND] = 1.0f;
-	rayQueue[baseIndex + R_BVHTRA] = 0;
-	rayQueue[baseIndex + R_DEPTH] = 0;
-	rayQueue[baseIndex + R_PIXX] = pixelx;
-	rayQueue[baseIndex + R_PIXY] = pixely;
-	rayQueue[baseIndex + R_ENERGY] = 1.0f;
-
-	atomicInc(((uint*)rayQueue) + 1, 0xffffffff);
-
-
+	addRayToQueue(ray, rayQueue);
 	delete ray;
-
 }
