@@ -35,7 +35,7 @@ void Game::Init()
 		SCENE_ANIMATION
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_OBJ_GLASS);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -365,10 +365,10 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 	if (collision.t > 0)
 	{
 		// if opaque
-		if (collision.other[T_REFRACTION] == 0.0f)
+		if (collision.refraction == 0.0f)
 		{
 			Color albedo, reflection;
-			float specularity = collision.other[T_SPECULARITY];
+			float specularity = collision.specularity;
 
 			// diffuse aspect
 			if (specularity < 1.0f)
@@ -379,7 +379,8 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 					vec3 direction = (lights[light].position - collision.Pos).normalized();
 					vec3 origin = collision.Pos + (0.00025f * direction); //move away a little bit from the surface, to avoid self-collision in the outward direction.
 					float maxt = (lights[light].position.x - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
-					Color shadowRayEnergy = collision.colorAt * energy * (1 - specularity) * lights[light].color * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lights[light].position - collision.Pos).sqrLentgh()));
+					Color collisioncolor = Color(collision.R, collision.G, collision.B);
+					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lights[light].color * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lights[light].position - collision.Pos).sqrLentgh()));
 					addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
 				}
 			}
@@ -407,7 +408,7 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 		{
 			float n1, n2;
 			if (inobj) n1 = refind, n2 = 1.0f;
-			else				n1 = refind, n2 = collision.other[T_REFRACTION];
+			else				n1 = refind, n2 = collision.refraction;
 			float transition = n1 / n2;
 			float costheta = dot(collision.N, -direction);
 			float k = 1 - (transition * transition) * (1.0f - (costheta * costheta));
@@ -457,7 +458,7 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 					collision.Pos + 0.00001f * newdirection,
 					newdirection,
 					!inobj,
-					(inobj ? 1.0f : collision.other[T_REFRACTION]),
+					(inobj ? 1.0f : collision.refraction),
 					0,
 					rdepth + 1,
 					pixelx,
@@ -1153,10 +1154,12 @@ Collision intersectTriangle(int i, vec3 origin, vec3 direction, float * triangle
 				return collision;
 			}
 
-			collision.colorAt.R = triangles[baseindex + T_COLORR];
-			collision.colorAt.G = triangles[baseindex + T_COLORG];
-			collision.colorAt.B = triangles[baseindex + T_COLORB];
-			collision.other = triangles + baseindex;
+			collision.R = triangles[baseindex + T_COLORR];
+			collision.G = triangles[baseindex + T_COLORG];
+			collision.B = triangles[baseindex + T_COLORB];
+			//collision.other = triangles + baseindex;
+			collision.refraction = triangles[baseindex + T_REFRACTION];
+			collision.specularity = triangles[baseindex + T_SPECULARITY];
 			if (NdotR > 0) collision.N = -N;
 			else collision.N = N;
 			collision.Pos = P;

@@ -148,11 +148,11 @@ struct Ray
 
 struct Collision
 {
-	float *other;
 	vec3 N;
 	vec3 Pos;
 	float t;
-	Color colorAt;
+	//Color colorAt;
+	float R, G, B, refraction, specularity;
 
 	//bool isTranslated;
 	//vec3 translation = { 0, 0, 0 };
