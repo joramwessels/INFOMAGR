@@ -104,10 +104,14 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 		{
 			float closestdist = 0xffffff;
 
+			int count = pool[index + B_COUNT];
+
 			// Find closest collision
 			for (int i = 0; i < pool[index + B_COUNT]; i++)
 			{
 				//Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
+				int triangleindex = orderedIndices[(int)pool[index + B_LEFTFIRST] + i];
+
 				Collision collision = intersectTriangle(orderedIndices[(int)pool[index + B_LEFTFIRST] + i], ray_origin, ray_direction, scene);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
@@ -551,7 +555,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 	subdivideBVHNode(bvh, leftchild, recursiondepth + 1);
 
 	bvh->pool[index + B_LEFTFIRST] = leftchild;
-	count = 0; //Set count to 0, because this node is no longer a leaf node.
+	bvh->pool[index + B_COUNT] = 0; //Set count to 0, because this node is no longer a leaf node.
 	subdivideBVHNode(bvh, rightchild, recursiondepth + 1);
 
 	if (debugprints) printf("Node on level %i done. \n", recursiondepth);
