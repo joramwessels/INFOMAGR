@@ -25,7 +25,8 @@ void BVH::Build(float* scene, int no_elements)
 	this->scene = scene;
 
 	//Create BVHnode pool, to pick BVHnodes from later
-	pool = new BVHNode[no_elements * 2 - 1];
+	//pool = new BVHNode[no_elements * 2 - 1];
+	pool = new float[(no_elements * 2 - 1) * B_SIZE];
 	orderedIndices = new uint[no_elements];
 
 	//Create indices array
@@ -38,10 +39,19 @@ void BVH::Build(float* scene, int no_elements)
 	root = &pool[0];
 	poolPtr = 2;
 
-	root->leftFirst = 0;
-	root->count = no_elements;
-	root->bounds = calculateAABB(orderedIndices, root->leftFirst, root->count);
-	root->subdivide(this); 
+	root[B_LEFTFIRST] = 0;
+	root[B_COUNT] = no_elements;
+	AABB rootaabb = calculateAABB(orderedIndices, root[B_LEFTFIRST], root[B_COUNT]);
+	//root->bounds = calculateAABB(orderedIndices, root->leftFirst, root->count);
+
+	root[B_AABB_MINX] = rootaabb.xmin;
+	root[B_AABB_MAXX] = rootaabb.xmax;
+	root[B_AABB_MINY] = rootaabb.ymin;
+	root[B_AABB_MAXY] = rootaabb.ymax;
+	root[B_AABB_MINZ] = rootaabb.zmin;
+	root[B_AABB_MAXZ] = rootaabb.zmax;
+
+	subdivideBVHNode(this, 0); 
 }
 
 
@@ -79,7 +89,7 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 }
 
 // Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
-Collision BVH::Traverse(float* ray_ptr, BVHNode* node)
+Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index)
 {
 	Collision closest;
 	closest.t = -1;
@@ -90,15 +100,15 @@ Collision BVH::Traverse(float* ray_ptr, BVHNode* node)
 	vec3 ray_direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
 
 		// If leaf
-		if (node->count != 0)
+		if (pool[index + B_COUNT] != 0)
 		{
 			float closestdist = 0xffffff;
 
 			// Find closest collision
-			for (int i = 0; i < node->count; i++)
+			for (int i = 0; i < pool[index + B_COUNT]; i++)
 			{
 				//Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
-				Collision collision = intersectTriangle(orderedIndices[node->leftFirst + i], ray_origin, ray_direction, scene);
+				Collision collision = intersectTriangle(orderedIndices[(int)pool[index + B_LEFTFIRST] + i], ray_origin, ray_direction, scene);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
 				{
@@ -114,25 +124,31 @@ Collision BVH::Traverse(float* ray_ptr, BVHNode* node)
 		else
 		{
 			// Check both children and return the closest collision if both intersected
-			AABB::AABBIntersection tleft = pool[node->leftFirst].bounds.Intersects(ray_origin, ray_direction);
-			AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray_origin, ray_direction);
+			//AABB::AABBIntersection tleft = pool[(int)pool[index + B_LEFTFIRST]].bounds.Intersects(ray_origin, ray_direction);
+			//AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray_origin, ray_direction);
 			
+			float tleft = IntersectAABB(ray_ptr, pool + ((index + B_LEFTFIRST) * B_SIZE));
+			float tright = IntersectAABB(ray_ptr, pool + ((index + B_LEFTFIRST + 1) * B_SIZE));
+
 			int flip = 0;
-			float tEntryFarNode = tright.tEntry;
-			if (tright.tEntry < tleft.tEntry) { flip = 1; tEntryFarNode = tleft.tEntry; };
+			float tEntryFarNode = tright;
+			if (tright < tleft && tright > 0) { flip = 1; tEntryFarNode = tleft; };
 
 			Collision colclose, colfar;
 			colclose.t = -1;
 			colfar.t = -1;
 
-			if ((tleft.intersects && !flip) || (flip && tright.intersects)) {
-				colclose = Traverse(ray_ptr, &(pool[node->leftFirst + flip]));
+			if ((tleft > 0 && !flip) || (flip && tright > 0)) {
+				//colclose = Traverse(ray_ptr, &(pool[node->leftFirst + flip]));
+				colclose = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, (pool[index + B_LEFTFIRST] + flip) * B_SIZE);
 				if (colclose.t < tEntryFarNode && colclose.t > 0) {
 					return colclose;
 				}
 			}
-			if ((tright.intersects && !flip) || (tleft.intersects && flip)) {
-				colfar = Traverse(ray_ptr, &(pool[node->leftFirst + (1 - flip)]));
+			if ((tright > 0 && !flip) || (tleft > 0 && flip)) {
+				//colfar = Traverse(ray_ptr, &(pool[node->leftFirst + (1 - flip)]));
+				colfar = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, (pool[index + B_LEFTFIRST] + (1 - flip)) * B_SIZE);
+
 			}
 
 			if (colfar.t == -1) return colclose;
@@ -145,7 +161,8 @@ Collision BVH::Traverse(float* ray_ptr, BVHNode* node)
 
 void BVH::load(char * filename, int totalNoElements, float* scene)
 {
-	this->totalNoElements = totalNoElements;
+	//TODO: Fix this
+	/*this->totalNoElements = totalNoElements;
 	this->scene = scene;
 
 	int metadata[2]; //no elements & poolptr
@@ -166,7 +183,7 @@ void BVH::load(char * filename, int totalNoElements, float* scene)
 	root = pool;
 	
 	printf("BVH loaded: %s \n", filename);
-
+	*/
 
 }
 
@@ -182,7 +199,7 @@ void BVH::save(char * filename)
 	
 	outFile.write((char*)metadata, sizeof(int) * 2);
 	outFile.write((char*)orderedIndices, sizeof(uint) * totalNoElements);
-	outFile.write((char*)pool, sizeof(BVHNode) * poolPtr);
+	//outFile.write((char*)pool, sizeof(BVHNode) * poolPtr);
 
 
 	outFile.close();
@@ -212,13 +229,406 @@ Collision ParentBVH::Traverse(float* ray_ptr, BVHNode* node)
 	rayleft[R_OY] += translateLeft.y;
 	rayleft[R_OZ] += translateLeft.z;
 
-	Collision coll1 = left->Traverse(rayleft, left->root);
-	coll1.Pos -= translateLeft;
+	//Collision coll1 = left->Traverse(rayleft, left->root);
+	//coll1.Pos -= translateLeft;
 
-	Collision coll2 = right->Traverse(rayright, right->root);
-	coll2.Pos -= translateRight;
+	//Collision coll2 = right->Traverse(rayright, right->root);
+	//coll2.Pos -= translateRight;
 
-	if ((coll2.t > 0 && coll2.t < coll1.t) || coll1.t < 0) coll1 = coll2;
+	//if ((coll2.t > 0 && coll2.t < coll1.t) || coll1.t < 0) coll1 = coll2;
 
-	return coll1;
+	//return coll1;
+	return Collision();
+}
+
+//Partitions into left right on splitplane, returns first for right node.
+// O(n) :)
+int sortOnAxis(int axis, float splitplane, uint* orderedIndices, float* scene, float* pool, int index) {
+	int leftFirst = pool[index + B_LEFTFIRST];
+	int count = pool[index + B_COUNT];
+
+	int start = leftFirst;
+	int end = start + count;
+
+	bool sorted = false;
+
+	int left = start;
+	int right = end - 1;
+
+	while (!sorted)
+	{
+		while (calculateTriangleAABBMidpoint(orderedIndices[left], scene)[axis] < splitplane) {
+			left++;
+			if (left >= (end - 1)) {
+				return -1;
+			}
+
+		}
+
+		while (calculateTriangleAABBMidpoint(orderedIndices[right], scene)[axis] >= splitplane) {
+			right--;
+			if (right <= start) {
+				return -1;
+			}
+
+		}
+
+		if (left >= right) {
+			sorted = true;
+		}
+		else {
+			int temp = orderedIndices[left];
+			orderedIndices[left] = orderedIndices[right];
+			orderedIndices[right] = temp;
+		}
+
+	}
+	return left;
+}
+
+float calculateAABBArea(float* pool, int index) {
+	float xmin = pool[index + B_AABB_MINX];
+	float xmax = pool[index + B_AABB_MAXX];
+	float ymin = pool[index + B_AABB_MINY];
+	float ymax = pool[index + B_AABB_MAXY];
+	float zmin = pool[index + B_AABB_MINZ];
+	float zmax = pool[index + B_AABB_MAXZ];
+
+
+	float diffx = xmax - xmin;
+	float diffy = ymax - ymin;
+	float diffz = zmax - zmin;
+
+	return 2 * ((diffx * diffy) + (diffy * diffz) + (diffx * diffz));
+}
+
+float calculateSplitCost(int axis, float splitplane, BVH* bvh, int index) {
+	int leftFirst = bvh->pool[index + B_LEFTFIRST];
+	int count = bvh->pool[index + B_COUNT];
+
+	int rightfirst = sortOnAxis(axis, splitplane, bvh->orderedIndices, bvh->scene, bvh->pool, index);
+
+	if (rightfirst == -1) return -1;
+
+	int Nleft = rightfirst - leftFirst;
+	int Nright = count - Nleft;
+
+	//One of the leafs empty, split will never be worth it.
+	if (Nleft <= 0 || Nright <= 0) return -1;
+
+	float Aleft = bvh->calculateAABB(bvh->orderedIndices, leftFirst, Nleft).Area();
+	float Aright = bvh->calculateAABB(bvh->orderedIndices, rightfirst, Nright).Area();
+
+	return (Aleft * Nleft) + (Aright * Nright);
+}
+
+
+float calculateSplitPosition(int axis, BVH* bvh, int index) {
+	int count = bvh->pool[index + B_COUNT];
+	int leftFirst = bvh->pool[index + B_LEFTFIRST];
+
+	float diff;
+	float base;
+
+	float smallest = -1;
+	float highest = -1;
+
+	//Set this to 1 to use midpointsplit
+#if 0
+	for (size_t i = 0; i < count; i++)
+	{
+		//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+		vec3 mid = calculateTriangleAABBMidpoint(bvh->orderedIndices[leftFirst + i], bvh->scene);
+		if (mid[axis] > highest || i == 0)
+		{
+			highest = mid[axis];
+		}
+		if (mid[axis] < smallest || i == 0)
+		{
+			smallest = mid[axis];
+		}
+	}
+
+	diff = highest - smallest;
+	base = smallest;
+
+	//MIDPOINTSPLIT
+	//return base + (diff / 2.0f);
+	return sortOnAxis(axis, base + (diff / 2.0f), bvh->orderedIndices, bvh->scene);
+#else
+		//SAH
+	int numbins = 10;
+
+	float mincost = calculateAABBArea(bvh->pool, index) * count;
+	float bestPositionSoFar = -1;
+
+	// Find the minimum and maximum midpoint of the child objects
+	for (size_t i = 0; i < count; i++)
+	{
+		//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+		vec3 mid = calculateTriangleAABBMidpoint(bvh->orderedIndices[leftFirst + i], bvh->scene);
+		if (i == 0 || mid[axis] > highest)
+		{
+			highest = mid[axis];
+		}
+		if (i == 0 || mid[axis] < smallest)
+		{
+			smallest = mid[axis];
+		}
+	}
+
+	diff = highest - smallest;
+	base = smallest;
+
+	float binsize = diff / (float)numbins;
+
+	//evaluate all split planes
+	for (size_t i = 1; i < numbins; i++)
+	{
+		float currentPosition = base + (i * binsize);
+		float cost = calculateSplitCost(axis, currentPosition, bvh, index);
+
+		if (cost < mincost && cost > 0) {
+			mincost = cost;
+			bestPositionSoFar = currentPosition;
+		}
+	}
+
+	int chosenaxis = axis;
+
+	//Also evaluate the SAH for the other axes. Set to false to just check the dominant axis. (Slightly faster, but the resulting bvh will be of lesser quality)
+	bool checkotheraxis = true;
+	if (checkotheraxis) {
+
+		//loop over all axis
+		for (int axisi = 0; axisi < 3; axisi++)
+		{
+			if (axisi == axis) continue; //We already checked this axis
+			for (size_t i = 0; i < count; i++)
+			{
+				//vec3 mid = bvh->scene[bvh->orderedIndices[leftFirst + i]]->aabb.Midpoint();
+				vec3 mid = calculateTriangleAABBMidpoint(bvh->orderedIndices[leftFirst + i], bvh->scene);
+				if (mid[axisi] > highest || i == 0)
+				{
+					highest = mid[axisi];
+				}
+				if (mid[axisi] < smallest || i == 0)
+				{
+					smallest = mid[axisi];
+				}
+			}
+
+			diff = highest - smallest;
+			base = smallest;
+
+			float binsize = diff / (float)numbins;
+
+			//evaluate all split planes
+			for (size_t i = 1; i < numbins; i++)
+			{
+				float currentPosition = base + (i * binsize);
+				float cost = calculateSplitCost(axisi, currentPosition, bvh, index);
+
+
+				if (cost < mincost && cost > 0) {
+					//printf("Found smaller cost on axis %i instead of %i: %f instead of %f \n", axis, axisi, cost, mincost);
+					mincost = cost;
+					bestPositionSoFar = currentPosition;
+					chosenaxis = axisi;
+				}
+			}
+		}
+	}
+
+	//Check if this split will actually help
+	if (bestPositionSoFar == -1) {
+		//printf("Not splitting. count: %i \n", count);
+		return -1;
+	}
+	else {
+		//printf("Selected splitposition: %f \n", bestPositionSoFar);
+		//printf("Given axis: %i, chosen axis: %i \n", axis, chosenaxis);
+		axis = chosenaxis;
+		return sortOnAxis(axis, bestPositionSoFar, bvh->orderedIndices, bvh->scene, bvh->pool, index);
+	}
+#endif
+}
+
+void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
+	int count = bvh->pool[index + B_COUNT];
+	int leftFirst = bvh->pool[index + B_LEFTFIRST];
+
+	bool debugprints = false;
+	if (debugprints) printf("\n*** Subdividing BVHNode on level %i. Count: %i ***\n", recursiondepth, count);
+
+	//Just to keep track of the bvh depth. Not used, other than to print it
+	if (recursiondepth > bvh->depth) bvh->depth = recursiondepth;
+
+	/*if (debugprints) {
+		printf("\nBounding box: \n");
+		printf("xmin: %f \n", bounds.xmin);
+		printf("xmax: %f \n", bounds.xmax);
+		printf("ymin: %f \n", bounds.ymin);
+		printf("ymax: %f \n", bounds.ymax);
+		printf("zmin: %f \n", bounds.zmin);
+		printf("zmax: %f \n\n", bounds.zmax);
+	}*/
+
+	if (count < 3) {
+		if (debugprints) {
+			printf("This is a leaf node, containing %i items (orderedindex: geometryindex) ", count);
+
+			for (size_t i = 0; i < count; i++)
+			{
+				printf("%i: ", leftFirst + i);
+				printf("%i, ", bvh->orderedIndices[leftFirst + i]);
+			}
+			printf("\n");
+		}
+		return;
+	}
+
+	int axis = calculateSplitAxis(bvh->pool[index + B_AABB_MINX], bvh->pool[index + B_AABB_MAXX], bvh->pool[index + B_AABB_MINY], bvh->pool[index + B_AABB_MAXY], bvh->pool[index + B_AABB_MINZ], bvh->pool[index + B_AABB_MAXZ]);
+
+	if (debugprints) printf("Selected axis %i \n", axis);
+
+	int firstForRightChild = calculateSplitPosition(axis, bvh, index);
+	if (firstForRightChild == -1) return; //Splitting this node will not make things better
+
+
+
+	if (debugprints) printf("First for right child: %i \n", firstForRightChild);
+
+	int leftchild = bvh->poolPtr++ * B_SIZE;
+	int rightchild = bvh->poolPtr++ * B_SIZE; //For right child.
+
+	//Create the left child
+	bvh->pool[leftchild + B_LEFTFIRST] = leftFirst;
+	bvh->pool[leftchild + B_COUNT] = firstForRightChild - leftFirst;
+	if (debugprints) printf("Set count of leftchild to %i \n", bvh->pool[leftchild + B_COUNT]);
+
+	if (bvh->pool[leftchild + B_COUNT] == 0 || count - bvh->pool[leftchild + B_COUNT] == 0) {
+		if (true)
+		{
+			printf("Zero in this child, all %i items (orderedindex: geometryindex) ", count);
+
+			for (size_t i = 0; i < count; i++)
+			{
+				printf("%i: ", leftFirst + i);
+				printf("%i, ", bvh->orderedIndices[leftFirst + i]);
+			}
+			printf("\n");
+		}
+		//Apparently the centers are too close together or something. devide equally between L / R
+		//Totally not a hack.
+		//This shouldn't happen anymore. Just here for reassurance
+		bvh->pool[leftchild + B_COUNT] = count / 2;
+		firstForRightChild = leftFirst + bvh->pool[leftchild + B_COUNT];
+	}
+
+	AABB leftchildaabb = bvh->calculateAABB(bvh->orderedIndices, bvh->pool[leftchild + B_LEFTFIRST], bvh->pool[leftchild + B_COUNT]);
+
+	storeBoundsInFloatArray(bvh->pool, leftchild, leftchildaabb);
+
+	//Create the right child
+	bvh->pool[rightchild + B_LEFTFIRST] = firstForRightChild;
+	bvh->pool[rightchild + B_COUNT] = count - bvh->pool[leftchild + B_COUNT];
+	if (debugprints) printf("Set count of rightchild to %i \n", bvh->pool[rightchild + B_COUNT]);
+
+	AABB rightchildaabb = bvh->calculateAABB(bvh->orderedIndices, firstForRightChild, bvh->pool[rightchild + B_COUNT]);
+
+	storeBoundsInFloatArray(bvh->pool, rightchild, rightchildaabb);
+
+	//bvh->pool[rightchild].bounds = bvh->calculateAABB(bvh->orderedIndices, firstForRightChild, bvh->pool[rightchild].count);
+
+	if (debugprints) printf("My count: %i, Left count: %i, Right count: %i", count, bvh->pool[leftchild + B_COUNT], bvh->pool[rightchild + B_COUNT]);
+
+
+	//Subdivide the children
+	if (debugprints) printf("Starting subdivide of left child on level %i \n", recursiondepth);
+	if (debugprints) printf("Starting subdivide of right child on level %i \n", recursiondepth);
+
+	subdivideBVHNode(bvh, leftchild, recursiondepth + 1);
+
+	bvh->pool[index + B_LEFTFIRST] = leftchild;
+	count = 0; //Set count to 0, because this node is no longer a leaf node.
+	subdivideBVHNode(bvh, rightchild, recursiondepth + 1);
+
+	if (debugprints) printf("Node on level %i done. \n", recursiondepth);
+
+}
+
+
+int calculateSplitAxis(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax) {
+	float xdiff = xmax - xmin;
+	float ydiff = ymax - ymin;
+	float zdiff = zmax - zmin;
+
+	int axis = 0;
+	float max = xdiff;
+	if (ydiff > max) { axis = 1; max = ydiff; }
+	if (zdiff > max) axis = 2;
+
+	return axis;
+}
+
+float IntersectAABB(float* ray_ptr, float* BVHNode)
+{
+	float xmin = BVHNode[B_AABB_MINX];
+	float xmax = BVHNode[B_AABB_MAXX];
+	float ymin = BVHNode[B_AABB_MINY];
+	float ymax = BVHNode[B_AABB_MAXY];
+	float zmin = BVHNode[B_AABB_MINZ];
+	float zmax = BVHNode[B_AABB_MAXZ];
+
+	float dirX = ray_ptr[R_DX];
+	float dirY = ray_ptr[R_DY];
+	float dirZ = ray_ptr[R_DZ];
+	float OX = ray_ptr[R_OX];
+	float OY = ray_ptr[R_OY];
+	float OZ = ray_ptr[R_OZ];
+
+	float invDirX = 1 / dirX;
+	float tmin = (xmin - OX) * invDirX;
+	float tmax = (xmax - OX) * invDirX;
+
+	if (tmin > tmax) swap(tmin, tmax);
+
+	float invDirY = 1 / dirY;
+	float tymin = (ymin - OY) * invDirY;
+	float tymax = (ymax - OY) * invDirY;
+
+	if (tymin > tymax) swap(tymin, tymax);
+
+	if ((tmin > tymax) || (tymin > tmax))
+		return -1;
+
+	tmin = max(tmin, tymin);
+	tmax = min(tymax, tmax);
+
+	float invDirZ = 1 / dirZ;
+	float tzmin = (zmin - OZ) * invDirZ;
+	float tzmax = (zmax - OZ) * invDirZ;
+
+	if (tzmin > tzmax) swap(tzmin, tzmax);
+
+	if ((tmin > tzmax) || (tzmin > tmax))
+		return -1;
+
+	tmin = max(tmin, tzmin);
+	tmax = min(tzmax, tmax);
+
+	if (tmax < 0) return -1;
+
+	return tmin;
+}
+
+void storeBoundsInFloatArray(float* pool, int startIndex, AABB aabb) {
+	pool[startIndex + B_AABB_MINX] = aabb.xmin;
+	pool[startIndex + B_AABB_MAXX] = aabb.xmax;
+	pool[startIndex + B_AABB_MINY] = aabb.ymin;
+	pool[startIndex + B_AABB_MAXY] = aabb.ymax;
+	pool[startIndex + B_AABB_MINZ] = aabb.zmin;
+	pool[startIndex + B_AABB_MAXZ] = aabb.zmax;
+
 }

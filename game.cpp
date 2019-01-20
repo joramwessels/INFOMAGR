@@ -294,7 +294,8 @@ Collision Game::nearestCollision(float* ray_ptr)
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		return bvh->Traverse(ray_ptr, bvh->root);
+		//return bvh->Traverse(ray_ptr, bvh->root);
+		return TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
 	}
 	else
 	{
@@ -502,7 +503,8 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 	{
 		float shadowray[R_SIZE] = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ], shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
 		//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
-		Collision shadowcollision = bvh->Traverse(shadowray, bvh->root);
+		Collision shadowcollision = TraverseBVHNode(shadowray, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
+
 		//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
 
 		if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;

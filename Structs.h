@@ -278,64 +278,6 @@ struct AABB		// 6*4 = 24 bytes
 
 	// Ray-AABB intersection algorithm found at:
 	//		https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
-	AABBIntersection Intersects(vec3 origin, vec3 direction)
-	{
-		/*// Intersect with the extended box edges
-		float t0x = (xmin - ray.Origin.x) / ray.Direction.x;
-		float t1x = (xmax - ray.Origin.x) / ray.Direction.x;
-		float t0y = (ymin - ray.Origin.y) / ray.Direction.y;
-		float t1y = (ymax - ray.Origin.y) / ray.Direction.y;
-		// Check if the max is actually bigger than the min
-		if (t0x > t1x) swap(t0x, t1x);
-		if (t0y > t1y) swap(t0y, t1y);
-		// If not neither the x nor y dimension intersects, there's no intersection
-		if ((t0x > t1y) || (t0y > t1x)) return { false, -1};
-
-		// Take the smallest and biggest of the x-y pairs
-		float t0 = (t0y > t0x ? t0y : t0x);
-		float t1 = (t1y < t1x ? t1y : t1x);
-		// Intersect with the extended z box edge
-		float t0z = (zmin - ray.Origin.z) / ray.Direction.z;
-		float t1z = (zmax - ray.Origin.z) / ray.Direction.z;
-		if (t0z > t1z) swap(t0z, t1z);
-		// If it's not on the z edge, there's no intersection
-		if ((t0 > t1z) || (t0z > t1) || (t1 < 0)) return {false, -1};
-		
-		return {true, t0};*/
-
-		float invDirX = 1 / direction.x;
-		float tmin = (xmin - origin.x) * invDirX;
-		float tmax = (xmax - origin.x) * invDirX;
-
-		if (tmin > tmax) swap(tmin, tmax);
-
-		float invDirY = 1 / direction.y;
-		float tymin = (ymin - origin.y) * invDirY;
-		float tymax = (ymax - origin.y) * invDirY;
-
-		if (tymin > tymax) swap(tymin, tymax);
-
-		if ((tmin > tymax) || (tymin > tmax))
-			return { false, -1 };
-
-		tmin = max(tmin, tymin);
-		tmax = min(tymax, tmax);
-
-		float invDirZ = 1 / direction.z;
-		float tzmin = (zmin - origin.z) * invDirZ;
-		float tzmax = (zmax - origin.z) * invDirZ;
-
-		if (tzmin > tzmax) swap(tzmin, tzmax);
-
-		if ((tmin > tzmax) || (tzmin > tmax))
-			return { false, -1 };
-
-		tmin = max(tmin, tzmin);
-		tmax = min(tzmax, tmax);
-
-		if (tmax < 0) return { false, -1 };
-
-		return { true, tmin };
-	}
-
 };
+
+
