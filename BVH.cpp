@@ -98,13 +98,14 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 
 	vec3 ray_origin =    { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
 	vec3 ray_direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
+	int count = pool[index + B_COUNT];
+	//printf("Count: %i \n", count);
 
 		// If leaf
-		if (pool[index + B_COUNT] != 0)
+		if (count != 0)
 		{
 			float closestdist = 0xffffff;
 
-			int count = pool[index + B_COUNT];
 
 			// Find closest collision
 			for (int i = 0; i < pool[index + B_COUNT]; i++)
@@ -112,7 +113,7 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 				//Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
 				int triangleindex = orderedIndices[(int)pool[index + B_LEFTFIRST] + i];
 
-				Collision collision = intersectTriangle(orderedIndices[(int)pool[index + B_LEFTFIRST] + i], ray_origin, ray_direction, scene);
+				Collision collision = intersectTriangle(triangleindex, ray_origin, ray_direction, scene);
 				float dist = collision.t;
 				if (dist != -1 && dist < closestdist)
 				{
@@ -127,33 +128,46 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 		// If node
 		else
 		{
+			//printf("Not leaf \n");
 			// Check both children and return the closest collision if both intersected
 			//AABB::AABBIntersection tleft = pool[(int)pool[index + B_LEFTFIRST]].bounds.Intersects(ray_origin, ray_direction);
 			//AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray_origin, ray_direction);
-			
-			float tleft = IntersectAABB(ray_ptr, pool + ((index + B_LEFTFIRST) * B_SIZE));
-			float tright = IntersectAABB(ray_ptr, pool + ((index + B_LEFTFIRST + 1) * B_SIZE));
+			int leftchild = pool[(int)index + B_LEFTFIRST];
+			int rightchild = leftchild + B_SIZE;
+
+
+			float tleft = IntersectAABB(ray_ptr, pool + leftchild);
+			float tright = IntersectAABB(ray_ptr, pool + rightchild);
 
 			int flip = 0;
+
+			int baseIndexNear = leftchild;
+			int baseIndexFar = rightchild;
+
 			float tEntryFarNode = tright;
-			if (tright < tleft && tright > 0) { flip = 1; tEntryFarNode = tleft; };
+			float tEntryNearNode = tleft;
+			if (tright < tleft && tright > -99999) { 
+				baseIndexNear = rightchild;
+				baseIndexFar = leftchild;
+				tEntryFarNode = tleft;
+				tEntryNearNode = tright;
+			};
 
 			Collision colclose, colfar;
 			colclose.t = -1;
 			colfar.t = -1;
 
-			if ((tleft > 0 && !flip) || (flip && tright > 0)) {
-				//colclose = Traverse(ray_ptr, &(pool[node->leftFirst + flip]));
-				colclose = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, (pool[index + B_LEFTFIRST] + flip) * B_SIZE);
+			if (tEntryNearNode > -99999) {
+				colclose = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexNear);
 				if (colclose.t < tEntryFarNode && colclose.t > 0) {
 					return colclose;
 				}
-			}
-			if ((tright > 0 && !flip) || (tleft > 0 && flip)) {
-				//colfar = Traverse(ray_ptr, &(pool[node->leftFirst + (1 - flip)]));
-				colfar = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, (pool[index + B_LEFTFIRST] + (1 - flip)) * B_SIZE);
 
 			}
+			if (tEntryFarNode > -99999) {
+				colfar = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
+			}
+
 
 			if (colfar.t == -1) return colclose;
 			if (colclose.t == -1) return colfar;
@@ -462,7 +476,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 	int count = bvh->pool[index + B_COUNT];
 	int leftFirst = bvh->pool[index + B_LEFTFIRST];
 
-	bool debugprints = false;
+	bool debugprints = true;
 	if (debugprints) printf("\n*** Subdividing BVHNode on level %i. Count: %i ***\n", recursiondepth, count);
 
 	//Just to keep track of the bvh depth. Not used, other than to print it
@@ -501,7 +515,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 
 
 
-	if (debugprints) printf("First for right child: %i \n", firstForRightChild);
+	if (debugprints) printf("First for right child: %f \n", firstForRightChild);
 
 	int leftchild = bvh->poolPtr++ * B_SIZE;
 	int rightchild = bvh->poolPtr++ * B_SIZE; //For right child.
@@ -509,7 +523,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 	//Create the left child
 	bvh->pool[leftchild + B_LEFTFIRST] = leftFirst;
 	bvh->pool[leftchild + B_COUNT] = firstForRightChild - leftFirst;
-	if (debugprints) printf("Set count of leftchild to %i \n", bvh->pool[leftchild + B_COUNT]);
+	if (debugprints) printf("Set count of leftchild to %f \n", bvh->pool[leftchild + B_COUNT]);
 
 	if (bvh->pool[leftchild + B_COUNT] == 0 || count - bvh->pool[leftchild + B_COUNT] == 0) {
 		if (true)
@@ -537,7 +551,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 	//Create the right child
 	bvh->pool[rightchild + B_LEFTFIRST] = firstForRightChild;
 	bvh->pool[rightchild + B_COUNT] = count - bvh->pool[leftchild + B_COUNT];
-	if (debugprints) printf("Set count of rightchild to %i \n", bvh->pool[rightchild + B_COUNT]);
+	if (debugprints) printf("Set count of rightchild to %f \n", bvh->pool[rightchild + B_COUNT]);
 
 	AABB rightchildaabb = bvh->calculateAABB(bvh->orderedIndices, firstForRightChild, bvh->pool[rightchild + B_COUNT]);
 
@@ -545,7 +559,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 
 	//bvh->pool[rightchild].bounds = bvh->calculateAABB(bvh->orderedIndices, firstForRightChild, bvh->pool[rightchild].count);
 
-	if (debugprints) printf("My count: %i, Left count: %i, Right count: %i", count, bvh->pool[leftchild + B_COUNT], bvh->pool[rightchild + B_COUNT]);
+	if (debugprints) printf("My count: %i, Left count: %f, Right count: %f", count, bvh->pool[leftchild + B_COUNT], bvh->pool[rightchild + B_COUNT]);
 
 
 	//Subdivide the children
@@ -605,7 +619,7 @@ float IntersectAABB(float* ray_ptr, float* BVHNode)
 	if (tymin > tymax) swap(tymin, tymax);
 
 	if ((tmin > tymax) || (tymin > tmax))
-		return -1;
+		return -99999;
 
 	tmin = max(tmin, tymin);
 	tmax = min(tymax, tmax);
@@ -617,12 +631,12 @@ float IntersectAABB(float* ray_ptr, float* BVHNode)
 	if (tzmin > tzmax) swap(tzmin, tzmax);
 
 	if ((tmin > tzmax) || (tzmin > tmax))
-		return -1;
+		return -99999;
 
 	tmin = max(tmin, tzmin);
 	tmax = min(tzmax, tmax);
 
-	if (tmax < 0) return -1;
+	if (tmax < 0) return -99999;
 
 	return tmin;
 }

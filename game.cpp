@@ -22,17 +22,11 @@ void Game::Init()
 {
 	/*
 	AVAILABLE SCENES:
-		SCENE_SIMPLE,
 		SCENE_OBJ_GLASS,
 		SCENE_OBJ_HALFREFLECT,
-		SCENE_LIGHTING_AMBIENT,
-		SCENE_LIGHTING_SPOT,
-		SCENE_LIGHTING_DIRECTIONAL,
-		SCENE_PERFORMANCE,
-		SCENE_BEERS_LAW,
-		SCENE_TEST_BVH,
 		SCENE_STRESSTEST,
-		SCENE_ANIMATION
+		SCENE_TRIANGLETEST,
+		SCENE_FLOORONLY
 	*/
 
 	loadscene(SCENES::SCENE_OBJ_GLASS);
@@ -168,7 +162,7 @@ void Game::Tick(float deltaTime)
 	CheckCudaError();
 	cudaDeviceSynchronize();
 	CheckCudaError();
-	printf("Num rays: %i \n", ((int*)rayQueue)[1]);
+	//printf("Num rays: %i \n", ((int*)rayQueue)[1]);
 
 	// Tracing queued rays
 //#pragma omp parallel for
@@ -187,7 +181,7 @@ void Game::Tick(float deltaTime)
 		//printf("New rays generated: %i \n", numRays);
 
 		int numShadowRays = ((int*)shadowRays)[1];
-		for (int i = 0; i < numShadowRays; i++)
+		for (int i = 1; i <= numShadowRays; i++)
 		{
 			TraceShadowRay(shadowRays, i);
 		}
@@ -635,6 +629,86 @@ void Game::loadscene(SCENES scene)
 
 	switch (scene)
 	{
+	case SCENE_FLOORONLY:
+	{
+		createfloor(Material(0.0f, 0.0f, 0xffffff));
+		numGeometries = 4;
+
+		//Vertex positions
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V0X] = -10.0f; //v0.x
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V0Z] = 10.0f; //v0.z
+
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V1X] = -10.0f; //v1.x
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
+
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V2X] = -10.0f; //v2.x
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V2Y] = 0.0f; //v2.y
+		triangles[2 * FLOATS_PER_TRIANGLE + T_V2Z] = -10.0f; //v2.z
+
+		//TODO: Completely remove material class?
+		//Color
+		triangles[2 * FLOATS_PER_TRIANGLE + T_COLORR] = 255; //R
+		triangles[2 * FLOATS_PER_TRIANGLE + T_COLORG] = 255; //G
+		triangles[2 * FLOATS_PER_TRIANGLE + T_COLORB] = 255; //B
+
+		//Material properties
+		triangles[2 * FLOATS_PER_TRIANGLE + T_SPECULARITY] = 0.0f; //Specularity
+		triangles[2 * FLOATS_PER_TRIANGLE + T_REFRACTION] = 0.0f; //Refractionindex
+
+		//Calculate the edges, normal and D
+		initializeTriangle(2, triangles);
+
+		//Vertex positions
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V0X] = 10.0f; //v0.x
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V0Z] = 10.0f; //v0.z
+
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V1X] = 10.0f; //v1.x
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
+
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V2X] = 10.0f; //v2.x
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V2Y] = 0.0f; //v2.y
+		triangles[3 * FLOATS_PER_TRIANGLE + T_V2Z] = -10.0f; //v2.z
+
+		//TODO: Completely remove material class?
+		//Color
+		triangles[3 * FLOATS_PER_TRIANGLE + T_COLORR] = 255; //R
+		triangles[3 * FLOATS_PER_TRIANGLE + T_COLORG] = 255; //G
+		triangles[3 * FLOATS_PER_TRIANGLE + T_COLORB] = 255; //B
+
+		//Material properties
+		triangles[3 * FLOATS_PER_TRIANGLE + T_SPECULARITY] = 0.0f; //Specularity
+		triangles[3 * FLOATS_PER_TRIANGLE + T_REFRACTION] = 0.0f; //Refractionindex
+
+		//Calculate the edges, normal and D
+		initializeTriangle(3, triangles);
+
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -5, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+		skybox = new Skybox("assets\\skybox4.jpg");
+		generateBVH();
+		break;
+
+	}
 	case SCENE_OBJ_GLASS:
 	{
 		camera.rotate({ -20, 180, 0 });

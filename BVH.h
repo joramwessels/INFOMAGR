@@ -25,7 +25,7 @@ public:
 
 	//Final BVH
 	float* root;
-	int depth;
+	int depth = 0;
 };
 
 
