@@ -203,7 +203,7 @@ __device__ struct g_Collision
 
 __device__ g_Collision intersectTriangle(int i, float* ray_ptr, float * triangles, bool isShadowRay = false)
 {
-	int baseindex = i * FLOATS_PER_TRIANGLE;
+	/*int baseindex = i * FLOATS_PER_TRIANGLE;
 
 	float3 v0 = {
 		triangles[baseindex + T_V0X],
@@ -237,11 +237,11 @@ __device__ g_Collision intersectTriangle(int i, float* ray_ptr, float * triangle
 	float3 origin = { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
 
 	float D = triangles[baseindex + T_D];
+	*/
 
-
-	g_Collision collision;
-	collision.t = -1;
-	float NdotR = dot(direction, N);
+	//g_Collision collision;
+	//collision.t = -1;
+	/*float NdotR = dot(direction, N);
 	if (NdotR == 0) return collision; //Ray parrallel to plane, would cause division by 0
 
 	float t = -(dot(origin, N) + D) / (NdotR);
@@ -270,8 +270,8 @@ __device__ g_Collision intersectTriangle(int i, float* ray_ptr, float * triangle
 			collision.Pos = P;
 			return collision;
 		}
-	}
-	return collision;
+	}*/
+	return g_Collision();
 }
 
 
@@ -292,7 +292,7 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 		for (int i = 0; i < numGeometries; i++)
 		{
 			//Collision collision = geometry[i]->Intersect(*ray);
-			g_Collision collision /*= intersectTriangle(i, ray_ptr, triangles)*/;
+			g_Collision collision/* = intersectTriangle(i, ray_ptr, triangles)*/;
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
 			{
