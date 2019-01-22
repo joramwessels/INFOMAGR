@@ -435,15 +435,17 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 			//	return colclose;
 			//}
 			int index = 2 + stack[0]++;
-			if (index >= 64) printf("stack too small!. index: %i", index);
+			if (index >= 64) printf("stack too small!. index: %i \n", index);
 			else stack[index] = baseIndexNear;
+			//printf("Added %i to stack location %i \n", baseIndexNear, index);
 		}
 		if (tEntryFarNode > -99999) {
 			//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
 			int index = 2 + stack[0]++;
-			if (index >= 64) printf("stack too small!. index: %i", index);
+			if (index >= 64) printf("stack too small!. index: %i \n", index);
 
 			else stack[index] = baseIndexFar;
+			//printf("Added %i to stack location %i \n", baseIndexFar, index);
 
 		}
 
@@ -471,12 +473,13 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 
 		while ((stack[1] - 2) < stack[0])
 		{
-			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[stack[1]], stack);
+			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[stack[1]++], stack);
 
-			if (newcollision.t != -1 && newcollision.t < closest.t) {
+			if ((newcollision.t != -1 && newcollision.t < closest.t) || closest.t == -1) {
 				closest = newcollision;
 			}
 		}
+		delete stack;
 		return closest;
 
 		//return g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, 0);

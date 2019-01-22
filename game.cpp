@@ -33,7 +33,7 @@ void Game::Init()
 
 	SSAA = false;
 	camera.DoF = false;
-	use_bvh = false;
+	use_bvh = true;
 	bvhdebug = false;
 
 	mytimer.reset();
@@ -171,17 +171,17 @@ void Game::Tick(float deltaTime)
 	bool finished = false;
 
 	while (!finished) {
+		/*findCollisions(rayQueue, numRays, collisions); //Find all collisions
 		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-		int numRays = ((int*)rayQueue)[1];
-		findCollisions(rayQueue, numRays, collisions); //Find all collisions
+		int numRays = ((int*)rayQueue)[1];*/
 
 		//cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
-		//g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
+		g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
 		//CheckCudaError(10);
 		
-		//cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
-		//cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-		numRays = ((int*)rayQueue)[1];
+		cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+		int numRays = ((int*)rayQueue)[1];
 
 		CheckCudaError(11);
 
