@@ -66,4 +66,4 @@ float IntersectAABB(float* ray_ptr, float* BVHNode);
 
 
 
-Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack);
+Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack, float* stackAABBEntrypoints);

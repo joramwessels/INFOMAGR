@@ -89,7 +89,7 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 }
 
 // Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
-Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack)
+Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack, float* stackAABBEntrypoints)
 {
 	//printf("traversing %i \n", index);
 	Collision closest;
@@ -160,18 +160,25 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 				//	return colclose;
 				//}
 				int index = 2 + stack[0]++;
-				if (index >= 64) printf("stack too small!. index: %i \n", index);
-				else stack[index] = baseIndexNear;
-				//printf("Added %i to stack location %i \n", baseIndexNear, index);
+				if (index >= 2048) printf("stack too small!. index: %i \n", index);
+				else {
+					stack[index] = baseIndexNear;
+					stackAABBEntrypoints[index] = tEntryNearNode;
+					//printf("Added %i to stack location %i \n", baseIndexNear, index);
+					
+				}
 			}
 			if (tEntryFarNode > -99999) {
 				//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
 				int index = 2 + stack[0]++;
-				if (index >= 64) printf("stack too small!. index: %i \n", index);
+				if (index >= 2048) printf("stack too small!. index: %i \n", index);
 
-				else stack[index] = baseIndexFar;
-				//printf("Added %i to stack location %i \n", baseIndexFar, index);
+				else {
+					stack[index] = baseIndexFar;
+					stackAABBEntrypoints[index] = tEntryFarNode;
 
+					//printf("Added %i to stack location %i \n", baseIndexFar, index);
+				}
 			}
 
 
