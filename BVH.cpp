@@ -476,7 +476,7 @@ void subdivideBVHNode(BVH* bvh, int index, int recursiondepth) {
 	int count = bvh->pool[index + B_COUNT];
 	int leftFirst = bvh->pool[index + B_LEFTFIRST];
 
-	bool debugprints = true;
+	bool debugprints = false;
 	if (debugprints) printf("\n*** Subdividing BVHNode on level %i. Count: %i ***\n", recursiondepth, count);
 
 	//Just to keep track of the bvh depth. Not used, other than to print it

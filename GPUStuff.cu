@@ -178,3 +178,159 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 		delete ray;
 	}
 }
+
+__device__ float dot(float3 a, float3 b)
+{
+	return (a.x * b.x + a.y * b.y + a.z * b.z);
+}
+
+__device__ float3 cross(float3 a, float3 b)
+{
+	return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+__device__ struct g_Collision
+{
+	float3 N;
+	float3 Pos;
+	float t;
+	//Color colorAt;
+	float R, G, B, refraction, specularity;
+
+	//bool isTranslated;
+	//vec3 translation = { 0, 0, 0 };
+};
+
+__device__ g_Collision intersectTriangle(int i, float* ray_ptr, float * triangles, bool isShadowRay = false)
+{
+	int baseindex = i * FLOATS_PER_TRIANGLE;
+
+	float3 v0 = {
+		triangles[baseindex + T_V0X],
+		triangles[baseindex + T_V0Y],
+		triangles[baseindex + T_V0Z] };
+	float3 v1 = {
+		triangles[baseindex + T_V1X],
+		triangles[baseindex + T_V1Y],
+		triangles[baseindex + T_V1Z] };
+	float3 v2 = {
+		triangles[baseindex + T_V2X],
+		triangles[baseindex + T_V2Y],
+		triangles[baseindex + T_V2Z] };
+	float3 e0 = {
+		triangles[baseindex + T_E0X],
+		triangles[baseindex + T_E0Y],
+		triangles[baseindex + T_E0Z] };
+	float3 e1 = {
+		triangles[baseindex + T_E1X],
+		triangles[baseindex + T_E1Y],
+		triangles[baseindex + T_E1Z] };
+	float3 e2 = {
+		triangles[baseindex + T_E2X],
+		triangles[baseindex + T_E2Y],
+		triangles[baseindex + T_E2Z] };
+	float3 N = { triangles[baseindex + T_NX],
+		triangles[baseindex + T_NY],
+		triangles[baseindex + T_NZ] };
+
+	float3 direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
+	float3 origin = { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
+
+	float D = triangles[baseindex + T_D];
+
+
+	g_Collision collision;
+	collision.t = -1;
+	float NdotR = dot(direction, N);
+	if (NdotR == 0) return collision; //Ray parrallel to plane, would cause division by 0
+
+	float t = -(dot(origin, N) + D) / (NdotR);
+
+	//From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
+	if (t > 0)
+	{
+		float3 P = origin + direction * t;
+		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
+		{
+			//Collision
+			collision.t = t;
+
+			if (isShadowRay) {
+				return collision;
+			}
+
+			collision.R = triangles[baseindex + T_COLORR];
+			collision.G = triangles[baseindex + T_COLORG];
+			collision.B = triangles[baseindex + T_COLORB];
+			//collision.other = triangles + baseindex;
+			collision.refraction = triangles[baseindex + T_REFRACTION];
+			collision.specularity = triangles[baseindex + T_SPECULARITY];
+			if (NdotR > 0) collision.N = N * -1;
+			else collision.N = N;
+			collision.Pos = P;
+			return collision;
+		}
+	}
+	return collision;
+}
+
+
+__device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numGeometries, float* triangles)
+{
+	if (use_bvh)
+	{
+		//printf("BVH TRAVERSAL ");
+		//return TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
+	}
+	else
+	{
+		float closestdist = 0xffffff;
+		g_Collision closest;
+		closest.t = -1;
+
+		//Loop over all primitives to find the closest collision
+		for (int i = 0; i < numGeometries; i++)
+		{
+			//Collision collision = geometry[i]->Intersect(*ray);
+			g_Collision collision /*= intersectTriangle(i, ray_ptr, triangles)*/;
+			float dist = collision.t;
+			if (dist != -1 && dist < closestdist)
+			{
+				//Collision. Check if closest
+				closest = collision;
+				closestdist = dist;
+			}
+		}
+		return closest;
+	}
+}
+
+
+__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions)
+{
+	uint numRays = ((uint*)rayQueue)[1];
+	printf("numrays: %i", numRays);
+
+	//numRays = 10;
+	//((uint*)rayQueue)[2] = 0; //current ray to be traced
+
+
+	int pixelx = blockIdx.x;
+	int pixely = threadIdx.x;
+
+	uint id = atomicInc(((uint*)rayQueue) + 2, 0xffffffff) + 1;
+	//printf("id: %i \n", id);
+
+	while (id < numRays)
+	{
+		//rintf("now doing ray %i from thread %i %i \n", id, pixelx, pixely);
+		float* rayptr = rayQueue + (id * R_SIZE);
+		g_Collision nearestcollision = g_nearestCollision(rayptr, false, numtriangles, triangles);
+		((g_Collision*)collisions)[id] = nearestcollision;
+		id = atomicInc(((uint*)rayQueue) + 2, 0xffffffff) + 1;
+	}
+
+
+	
+	//collisions[id] = 0;
+}

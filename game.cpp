@@ -46,6 +46,7 @@ void Game::Init()
 	((int*)shadowRays)[1] = 0; //current count
 
 	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
+	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
 
 	printf("rand: %f \n", random1);
 	printf("rand: %f \n", random2);
@@ -68,13 +69,13 @@ void Game::Shutdown()
 
 
 
-inline void CheckCudaError()
+inline void CheckCudaError(int i)
 {
 	cudaError_t error = cudaGetLastError();
 	if (error != cudaSuccess)
 	{
 		// print the CUDA error message and exit
-		printf("3 CUDA error: %s\n", cudaGetErrorString(error));
+		printf("%i CUDA error: %s\n", i, cudaGetErrorString(error));
 		printf("exiting...");
 		std::cin.get(); exit(-1);;
 	}
@@ -88,8 +89,9 @@ void Game::Tick(float deltaTime)
 {
 	((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE; //Size of array
 	((int*)rayQueue)[1] = 0; //num rays in queue
+	((int*)rayQueue)[2] = 0; //num rays in queue
 
-	cudaMemset(g_rayQueue + 1, 0, sizeof(uint));
+	cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 2);
 
 	frames++;
 	raysPerFrame = 0;
@@ -152,17 +154,20 @@ void Game::Tick(float deltaTime)
 	float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 	float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 	
-	
+	printf("Primray \n");
+
+	cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+
 	GeneratePrimaryRay <<<SCRWIDTH, SCRHEIGHT >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
-	CheckCudaError();
+	CheckCudaError(1);
 
 	cudaDeviceSynchronize();
-	CheckCudaError();
+	CheckCudaError(2);
 	cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-	CheckCudaError();
+	CheckCudaError(3);
 	cudaDeviceSynchronize();
-	CheckCudaError();
-	//printf("Num rays: %i \n", ((int*)rayQueue)[1]);
+	CheckCudaError(4);
+	printf("Num rays: %i \n", ((int*)rayQueue)[1]);
 
 	// Tracing queued rays
 //#pragma omp parallel for
@@ -171,7 +176,19 @@ void Game::Tick(float deltaTime)
 
 	while (!finished) {
 		int numRays = ((int*)rayQueue)[1];
+
 		findCollisions(rayQueue, numRays, collisions); //Find all collisions
+		
+		printf("findcolls \n");
+
+		cudaMemset(g_rayQueue + 2, 0, sizeof(uint));
+		g_findCollisions << <10, 10 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
+		CheckCudaError(10);
+		
+		cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+
+		CheckCudaError(11);
+
 
 		//#pragma omp parallel for
 		for (int i = 1; i <= numRays; i++)
@@ -316,15 +333,40 @@ Collision Game::nearestCollision(float* ray_ptr)
 	}
 }
 
-void Game::findCollisions(float* rays, int numrays, Collision* collisions)
+void Game::findCollisions(float* rayQueue, int numrays, Collision* collisions)
 {
-	for (size_t i = 1; i <= numrays; i++)
+	/*for (size_t i = 1; i <= numrays; i++)
 	{
 		float* rayptr = rays + (i * R_SIZE);
 		Collision collision = nearestCollision(rayptr);
 		collisions[i] = collision;
-		int c = 3;
+	}*/
+
+
+	int numRays = ((uint*)rayQueue)[1];
+	((uint*)rayQueue)[2] = 0;
+	printf("numrays: %i", numRays);
+
+	//numRays = 10;
+	//((uint*)rayQueue)[2] = 0; //current ray to be traced
+
+
+	uint id = ((uint*)rayQueue)[2]++;
+	//printf("id: %i \n", id);
+
+	while (id < numRays)
+	{
+		//rintf("now doing ray %i from thread %i %i \n", id, pixelx, pixely);
+		float* rayptr = rayQueue + (id * R_SIZE);
+		Collision nearestcollision = nearestCollision(rayptr);
+		collisions[id] = nearestcollision;
+		id = ((uint*)rayQueue)[2]++;
 	}
+
+
+
+
+
 }
 
 //Trace the ray.
@@ -626,6 +668,8 @@ vec3 Game::reflect(vec3 D, vec3 N)
 void Game::loadscene(SCENES scene)
 {
 	triangles = new float[5000 * FLOATS_PER_TRIANGLE];
+	cudaMalloc(&g_triangles, 5000 * FLOATS_PER_TRIANGLE * sizeof(float));
+	CheckCudaError(5);
 
 	switch (scene)
 	{
@@ -809,6 +853,7 @@ void Game::loadscene(SCENES scene)
 	{
 		delete triangles;
 		triangles = new float[900004 * FLOATS_PER_TRIANGLE];
+		cudaMalloc(&g_triangles, 900004 * FLOATS_PER_TRIANGLE * sizeof(float));
 
 		//Set up the scene
 		numGeometries = 0;
@@ -855,6 +900,8 @@ void Game::loadscene(SCENES scene)
 	default:
 		break;
 	}
+	cudaMemcpy(g_triangles, triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float), cudaMemcpyHostToDevice);
+	CheckCudaError(6);
 }
 
 void Game::loadobj(string filename, vec3 scale, vec3 translate, Material material)

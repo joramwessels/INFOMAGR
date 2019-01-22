@@ -111,6 +111,7 @@ private:
 
 	int numGeometries = 0;
 	float* triangles;
+	float* g_triangles;
 
 	//Color DirectIllumination(Collision collision);
 	void TraceShadowRay(float* shadowrays, int rayIndex);
@@ -180,7 +181,8 @@ private:
 	float* newRays = new float[rayQueueSize];
 	float* shadowRays = new float[rayQueueSize * 5];
 	Collision* collisions = new Collision[rayQueueSize];
-	
+	void* g_collisions;
+
 	void addRayToQueue(Ray ray);
 	void addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
 	void addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue);
