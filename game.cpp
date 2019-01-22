@@ -29,7 +29,7 @@ void Game::Init()
 		SCENE_FLOORONLY
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_GLASS);
+	loadscene(SCENES::SCENE_FLOORONLY);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -177,15 +177,18 @@ void Game::Tick(float deltaTime)
 	while (!finished) {
 		int numRays = ((int*)rayQueue)[1];
 
+		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 		findCollisions(rayQueue, numRays, collisions); //Find all collisions
 		
 		printf("findcolls \n");
+
 
 		cudaMemset(g_rayQueue + 2, 0, sizeof(uint));
 		g_findCollisions << <10, 10 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
 		CheckCudaError(10);
 		
 		cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 
 		CheckCudaError(11);
 
