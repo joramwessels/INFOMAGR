@@ -77,7 +77,7 @@ __device__ void addRayToQueue(float* ray, float* queue)
 
 	if (id > queuesize / R_SIZE)
 	{
-		printf("ERROR: Queue overflow. Rays exceeded the %d indices of queue space.\n", queuesize / R_SIZE);
+		printf("ERROR: Queue overflow. Rays exceeded the %i indices of queue space.\n", (int)(queuesize / R_SIZE));
 	}
 
 	int baseIndex = id * R_SIZE;
@@ -99,84 +99,95 @@ __device__ void addRayToQueue(float* ray, float* queue)
 
 __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA)
 {
-	int pixelx = blockIdx.x;
-	int pixely = threadIdx.x;
-
-	if (pixelx > SCRWIDTH || pixely > SCRHEIGHT) return;
-
-	if (pixelx == 0 & pixely == 0) {
+	if (threadIdx.x == 0 & blockIdx.x == 0) {
 		((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
 	}
-	
-	//Generate the ray
-	if(SSAA){
-		float* ray1 = generateRayTroughVirtualScreen((float)pixelx + g_random1, (float)pixely + g_random2, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
 
-		ray1[R_INOBJ] = 0;
-		ray1[R_REFRIND] = 1.0f;
-		ray1[R_BVHTRA] = 0;
-		ray1[R_DEPTH] = 0;
-		ray1[R_PIXX] = pixelx;
-		ray1[R_PIXY] = pixely;
-		ray1[R_ENERGY] = 0.25f;
+	uint numRays = SCRWIDTH * SCRHEIGHT;
+	uint raynum = atomicInc(((uint*)rayQueue) + 2, 0xffffffff);
 
-		addRayToQueue(ray1, rayQueue);
-		delete ray1;
-		
-		float* ray2 = generateRayTroughVirtualScreen((float)pixelx + g_random3, (float)pixely + g_random4, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+	while (raynum < numRays) {
+		int pixelx = raynum % SCRWIDTH;
+		int pixely = raynum / SCRWIDTH;
+		//int pixelx = threadIdx.x;
+		//int pixely = blockIdx.x;
 
-		ray2[R_INOBJ] = 0;
-		ray2[R_REFRIND] = 1.0f;
-		ray2[R_BVHTRA] = 0;
-		ray2[R_DEPTH] = 0;
-		ray2[R_PIXX] = pixelx;
-		ray2[R_PIXY] = pixely;
-		ray2[R_ENERGY] = 0.25f;
+		//printf("id: %i, x: %i, y: %i \n", raynum, pixelx, pixely);
 
-		addRayToQueue(ray2, rayQueue);
-		delete ray2;
-		
-		float* ray3 = generateRayTroughVirtualScreen((float)pixelx + g_random5, (float)pixely + g_random6, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+		if (pixelx > SCRWIDTH || pixely > SCRHEIGHT) printf("wtf");
 
-		ray3[R_INOBJ] = 0;
-		ray3[R_REFRIND] = 1.0f;
-		ray3[R_BVHTRA] = 0;
-		ray3[R_DEPTH] = 0;
-		ray3[R_PIXX] = pixelx;
-		ray3[R_PIXY] = pixely;
-		ray3[R_ENERGY] = 0.25f;
+		//Generate the ray
+		if (SSAA) {
+			float* ray1 = generateRayTroughVirtualScreen((float)pixelx + g_random1, (float)pixely + g_random2, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
 
-		addRayToQueue(ray3, rayQueue);
-		delete ray3;
-		
-		float* ray4 = generateRayTroughVirtualScreen((float)pixelx + g_random7, (float)pixely + g_random8, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+			ray1[R_INOBJ] = 0;
+			ray1[R_REFRIND] = 1.0f;
+			ray1[R_BVHTRA] = 0;
+			ray1[R_DEPTH] = 0;
+			ray1[R_PIXX] = pixelx;
+			ray1[R_PIXY] = pixely;
+			ray1[R_ENERGY] = 0.25f;
 
-		ray4[R_INOBJ] = 0;
-		ray4[R_REFRIND] = 1.0f;
-		ray4[R_BVHTRA] = 0;
-		ray4[R_DEPTH] = 0;
-		ray4[R_PIXX] = pixelx;
-		ray4[R_PIXY] = pixely;
-		ray4[R_ENERGY] = 0.25f;
+			addRayToQueue(ray1, rayQueue);
+			delete ray1;
 
-		addRayToQueue(ray4, rayQueue);
-		delete ray4;
-		
+			float* ray2 = generateRayTroughVirtualScreen((float)pixelx + g_random3, (float)pixely + g_random4, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+			ray2[R_INOBJ] = 0;
+			ray2[R_REFRIND] = 1.0f;
+			ray2[R_BVHTRA] = 0;
+			ray2[R_DEPTH] = 0;
+			ray2[R_PIXX] = pixelx;
+			ray2[R_PIXY] = pixely;
+			ray2[R_ENERGY] = 0.25f;
+
+			addRayToQueue(ray2, rayQueue);
+			delete ray2;
+
+			float* ray3 = generateRayTroughVirtualScreen((float)pixelx + g_random5, (float)pixely + g_random6, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+			ray3[R_INOBJ] = 0;
+			ray3[R_REFRIND] = 1.0f;
+			ray3[R_BVHTRA] = 0;
+			ray3[R_DEPTH] = 0;
+			ray3[R_PIXX] = pixelx;
+			ray3[R_PIXY] = pixely;
+			ray3[R_ENERGY] = 0.25f;
+
+			addRayToQueue(ray3, rayQueue);
+			delete ray3;
+
+			float* ray4 = generateRayTroughVirtualScreen((float)pixelx + g_random7, (float)pixely + g_random8, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+			ray4[R_INOBJ] = 0;
+			ray4[R_REFRIND] = 1.0f;
+			ray4[R_BVHTRA] = 0;
+			ray4[R_DEPTH] = 0;
+			ray4[R_PIXX] = pixelx;
+			ray4[R_PIXY] = pixely;
+			ray4[R_ENERGY] = 0.25f;
+
+			addRayToQueue(ray4, rayQueue);
+			delete ray4;
+
+		}
+		else {
+			float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
+
+			ray[R_INOBJ] = 0;
+			ray[R_REFRIND] = 1.0f;
+			ray[R_BVHTRA] = 0;
+			ray[R_DEPTH] = 0;
+			ray[R_PIXX] = pixelx;
+			ray[R_PIXY] = pixely;
+			ray[R_ENERGY] = 1.0f;
+
+			addRayToQueue(ray, rayQueue);
+			delete ray;
+		}
+		raynum = atomicInc(((uint*)rayQueue) + 2, 0xffffffff);
 	}
-	else {
-		float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL);
 
-		ray[R_INOBJ] = 0;
-		ray[R_REFRIND] = 1.0f;
-		ray[R_BVHTRA] = 0;
-		ray[R_DEPTH] = 0;
-		ray[R_PIXX] = pixelx;
-		ray[R_PIXY] = pixely;
-		ray[R_ENERGY] = 1.0f;
-
-		addRayToQueue(ray, rayQueue);
-		delete ray;
-	}
 }
 
 __device__ float dot(float3 a, float3 b)
@@ -323,17 +334,14 @@ __device__ g_Collision test(int i) {
 __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions)
 {
 	uint numRays = ((uint*)rayQueue)[1];
-	int pixelx = blockIdx.x;
-	int pixely = threadIdx.x;
-
-	uint id = atomicInc(((uint*)rayQueue) + 2, 0xffffffff) + 1;
+	uint id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 
 	while (id <= numRays)
 	{
 		float* rayptr = rayQueue + (id * R_SIZE);
 		g_Collision collision = g_nearestCollision(rayptr, false, numtriangles, triangles);
 		((g_Collision*)collisions)[id] = collision;
-		id = atomicInc(((uint*)rayQueue) + 2, 0xffffffff) + 1;
+		id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 	}
 
 }

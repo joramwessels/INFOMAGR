@@ -91,7 +91,7 @@ void Game::Tick(float deltaTime)
 	((int*)rayQueue)[1] = 0; //num rays in queue
 	((int*)rayQueue)[2] = 0; //num rays in queue
 
-	cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 2);
+	cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 3);
 
 	frames++;
 	raysPerFrame = 0;
@@ -154,7 +154,7 @@ void Game::Tick(float deltaTime)
 	float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 	float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 	
-	GeneratePrimaryRay <<<SCRWIDTH, SCRHEIGHT >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
+	GeneratePrimaryRay <<<255, 255 >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
 	CheckCudaError(1);
 
 	cudaDeviceSynchronize();
@@ -172,7 +172,7 @@ void Game::Tick(float deltaTime)
 
 		//findCollisions(rayQueue, numRays, collisions); //Find all collisions
 
-		cudaMemset(g_rayQueue + 2, 0, sizeof(uint));
+		cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
 		g_findCollisions << <255, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
 		CheckCudaError(10);
 		
