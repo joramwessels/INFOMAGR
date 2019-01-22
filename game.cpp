@@ -154,20 +154,14 @@ void Game::Tick(float deltaTime)
 	float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 	float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 	
-	printf("Primray \n");
-
-	cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
-
 	GeneratePrimaryRay <<<SCRWIDTH, SCRHEIGHT >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
 	CheckCudaError(1);
 
 	cudaDeviceSynchronize();
 	CheckCudaError(2);
-	cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-	CheckCudaError(3);
 	cudaDeviceSynchronize();
 	CheckCudaError(4);
-	printf("Num rays: %i \n", ((int*)rayQueue)[1]);
+	//printf("Num rays: %i \n", ((int*)rayQueue)[1]);
 
 	// Tracing queued rays
 //#pragma omp parallel for
@@ -175,13 +169,8 @@ void Game::Tick(float deltaTime)
 	bool finished = false;
 
 	while (!finished) {
-		int numRays = ((int*)rayQueue)[1];
 
-		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 		//findCollisions(rayQueue, numRays, collisions); //Find all collisions
-		
-		printf("findcolls \n");
-
 
 		cudaMemset(g_rayQueue + 2, 0, sizeof(uint));
 		g_findCollisions << <255, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
@@ -189,6 +178,7 @@ void Game::Tick(float deltaTime)
 		
 		cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
 		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+		int numRays = ((int*)rayQueue)[1];
 
 		CheckCudaError(11);
 
@@ -210,6 +200,7 @@ void Game::Tick(float deltaTime)
 		float* temp = rayQueue;
 		rayQueue = newRays;
 		newRays = temp;
+		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 
 		((int*)newRays)[1] = 0; //set new ray count to 0
 		((int*)shadowRays)[1] = 0; //set new shadowray count to 0
