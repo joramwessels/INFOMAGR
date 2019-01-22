@@ -361,7 +361,7 @@ __device__ float g_IntersectAABB(float* ray_ptr, float* BVHNode)
 
 
 // Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
-__device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack)
+__device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack, float* stackAABBEntrypoints)
 {
 	g_Collision closest;
 	closest.t = -1;
@@ -435,20 +435,27 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 			//	return colclose;
 			//}
 			int index = 2 + stack[0]++;
-			if (index >= 64) printf("stack too small!. index: %i \n", index);
-			else stack[index] = baseIndexNear;
-			//printf("Added %i to stack location %i \n", baseIndexNear, index);
+			if (index >= 2048) printf("stack too small!. index: %i \n", index);
+			else {
+				stack[index] = baseIndexNear;
+				stackAABBEntrypoints[index] = tEntryNearNode;
+
+				//printf("Added %i to stack location %i \n", baseIndexNear, index);
+
+			}
 		}
 		if (tEntryFarNode > -99999) {
 			//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
 			int index = 2 + stack[0]++;
-			if (index >= 64) printf("stack too small!. index: %i \n", index);
+			if (index >= 2048) printf("stack too small!. index: %i \n", index);
 
-			else stack[index] = baseIndexFar;
-			//printf("Added %i to stack location %i \n", baseIndexFar, index);
+			else {
+				stack[index] = baseIndexFar;
+				stackAABBEntrypoints[index] = tEntryFarNode;
 
+				//printf("Added %i to stack location %i \n", baseIndexFar, index);
+			}
 		}
-
 
 		//if (colfar.t == -1) return colclose;
 		//if (colclose.t == -1) return colfar;
@@ -463,7 +470,9 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		int* stack = new int[64];
+		int* stack = new int[2048];
+		float* aabbEntryPoints = new float[2048];
+
 		stack[0] = 1; //count;
 		stack[1] = 2; //next one to evaluate
 		stack[2] = 0; //root node
@@ -473,13 +482,22 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 
 		while ((stack[1] - 2) < stack[0])
 		{
-			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[stack[1]++], stack);
+			int next = stack[1]++;
+
+			if (closest.t > 0 && closest.t < (aabbEntryPoints[next])) {
+				delete stack;
+				delete aabbEntryPoints;
+				return closest;
+			}
+
+			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[next], stack, aabbEntryPoints);
 
 			if ((newcollision.t != -1 && newcollision.t < closest.t) || closest.t == -1) {
 				closest = newcollision;
 			}
 		}
 		delete stack;
+		delete aabbEntryPoints;
 		return closest;
 
 		//return g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, 0);
@@ -528,9 +546,12 @@ __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQ
 
 	while (id <= numRays)
 	{
-		float* rayptr = rayQueue + (id * R_SIZE);
-		g_Collision collision = g_nearestCollision(rayptr, useBVH, numtriangles, triangles, BVH, orderedIndices);
-		((g_Collision*)collisions)[id] = collision;
+		if (id != 0)
+		{
+			float* rayptr = rayQueue + (id * R_SIZE);
+			g_Collision collision = g_nearestCollision(rayptr, useBVH, numtriangles, triangles, BVH, orderedIndices);
+			((g_Collision*)collisions)[id] = collision;
+		}
 		id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 	}
 

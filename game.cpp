@@ -29,7 +29,7 @@ void Game::Init()
 		SCENE_FLOORONLY
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_CUBE);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -175,12 +175,12 @@ void Game::Tick(float deltaTime)
 		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 		findCollisions(rayQueue, numRays, collisions); //Find all collisions
 
-		//cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
-		//g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
-		//CheckCudaError(10);
+		/*cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
+		g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
+		CheckCudaError(10);*/
 		
 		//cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
-		//cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 		numRays = ((int*)rayQueue)[1];
 
 		CheckCudaError(11);
@@ -305,6 +305,7 @@ Collision Game::nearestCollision(float* ray_ptr)
 		//return bvh->Traverse(ray_ptr, bvh->root);
 		int* stack = new int[2048];
 		float* aabbEntryPoints = new float[2048];
+		aabbEntryPoints[2] = -5000.0f;
 
 		stack[0] = 1; //count;
 		stack[1] = 2; //next one to evaluate
@@ -316,17 +317,20 @@ Collision Game::nearestCollision(float* ray_ptr)
 		while ((stack[1] - 2) < stack[0])
 		{
 			int next = stack[1]++;
+			//printf("next: stack[%i]: %i. AABB entrypoint: %f \n", next, stack[next], aabbEntryPoints[next]);
 
-			if (closest.t != -1 && closest.t < aabbEntryPoints[next]) {
-				delete stack;
-				delete aabbEntryPoints;
-				return closest;
-			}
 			
 			Collision newcollision = TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, stack[next], stack, aabbEntryPoints);
 
+			if (newcollision.t != -1 && newcollision.t < aabbEntryPoints[next]) {
+				//printf("%f \n", aabbEntryPoints[next]);
+				delete stack;
+				delete aabbEntryPoints;
+				return newcollision;
+			}
 			if ((newcollision.t != -1 && newcollision.t < closest.t) || closest.t == -1) {
 				closest = newcollision;
+				//printf("closest t now %f \n", closest.t);
 			}
 		}
 		delete stack;
@@ -374,7 +378,7 @@ void Game::findCollisions(float* rayQueue, int numrays, Collision* collisions)
 
 
 	int numRays = ((uint*)rayQueue)[1];
-	((uint*)rayQueue)[2] = 0;
+	((uint*)rayQueue)[2] = 1;
 	printf("numrays: %i", numRays);
 
 	//numRays = 10;
@@ -570,7 +574,7 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 		float shadowray[R_SIZE] = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ], shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
 		//Collision shadowcollision;
 		//shadowcollision.t = -1;
-
+		
 		int* stack = new int[2048];
 		float* AABBEntryPoints = new float[2048];
 
@@ -781,6 +785,35 @@ void Game::loadscene(SCENES scene)
 		//Calculate the edges, normal and D
 		initializeTriangle(3, triangles);
 
+
+		numLights = 3;
+		lights = new Light[numLights];
+		lights[0].position = { -5, -5, 20 };
+		lights[0].color = 0xffffff;
+		//lights[0].color = 0xff1111;
+		lights[0].color = lights[0].color * 700;
+
+		lights[1].position = { 5, -5, 0 };
+		lights[1].color = 0xffffff;
+		//lights[1].color = 0x1111ff;
+		lights[1].color = lights[1].color * 700;
+
+		lights[2].position = { -5, -5, 0 };
+		lights[2].color = 0xffffff;
+		//lights[2].color = 0x11ff11;
+		lights[2].color = lights[2].color * 700;
+
+		skybox = new Skybox("assets\\skybox4.jpg");
+		generateBVH();
+		break;
+
+	}
+	case SCENE_CUBE:
+	{
+		numGeometries = 0;
+		//createfloor(Material(0.0f, 0.0f, 0xffffff));
+
+		loadobj("assets\\cube.obj", { 1, 1, 1 }, { 0.05, 0, 3 }, Material(0.0f, 0.0f, 0xff0000));
 
 		numLights = 3;
 		lights = new Light[numLights];
