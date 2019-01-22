@@ -89,8 +89,9 @@ AABB BVH::calculateAABB(uint* indices, int start, int no_elements)
 }
 
 // Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
-Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index)
+Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack)
 {
+	//printf("traversing %i \n", index);
 	Collision closest;
 	closest.t = -1;
 
@@ -153,25 +154,27 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 				tEntryNearNode = tright;
 			};
 
-			Collision colclose, colfar;
-			colclose.t = -1;
-			colfar.t = -1;
-
 			if (tEntryNearNode > -99999) {
-				colclose = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexNear);
-				if (colclose.t < tEntryFarNode && colclose.t > 0) {
-					return colclose;
-				}
-
+				//colclose = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexNear);
+				//if (colclose.t < tEntryFarNode && colclose.t > 0) {
+				//	return colclose;
+				//}
+				int index = 2 + stack[0]++;
+				if (index >= 64) printf("stack too small!. index: %i \n", index);
+				else stack[index] = baseIndexNear;
+				//printf("Added %i to stack location %i \n", baseIndexNear, index);
 			}
 			if (tEntryFarNode > -99999) {
-				colfar = TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
+				//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
+				int index = 2 + stack[0]++;
+				if (index >= 64) printf("stack too small!. index: %i \n", index);
+
+				else stack[index] = baseIndexFar;
+				//printf("Added %i to stack location %i \n", baseIndexFar, index);
+
 			}
 
 
-			if (colfar.t == -1) return colclose;
-			if (colclose.t == -1) return colfar;
-			return (colclose.t < colfar.t ? colclose : colfar);
 		}
 	
 	return closest;

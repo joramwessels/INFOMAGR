@@ -101,6 +101,8 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 {
 	if (threadIdx.x == 0 & blockIdx.x == 0) {
 		((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
+		//((uint*)rayQueue)[2] = 0;
+
 	}
 
 	uint numRays = SCRWIDTH * SCRHEIGHT;
@@ -216,7 +218,7 @@ __device__ struct g_Collision
 	//vec3 translation = { 0, 0, 0 };
 };
 
-__device__ g_Collision intersectTriangle(int i, float* ray_ptr, float * triangles, bool isShadowRay = false)
+__device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float * triangles, bool isShadowRay = false)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
 
@@ -290,13 +292,194 @@ __device__ g_Collision intersectTriangle(int i, float* ray_ptr, float * triangle
 	return collision;
 }
 
+__device__ float g_IntersectAABB(float* ray_ptr, float* BVHNode)
+{
+	float xmin = BVHNode[B_AABB_MINX];
+	float xmax = BVHNode[B_AABB_MAXX];
+	float ymin = BVHNode[B_AABB_MINY];
+	float ymax = BVHNode[B_AABB_MAXY];
+	float zmin = BVHNode[B_AABB_MINZ];
+	float zmax = BVHNode[B_AABB_MAXZ];
 
-__device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numGeometries, float* triangles)
+	float dirX = ray_ptr[R_DX];
+	float dirY = ray_ptr[R_DY];
+	float dirZ = ray_ptr[R_DZ];
+	float OX = ray_ptr[R_OX];
+	float OY = ray_ptr[R_OY];
+	float OZ = ray_ptr[R_OZ];
+
+	float invDirX = 1 / dirX;
+	float tmin = (xmin - OX) * invDirX;
+	float tmax = (xmax - OX) * invDirX;
+
+	if (tmin > tmax) { 
+		float temp = tmin;
+		tmin = tmax;
+		tmax = temp;
+	}
+
+	float invDirY = 1 / dirY;
+	float tymin = (ymin - OY) * invDirY;
+	float tymax = (ymax - OY) * invDirY;
+
+	if (tymin > tymax) {
+		float temp = tymin;
+		tymin = tymax;
+		tymax = temp;
+
+		//swap(tymin, tymax);
+	}
+
+	if ((tmin > tymax) || (tymin > tmax))
+		return -99999;
+
+	tmin = max(tmin, tymin);
+	tmax = min(tymax, tmax);
+
+	float invDirZ = 1 / dirZ;
+	float tzmin = (zmin - OZ) * invDirZ;
+	float tzmax = (zmax - OZ) * invDirZ;
+
+	if (tzmin > tzmax) {
+		float temp = tzmin;
+		tzmin = tzmax;
+		tzmax = temp;
+
+		//swap(tzmin, tzmax);
+	}
+
+	if ((tmin > tzmax) || (tzmin > tmax))
+		return -99999;
+
+	tmin = max(tmin, tzmin);
+	tmax = min(tzmax, tmax);
+
+	if (tmax < 0) return -99999;
+
+	return tmin;
+}
+
+
+// Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
+__device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack)
+{
+	g_Collision closest;
+	closest.t = -1;
+
+	ray_ptr[R_BVHTRA]++;
+
+	//vec3 ray_origin = { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
+	//vec3 ray_direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
+	int count = pool[index + B_COUNT];
+	//printf("Count: %i \n", count);
+
+		// If leaf
+	if (count != 0)
+	{
+		float closestdist = 0xffffff;
+
+
+		// Find closest collision
+		for (int i = 0; i < pool[index + B_COUNT]; i++)
+		{
+			//Collision collision = scene[orderedIndices[node->leftFirst + i]]->Intersect(*ray);
+			int triangleindex = orderedIndices[(int)pool[index + B_LEFTFIRST] + i];
+
+			g_Collision collision = g_intersectTriangle(triangleindex, ray_ptr, scene);
+			float dist = collision.t;
+			if (dist != -1 && dist < closestdist)
+			{
+				//Collision. Check if closest
+				closest = collision;
+				closestdist = dist;
+			}
+		}
+		//printf("leaf: collision at %f \n", closest.t);
+		return closest;
+	}
+	// If node
+	else
+	{
+		//printf("Not leaf \n");
+		// Check both children and return the closest collision if both intersected
+		//AABB::AABBIntersection tleft = pool[(int)pool[index + B_LEFTFIRST]].bounds.Intersects(ray_origin, ray_direction);
+		//AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray_origin, ray_direction);
+		int leftchild = pool[(int)index + B_LEFTFIRST];
+		int rightchild = leftchild + B_SIZE;
+
+
+		float tleft = g_IntersectAABB(ray_ptr, pool + leftchild);
+		float tright = g_IntersectAABB(ray_ptr, pool + rightchild);
+
+		int flip = 0;
+
+		int baseIndexNear = leftchild;
+		int baseIndexFar = rightchild;
+
+		float tEntryFarNode = tright;
+		float tEntryNearNode = tleft;
+		if (tright < tleft && tright > -99999) {
+			baseIndexNear = rightchild;
+			baseIndexFar = leftchild;
+			tEntryFarNode = tleft;
+			tEntryNearNode = tright;
+		};
+
+		g_Collision colclose, colfar;
+		colclose.t = -1;
+		colfar.t = -1;
+
+		if (tEntryNearNode > -99999) {
+			//colclose = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexNear);
+			//if (colclose.t < tEntryFarNode && colclose.t > 0) {
+			//	return colclose;
+			//}
+			int index = 2 + stack[0]++;
+			if (index >= 64) printf("stack too small!. index: %i", index);
+			else stack[index] = baseIndexNear;
+		}
+		if (tEntryFarNode > -99999) {
+			//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
+			int index = 2 + stack[0]++;
+			if (index >= 64) printf("stack too small!. index: %i", index);
+
+			else stack[index] = baseIndexFar;
+
+		}
+
+
+		//if (colfar.t == -1) return colclose;
+		//if (colclose.t == -1) return colfar;
+		return (colclose.t < colfar.t ? colclose : colfar);
+	}
+
+	return closest;
+}
+
+__device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numGeometries, float* triangles, float* BVH, uint* orderedIndices)
 {
 	if (use_bvh)
 	{
 		//printf("BVH TRAVERSAL ");
-		//return TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
+		int* stack = new int[64];
+		stack[0] = 1; //count;
+		stack[1] = 2; //next one to evaluate
+		stack[2] = 0; //root node
+
+		g_Collision closest;
+		closest.t = -1;
+
+		while ((stack[1] - 2) < stack[0])
+		{
+			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[stack[1]], stack);
+
+			if (newcollision.t != -1 && newcollision.t < closest.t) {
+				closest = newcollision;
+			}
+		}
+		return closest;
+
+		//return g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, 0);
 	}
 	else
 	{
@@ -309,7 +492,7 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 		{
 			//Collision collision = geometry[i]->Intersect(*ray);
 			//printf("Trying to intersect ray with triangle %i... \n", i);
-			g_Collision collision = intersectTriangle(i, ray_ptr, triangles);
+			g_Collision collision = g_intersectTriangle(i, ray_ptr, triangles);
 			//printf("(nearestcollision) got collision with t %f. \n", collision.t);
 
 
@@ -331,15 +514,19 @@ __device__ g_Collision test(int i) {
 	coll.t = i;
 	return coll;
 }
-__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions)
+__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, uint* orderedIndices)
 {
+	if (threadIdx.x == 0 && blockIdx.x == 0) {
+		((uint*)rayQueue)[3] = 0;
+	}
+
 	uint numRays = ((uint*)rayQueue)[1];
 	uint id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 
 	while (id <= numRays)
 	{
 		float* rayptr = rayQueue + (id * R_SIZE);
-		g_Collision collision = g_nearestCollision(rayptr, false, numtriangles, triangles);
+		g_Collision collision = g_nearestCollision(rayptr, useBVH, numtriangles, triangles, BVH, orderedIndices);
 		((g_Collision*)collisions)[id] = collision;
 		id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 	}

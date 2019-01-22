@@ -159,6 +159,9 @@ private:
 
 	// BVH
 	BVH* bvh;
+	float* g_BVH;
+	uint* g_orderedIndices;
+
 	bool bvhdebug = false;
 	void generateBVH() {
 		//BVH GENERATION
@@ -167,7 +170,12 @@ private:
 		mytimer.reset();
 		bvh->Build(triangles, numGeometries);
 		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh->depth);
+		cudaMalloc(&g_BVH, bvh->poolPtr * B_SIZE * sizeof(float));
+		cudaMemcpy(g_BVH, bvh->pool, bvh->poolPtr * B_SIZE * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMalloc(&g_orderedIndices, bvh->totalNoElements * sizeof(uint));
+		cudaMemcpy(g_orderedIndices, bvh->orderedIndices, bvh->totalNoElements * sizeof(uint), cudaMemcpyHostToDevice);
 	}
+	
 
 	// Ray queue
 	int endOfRaysQueue = 0;				// the number of rays in the floats array

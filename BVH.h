@@ -16,7 +16,6 @@ public:
 	int totalNoElements = 0;
 
 	//BVH Construction
-	//__declspec(align(64)) BVHNode* pool;
 	__declspec(align(64)) float* pool;
 	uint poolPtr;
 	uint* orderedIndices;
@@ -67,4 +66,4 @@ float IntersectAABB(float* ray_ptr, float* BVHNode);
 
 
 
-Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index);
+Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack);

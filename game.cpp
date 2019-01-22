@@ -33,7 +33,7 @@ void Game::Init()
 
 	SSAA = false;
 	camera.DoF = false;
-	use_bvh = true;
+	use_bvh = false;
 	bvhdebug = false;
 
 	mytimer.reset();
@@ -154,7 +154,9 @@ void Game::Tick(float deltaTime)
 	float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 	float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 	
-	GeneratePrimaryRay <<<255, 255 >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
+	cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 2);
+
+	GeneratePrimaryRay <<<24, 255 >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
 	CheckCudaError(1);
 
 	cudaDeviceSynchronize();
@@ -169,16 +171,17 @@ void Game::Tick(float deltaTime)
 	bool finished = false;
 
 	while (!finished) {
-
-		//findCollisions(rayQueue, numRays, collisions); //Find all collisions
-
-		cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
-		g_findCollisions << <255, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
-		CheckCudaError(10);
-		
-		cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
 		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 		int numRays = ((int*)rayQueue)[1];
+		findCollisions(rayQueue, numRays, collisions); //Find all collisions
+
+		//cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
+		//g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
+		//CheckCudaError(10);
+		
+		//cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+		//cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+		numRays = ((int*)rayQueue)[1];
 
 		CheckCudaError(11);
 
@@ -300,7 +303,28 @@ Collision Game::nearestCollision(float* ray_ptr)
 	{
 		//printf("BVH TRAVERSAL ");
 		//return bvh->Traverse(ray_ptr, bvh->root);
-		return TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
+		int* stack = new int[64];
+		stack[0] = 1; //count;
+		stack[1] = 2; //next one to evaluate
+		stack[2] = 0; //root node
+
+		Collision closest;
+		closest.t = -1;
+
+		while ((stack[1] - 2) < stack[0])
+		{
+			Collision newcollision = TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, stack[stack[1]++], stack);
+
+			if ((newcollision.t != -1 && newcollision.t < closest.t) || closest.t == -1) {
+				closest = newcollision;
+			}
+		}
+		delete stack;
+		//printf("done.");
+		return closest;
+
+
+		//return TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
 	}
 	else
 	{
@@ -532,12 +556,30 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 	if (use_bvh)
 	{
 		float shadowray[R_SIZE] = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ], shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
-		//Collision shadowcollision = bvh.Traverse(&shadowray, bvh.root);
-		Collision shadowcollision = TraverseBVHNode(shadowray, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
+		//Collision shadowcollision;
+		//shadowcollision.t = -1;
 
-		//Collision shadowcollision = bvh.left->Traverse(&shadowray, bvh.left->root);
+		/*int* stack = new int[64];
+		stack[0] = 1; //count;
+		stack[1] = 2; //next one to evaluate
+		stack[2] = 0; //root node
 
-		if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
+		while ((stack[1] - 2) < stack[0])
+		{
+			Collision newcollision = TraverseBVHNode(shadowray, bvh->pool, bvh->orderedIndices, bvh->scene, stack[stack[1]++], stack);
+			if (newcollision.t > 0 && newcollision.t < maxt)
+			{
+				collided = true;
+				break;
+			}
+			
+		}
+		delete stack;*/
+		//printf("done.");
+
+		//Collision shadowcollision = TraverseBVHNode(shadowray, bvh->pool, bvh->orderedIndices, bvh->scene, 0);
+
+		//if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
 	}
 	else {
 		for (int i = 0; i < numGeometries; i++)

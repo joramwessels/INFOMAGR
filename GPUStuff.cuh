@@ -7,4 +7,4 @@ __device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, boo
 
 __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA);
 
-__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions);
+__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices);
