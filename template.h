@@ -102,7 +102,7 @@ public:
 class vec3
 {
 public:
-	union { struct { float x, y, z, dummy; }; float cell[4]; };
+	union { struct { float x, y, z; }; float cell[3]; };
 	vec3() = default;
 	vec3( float v ) : x( v ), y( v ), z( v ) {}
 	vec3( float x, float y, float z ) : x( x ), y( y ), z( z ) {}

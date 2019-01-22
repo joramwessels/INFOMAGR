@@ -323,31 +323,17 @@ __device__ g_Collision test(int i) {
 __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions)
 {
 	uint numRays = ((uint*)rayQueue)[1];
-	//printf("numrays: %i", numRays);
-
-	//numRays = 1000;
-	//((uint*)rayQueue)[2] = 0; //current ray to be traced
-
-
 	int pixelx = blockIdx.x;
 	int pixely = threadIdx.x;
 
 	uint id = atomicInc(((uint*)rayQueue) + 2, 0xffffffff) + 1;
-	//printf("id: %i \n", id);
 
 	while (id <= numRays)
 	{
-		//rintf("now doing ray %i from thread %i %i \n", id, pixelx, pixely);
 		float* rayptr = rayQueue + (id * R_SIZE);
 		g_Collision collision = g_nearestCollision(rayptr, false, numtriangles, triangles);
-		//g_Collision collision = test(id);
-		if(collision.t != -1)printf("got back collision with t %f. id: %i. Colorat: %f %f %f \n", collision.t, (int)id, collision.R, collision.G, collision.B);
-
 		((g_Collision*)collisions)[id] = collision;
 		id = atomicInc(((uint*)rayQueue) + 2, 0xffffffff) + 1;
 	}
 
-
-	
-	//collisions[id] = 0;
 }

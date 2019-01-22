@@ -178,13 +178,13 @@ void Game::Tick(float deltaTime)
 		int numRays = ((int*)rayQueue)[1];
 
 		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
-		findCollisions(rayQueue, numRays, collisions); //Find all collisions
+		//findCollisions(rayQueue, numRays, collisions); //Find all collisions
 		
 		printf("findcolls \n");
 
 
 		cudaMemset(g_rayQueue + 2, 0, sizeof(uint));
-		g_findCollisions << <10, 10 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
+		g_findCollisions << <255, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions);
 		CheckCudaError(10);
 		
 		cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
