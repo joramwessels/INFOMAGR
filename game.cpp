@@ -46,7 +46,10 @@ void Game::Init()
 	((int*)shadowRays)[1] = 0; //current count
 
 	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
+	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
 	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
+	cudaMalloc(&g_shadowRays, rayQueueSize * sizeof(float) * 5);
+
 
 	printf("rand: %f \n", random1);
 	printf("rand: %f \n", random2);
@@ -453,11 +456,12 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 				//Generate shadow rays
 				for (int light = 0; light < numLights; light++)
 				{
-					vec3 direction = (lights[light].position - collision.Pos).normalized();
+					vec3 lightPosition = vec3(lightPos[light * 3 + 0], lightPos[light * 3 + 1], lightPos[light * 3 + 2]);
+					vec3 direction = (lightPosition - collision.Pos).normalized();
 					vec3 origin = collision.Pos + (0.00025f * direction); //move away a little bit from the surface, to avoid self-collision in the outward direction.
-					float maxt = (lights[light].position.x - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
+					float maxt = (lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 					Color collisioncolor = Color(collision.R, collision.G, collision.B);
-					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lights[light].color * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lights[light].position - collision.Pos).sqrLentgh()));
+					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColor[light] * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lightPosition - collision.Pos).sqrLentgh()));
 					addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
 				}
 			}
@@ -793,21 +797,27 @@ void Game::loadscene(SCENES scene)
 
 
 		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lightPos = new float[numLights * 3];
+		lightColor = new Color[numLights];
 
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
+		lightPos[0] = -5.0f; //X
+		lightPos[1] = -5.0f; //Y
+		lightPos[2] = 20.0f; //Z
+		lightColor[0] = 0xffffff;
+		lightColor[0] = lightColor[0] * 700;
 
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lightPos[(1 * 3) + 0] = 5.0f; //X
+		lightPos[(1 * 3) + 1] = -5.0f; //Y
+		lightPos[(1 * 3) + 2] = 0.0f; //Z
+		lightColor[1] = 0xffffff;
+		lightColor[1] = lightColor[1] * 700;
+
+		lightPos[(2 * 3) + 0] = -5.0f; //X
+		lightPos[(2 * 3) + 1] = -5.0f; //Y
+		lightPos[(2 * 3) + 2] = 0.0f; //Z
+		lightColor[2] = 0xffffff;
+		lightColor[2] = lightColor[2] * 700;
+
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();
@@ -822,21 +832,26 @@ void Game::loadscene(SCENES scene)
 		loadobj("assets\\cube.obj", { 1, 1, 1 }, { 0.05, 0, 3 }, Material(0.0f, 0.0f, 0xff0000));
 
 		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lightPos = new float[numLights * 3];
+		lightColor = new Color[numLights];
 
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
+		lightPos[0] = -5.0f; //X
+		lightPos[1] = -5.0f; //Y
+		lightPos[2] = 20.0f; //Z
+		lightColor[0] = 0xffffff;
+		lightColor[0] = lightColor[0] * 700;
 
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lightPos[(1 * 3) + 0] = 5.0f; //X
+		lightPos[(1 * 3) + 1] = -5.0f; //Y
+		lightPos[(1 * 3) + 2] = 0.0f; //Z
+		lightColor[1] = 0xffffff;
+		lightColor[1] = lightColor[1] * 700;
+
+		lightPos[(2 * 3) + 0] = -5.0f; //X
+		lightPos[(2 * 3) + 1] = -5.0f; //Y
+		lightPos[(2 * 3) + 2] = 0.0f; //Z
+		lightColor[2] = 0xffffff;
+		lightColor[2] = lightColor[2] * 700;
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();
@@ -853,21 +868,27 @@ void Game::loadscene(SCENES scene)
 		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 }, Material(0.0f, 1.52f, 0xffffff));
 
 		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lightPos = new float[numLights * 3];
+		lightColor = new Color[numLights];
 
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
+		lightPos[0] = -5.0f; //X
+		lightPos[1] = -5.0f; //Y
+		lightPos[2] = 20.0f; //Z
+		lightColor[0] = 0xffffff;
+		lightColor[0] = lightColor[0] * 700;
 
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lightPos[(1 * 3) + 0] = 5.0f; //X
+		lightPos[(1 * 3) + 1] = -5.0f; //Y
+		lightPos[(1 * 3) + 2] = 0.0f; //Z
+		lightColor[1] = 0xffffff;
+		lightColor[1] = lightColor[1] * 700;
+
+		lightPos[(2 * 3) + 0] = -5.0f; //X
+		lightPos[(2 * 3) + 1] = -5.0f; //Y
+		lightPos[(2 * 3) + 2] = 0.0f; //Z
+		lightColor[2] = 0xffffff;
+		lightColor[2] = lightColor[2] * 700;
+
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();
@@ -886,21 +907,27 @@ void Game::loadscene(SCENES scene)
 		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
 
 		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lightPos = new float[numLights * 3];
+		lightColor = new Color[numLights];
 
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
+		lightPos[0] = -5.0f; //X
+		lightPos[1] = -5.0f; //Y
+		lightPos[2] = 20.0f; //Z
+		lightColor[0] = 0xffffff;
+		lightColor[0] = lightColor[0] * 700;
 
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lightPos[(1 * 3) + 0] = 5.0f; //X
+		lightPos[(1 * 3) + 1] = -5.0f; //Y
+		lightPos[(1 * 3) + 2] = 0.0f; //Z
+		lightColor[1] = 0xffffff;
+		lightColor[1] = lightColor[1] * 700;
+
+		lightPos[(2 * 3) + 0] = -5.0f; //X
+		lightPos[(2 * 3) + 1] = -5.0f; //Y
+		lightPos[(2 * 3) + 2] = 0.0f; //Z
+		lightColor[2] = 0xffffff;
+		lightColor[2] = lightColor[2] * 700;
+
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();
@@ -918,21 +945,27 @@ void Game::loadscene(SCENES scene)
 		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 }, Material(0.5f, 0.0f, 0xffff00));
 
 		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -5, 20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lightPos = new float[numLights * 3];
+		lightColor = new Color[numLights];
 
-		lights[1].position = { 5, -5, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
+		lightPos[0] = -5.0f; //X
+		lightPos[1] = -5.0f; //Y
+		lightPos[2] = 20.0f; //Z
+		lightColor[0] = 0xffffff;
+		lightColor[0] = lightColor[0] * 700;
 
-		lights[2].position = { -5, -5, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lightPos[(1 * 3) + 0] = 5.0f; //X
+		lightPos[(1 * 3) + 1] = -5.0f; //Y
+		lightPos[(1 * 3) + 2] = 0.0f; //Z
+		lightColor[1] = 0xffffff;
+		lightColor[1] = lightColor[1] * 700;
+
+		lightPos[(2 * 3) + 0] = -5.0f; //X
+		lightPos[(2 * 3) + 1] = -5.0f; //Y
+		lightPos[(2 * 3) + 2] = 0.0f; //Z
+		lightColor[2] = 0xffffff;
+		lightColor[2] = lightColor[2] * 700;
+
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 
@@ -966,21 +999,27 @@ void Game::loadscene(SCENES scene)
 		camera.move({ 0.0f, -5.0f, 0.0f });
 
 		numLights = 3;
-		lights = new Light[numLights];
-		lights[0].position = { -5, -10, -20 };
-		lights[0].color = 0xffffff;
-		//lights[0].color = 0xff1111;
-		lights[0].color = lights[0].color * 700;
+		lightPos = new float[numLights * 3];
+		lightColor = new Color[numLights];
 
-		lights[1].position = { 5, -10, 0 };
-		lights[1].color = 0xffffff;
-		//lights[1].color = 0x1111ff;
-		lights[1].color = lights[1].color * 700;
+		lightPos[0] = -5.0f; //X
+		lightPos[1] = -5.0f; //Y
+		lightPos[2] = 20.0f; //Z
+		lightColor[0] = 0xffffff;
+		lightColor[0] = lightColor[0] * 700;
 
-		lights[2].position = { -5, -10, 0 };
-		lights[2].color = 0xffffff;
-		//lights[2].color = 0x11ff11;
-		lights[2].color = lights[2].color * 700;
+		lightPos[(1 * 3) + 0] = 5.0f; //X
+		lightPos[(1 * 3) + 1] = -5.0f; //Y
+		lightPos[(1 * 3) + 2] = 0.0f; //Z
+		lightColor[1] = 0xffffff;
+		lightColor[1] = lightColor[1] * 700;
+
+		lightPos[(2 * 3) + 0] = -5.0f; //X
+		lightPos[(2 * 3) + 1] = -5.0f; //Y
+		lightPos[(2 * 3) + 2] = 0.0f; //Z
+		lightColor[2] = 0xffffff;
+		lightColor[2] = lightColor[2] * 700;
+
 
 
 		skybox = new Skybox("assets\\skybox4.jpg");

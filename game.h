@@ -117,7 +117,9 @@ private:
 	void TraceShadowRay(float* shadowrays, int rayIndex);
 
 	int numLights = 2;
-	Light* lights;
+	//Light* lights;
+	float* lightPos;
+	Color* lightColor;
 
 	vec3 reflect(vec3 D, vec3 N);
 
@@ -188,7 +190,9 @@ private:
 	float *g_rayQueue;
 
 	float* newRays = new float[rayQueueSize];
+	float* g_newRays;
 	float* shadowRays = new float[rayQueueSize * 5];
+	float* g_shadowRays;
 	Collision* collisions = new Collision[rayQueueSize];
 	void* g_collisions;
 
