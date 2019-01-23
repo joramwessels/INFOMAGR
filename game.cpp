@@ -29,7 +29,7 @@ void Game::Init()
 		SCENE_FLOORONLY
 	*/
 
-	loadscene(SCENES::SCENE_CUBE);
+	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -307,27 +307,26 @@ Collision Game::nearestCollision(float* ray_ptr)
 		float* aabbEntryPoints = new float[2048];
 		aabbEntryPoints[2] = -5000.0f;
 
-		stack[0] = 1; //count;
-		stack[1] = 2; //next one to evaluate
-		stack[2] = 0; //root node
+		stack[0] = 1; //count, next one to evaluate;
+		stack[1] = 0; //Root node
 
 		Collision closest;
 		closest.t = -1;
 
-		while ((stack[1] - 2) < stack[0])
+		while (stack[0] > 0)
 		{
-			int next = stack[1]++;
+			int next = stack[0]--;
 			//printf("next: stack[%i]: %i. AABB entrypoint: %f \n", next, stack[next], aabbEntryPoints[next]);
 
-			
-			Collision newcollision = TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, stack[next], stack, aabbEntryPoints);
-
-			if (newcollision.t != -1 && newcollision.t < aabbEntryPoints[next]) {
+			/*if (closest.t != -1 && closest.t < aabbEntryPoints[next]) {
 				//printf("%f \n", aabbEntryPoints[next]);
 				delete stack;
 				delete aabbEntryPoints;
-				return newcollision;
-			}
+				return closest;
+			}*/
+			
+			Collision newcollision = TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, stack[next], stack, aabbEntryPoints);
+
 			if ((newcollision.t != -1 && newcollision.t < closest.t) || closest.t == -1) {
 				closest = newcollision;
 				//printf("closest t now %f \n", closest.t);
@@ -578,13 +577,13 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 		int* stack = new int[2048];
 		float* AABBEntryPoints = new float[2048];
 
-		stack[0] = 1; //count;
-		stack[1] = 2; //next one to evaluate
-		stack[2] = 0; //root node
+		stack[0] = 1; //count, next one to evaluate;
+		stack[1] = 0; //root node
 
-		while ((stack[1] - 2) < stack[0])
+		while (stack[0] > 0)
 		{
-			Collision newcollision = TraverseBVHNode(shadowray, bvh->pool, bvh->orderedIndices, bvh->scene, stack[stack[1]++], stack, AABBEntryPoints);
+			int next = stack[0]--;
+			Collision newcollision = TraverseBVHNode(shadowray, bvh->pool, bvh->orderedIndices, bvh->scene, stack[next], stack, AABBEntryPoints);
 			if (newcollision.t > 0 && newcollision.t < maxt)
 			{
 				collided = true;
