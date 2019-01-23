@@ -1,21 +1,35 @@
 #include "precomp.h"
 
-__device__ float3 operator+(const float3 &a, const float3 &b) {
 
+// float3 operations
+__device__ float3 operator+(const float3 &a, const float3 &b)
+{
 	return make_float3(a.x + b.x, a.y + b.y, a.z + b.z);
-
 }
-__device__ float3 operator-(const float3 &a, const float3 &b) {
-
+__device__ float3 operator-(const float3 &a, const float3 &b)
+{
 	return make_float3(a.x - b.x, a.y - b.y, a.z - b.z);
-
 }
-__device__ float3 operator*(const float3 &a, const float &b) {
-
+__device__ float3 operator*(const float3 &a, const float &b)
+{
 	return make_float3(a.x * b, a.y * b, a.z * b);
-
+}
+__device__ float3 normalize(float3 in)
+{
+	float mag = 1 / sqrtf(in.x * in.x + in.y * in.y + in.z*in.z);
+	return make_float3(in.x * mag, in.y * mag, in.z * mag);
+}
+__device__ float3 cross(float3 a, float3 b)
+{
+	return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+__device__ float dot(float3 a, float3 b)
+{
+	return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
 
+
+// SSAA random number generation
 __device__ uint g_seed = 0x12345678;
 __device__ inline uint g_RandomUInt() { g_seed ^= g_seed << 13; g_seed ^= g_seed >> 17; g_seed ^= g_seed << 5; return g_seed; }
 __device__ inline float g_RandomFloat() { return g_RandomUInt() * 2.3283064365387e-10f; }
@@ -30,11 +44,6 @@ __device__ float g_random7 = 0.538243f;
 __device__ float g_random8 = 0.769904f;
 
 
-__device__ float3 normalize(float3 in) {
-	float mag = 1 / sqrtf(in.x * in.x + in.y * in.y + in.z*in.z);
-	return make_float3(in.x * mag, in.y * mag, in.z * mag);
-}
-
 __global__ void testkernel(float* a)
 {
 	int i = threadIdx.x;
@@ -43,33 +52,13 @@ __global__ void testkernel(float* a)
 	printf("Gpu thread %i says hi! \n", i);
 }
 
-__device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL)
+// Adds the given color to the intermediate screen buffer
+__device__ void g_addToIntermediate(g_Color* buffer, float x, float y, g_Color color)
 {
-	float3 pixelPosScaled;
-	pixelPosScaled.x = pixelx / SCRWIDTH; //Scale the pixel position to be in the range 0..1
-	pixelPosScaled.y = pixely / SCRHEIGHT;
+	buffer[(int)x + ((int)y * SCRWIDTH)] += color;
+};
 
-	float3 DofRandomness = { 0, 0, 0 };
-	if (DoF) DofRandomness = make_float3((g_RandomFloat() * 0.1 - 0.05), (g_RandomFloat() * 0.1 - 0.05), 0); //TODO: make random and maybe 7-gon instead of square?
-
-	float3 origin = position + DofRandomness;
-	//printf("ray origin: %f, %f, %f", origin.x, origin.y, origin.z);
-
-	float3 positionOnVirtualScreen = virtualScreenCornerTL + (virtualScreenCornerTR - virtualScreenCornerTL) * pixelPosScaled.x + (virtualScreenCornerBL - virtualScreenCornerTL) * pixelPosScaled.y;
-	float3 direction = normalize(positionOnVirtualScreen - origin);
-
-	float* ray = new float[R_SIZE];
-	ray[0] = origin.x;
-	ray[1] = origin.y;
-	ray[2] = origin.z;
-	ray[3] = direction.x;
-	ray[4] = direction.y;
-	ray[5] = direction.z;
-	//float ray[6] = { origin.x, origin.y, origin.z, direction.x, direction.y, direction.z };
-
-	return ray;
-}
-
+// Adds a given ray to the given ray queue and updates the queue size
 __device__ void addRayToQueue(float* ray, float* queue)
 {
 	int id = atomicInc(((uint*)queue) + 1, 0xffffffff) + 1;
@@ -97,6 +86,35 @@ __device__ void addRayToQueue(float* ray, float* queue)
 	queue[baseIndex + R_ENERGY] = ray[12];
 }
 
+// Generates and returns a primary ray given the virtual screen coordinates
+__device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL)
+{
+	float3 pixelPosScaled;
+	pixelPosScaled.x = pixelx / SCRWIDTH; //Scale the pixel position to be in the range 0..1
+	pixelPosScaled.y = pixely / SCRHEIGHT;
+
+	float3 DofRandomness = { 0, 0, 0 };
+	if (DoF) DofRandomness = make_float3((g_RandomFloat() * 0.1 - 0.05), (g_RandomFloat() * 0.1 - 0.05), 0); //TODO: make random and maybe 7-gon instead of square?
+
+	float3 origin = position + DofRandomness;
+	//printf("ray origin: %f, %f, %f", origin.x, origin.y, origin.z);
+
+	float3 positionOnVirtualScreen = virtualScreenCornerTL + (virtualScreenCornerTR - virtualScreenCornerTL) * pixelPosScaled.x + (virtualScreenCornerBL - virtualScreenCornerTL) * pixelPosScaled.y;
+	float3 direction = normalize(positionOnVirtualScreen - origin);
+
+	float* ray = new float[R_SIZE];
+	ray[0] = origin.x;
+	ray[1] = origin.y;
+	ray[2] = origin.z;
+	ray[3] = direction.x;
+	ray[4] = direction.y;
+	ray[5] = direction.z;
+	//float ray[6] = { origin.x, origin.y, origin.z, direction.x, direction.y, direction.z };
+
+	return ray;
+}
+
+// Generates and collects primary rays in the given ray queue
 __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA)
 {
 	if (threadIdx.x == 0 & blockIdx.x == 0) {
@@ -192,32 +210,7 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 
 }
 
-__device__ float dot(float3 a, float3 b)
-{
-	return (a.x * b.x + a.y * b.y + a.z * b.z);
-}
-
-__device__ float3 cross(float3 a, float3 b)
-{
-	return make_float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-}
-
-__device__ struct g_Collision
-{
-	float3 N;
-	float3 Pos;
-	float t;
-	//Color colorAt;
-	float R;
-	float G;
-	float B;
-	float refraction;
-	float specularity;
-
-	//bool isTranslated;
-	//vec3 translation = { 0, 0, 0 };
-};
-
+// Finds a collision with the triangle. Returns a collision with t = -1 if none were found.
 __device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float * triangles, bool isShadowRay = false)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
@@ -292,6 +285,7 @@ __device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float * triang
 	return collision;
 }
 
+// Checks if the ray intersects the BVH node. Returns 'tmin' if it does, and returns -99999 otherwise.
 __device__ float g_IntersectAABB(float* ray_ptr, float* BVHNode)
 {
 	float xmin = BVHNode[B_AABB_MINX];
@@ -359,8 +353,7 @@ __device__ float g_IntersectAABB(float* ray_ptr, float* BVHNode)
 	return tmin;
 }
 
-
-// Recursively traverses the BVH tree from the given node to find a collision. Returns collision with t = -1 if none were found.
+// Recursively traverses the BVH tree from the given node to find a collision. Returns a collision with t = -1 if none were found.
 __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack, float* stackAABBEntrypoints)
 {
 	g_Collision closest;
@@ -459,11 +452,11 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 	return closest;
 }
 
+// Finds the first geometry collision in its path. Returns a collision with t = -1 if none were found.
 __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numGeometries, float* triangles, float* BVH, uint* orderedIndices)
 {
 	if (use_bvh)
 	{
-		//printf("BVH TRAVERSAL ");
 		int* stack = new int[32];
 		float* aabbEntryPoints = new float[32];
 		aabbEntryPoints[2] = -5000.0f;
@@ -528,12 +521,8 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 	}
 }
 
-__device__ g_Collision test(int i) {
-	g_Collision coll;
-	coll.t = i;
-	return coll;
-}
-__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, uint* orderedIndices)
+// Generates and collects the nearest geometry intersections for the given ray queue
+__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices)
 {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
 		((uint*)rayQueue)[3] = 0;
@@ -552,5 +541,56 @@ __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQ
 		}
 		id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 	}
+}
 
+// Checks for geometry intersections with the given shadow ray queue, and adds their energy to the intermediate screen buffer if unoccluded
+__global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, float* BVH, unsigned int* orderedIndices, int numGeometries, float* scene, g_Color* intermediate, int bvhStackCapacity)
+{
+	int baseIndex = rayIndex * SR_SIZE;
+	float maxt = shadowrays[baseIndex + SR_MAXT];
+	bool collided = false;
+
+	// Extracting shadow ray from ray queue
+	float shadowray[R_SIZE] = {
+		shadowrays[baseIndex + SR_OX],
+		shadowrays[baseIndex + SR_OY],
+		shadowrays[baseIndex + SR_OZ],
+		shadowrays[baseIndex + SR_DX],
+		shadowrays[baseIndex + SR_DY],
+		shadowrays[baseIndex + SR_DZ]
+	};
+
+	if (use_bvh)
+	{
+		// Initializing stack
+		float* AABBEntryPoints = new float[bvhStackCapacity];
+		int* stack = new int[bvhStackCapacity];
+		stack[0] = 1; //count, next one to evaluate;
+		stack[1] = 0; //root node
+
+		// Traversing BVH
+		while (stack[0] > 0)
+		{
+			int next = stack[0]--;
+			g_Collision newcollision = g_TraverseBVHNode(shadowray, BVH, orderedIndices, scene, stack[next], stack, AABBEntryPoints);
+			if (newcollision.t > 0 && newcollision.t < maxt) return; // collision: light source is occluded
+		}
+
+		// Cleaning up
+		delete stack;
+		delete AABBEntryPoints;
+	}
+	else
+	{
+		// NOTE: Not using a BVH on the GPU will cause an automatic kernel shutdown after 5 seconds when there are too many triangles
+		for (int i = 0; i < numGeometries; i++)
+		{
+			g_Collision shadowcollision = g_intersectTriangle(i, shadowray, scene, true);
+			if (shadowcollision.t != -1 && shadowcollision.t < maxt) return; // collision: light source is occluded
+		}
+	}
+
+	// Adding the unoccluded ray to the intermediate screen buffer
+	g_Color toadd = g_Color(shadowrays[baseIndex + SR_R], shadowrays[baseIndex + SR_G], shadowrays[baseIndex + SR_B]);
+	g_addToIntermediate(intermediate, shadowrays[baseIndex + SR_PIXX], shadowrays[baseIndex + SR_PIXY], toadd);
 }
