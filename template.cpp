@@ -342,5 +342,5 @@ int main( int argc, char **argv )
 	}
 	game->Shutdown();
 	SDL_Quit();
-	return 1;
+	return 0;
 }
