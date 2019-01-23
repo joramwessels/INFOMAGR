@@ -172,14 +172,20 @@ void Game::Tick(float deltaTime)
 
 	while (!finished) {
 		int numRays = ((int*)rayQueue)[1];
-		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-		findCollisions(rayQueue, numRays, collisions); //Find all collisions
+		if (bool useCpuForCollisions = false) //Single = is intentional. change false to true to find the collisions on the cpu instead of the gpu.
+		{
+			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			findCollisions(rayQueue, numRays, collisions); //Find all collisions
+		}
+		else
+		{
 
-		/*cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
-		g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
-		CheckCudaError(10);*/
-		
-		//cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+
+			cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
+			g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
+			CheckCudaError(10);
+			cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+		}
 		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 		numRays = ((int*)rayQueue)[1];
 
@@ -303,8 +309,8 @@ Collision Game::nearestCollision(float* ray_ptr)
 	{
 		//printf("BVH TRAVERSAL ");
 		//return bvh->Traverse(ray_ptr, bvh->root);
-		int* stack = new int[2048];
-		float* aabbEntryPoints = new float[2048];
+		int* stack = new int[32];
+		float* aabbEntryPoints = new float[32];
 		aabbEntryPoints[2] = -5000.0f;
 
 		stack[0] = 1; //count, next one to evaluate;
@@ -318,12 +324,13 @@ Collision Game::nearestCollision(float* ray_ptr)
 			int next = stack[0]--;
 			//printf("next: stack[%i]: %i. AABB entrypoint: %f \n", next, stack[next], aabbEntryPoints[next]);
 
-			/*if (closest.t != -1 && closest.t < aabbEntryPoints[next]) {
+			if (closest.t != -1 && closest.t < aabbEntryPoints[next]) {
+				continue;
 				//printf("%f \n", aabbEntryPoints[next]);
-				delete stack;
-				delete aabbEntryPoints;
-				return closest;
-			}*/
+				//delete stack;
+				//delete aabbEntryPoints;
+				//return closest;
+			}
 			
 			Collision newcollision = TraverseBVHNode(ray_ptr, bvh->pool, bvh->orderedIndices, bvh->scene, stack[next], stack, aabbEntryPoints);
 
@@ -574,8 +581,8 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 		//Collision shadowcollision;
 		//shadowcollision.t = -1;
 		
-		int* stack = new int[2048];
-		float* AABBEntryPoints = new float[2048];
+		int* stack = new int[32];
+		float* AABBEntryPoints = new float[32];
 
 		stack[0] = 1; //count, next one to evaluate;
 		stack[1] = 0; //root node

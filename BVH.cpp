@@ -160,7 +160,7 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 				//	return colclose;
 				//}
 				int stackindex = ++stack[0];
-				if (stackindex >= 2048) printf("stack too small!. index: %i \n", stackindex);
+				if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
 				else {
 					stack[stackindex] = baseIndexNear;
 					stackAABBEntrypoints[stackindex] = tEntryNearNode;
@@ -172,7 +172,7 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 			if (tEntryFarNode > -99999) {
 				//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
 				int stackindex = ++stack[0];
-				if (stackindex >= 2048) printf("stack too small!. index: %i \n", stackindex);
+				if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
 
 				else {
 					stack[stackindex] = baseIndexFar;
