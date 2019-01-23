@@ -119,7 +119,9 @@ private:
 	int numLights = 2;
 	//Light* lights;
 	float* lightPos;
+	float* g_lightPos;
 	Color* lightColor;
+	g_Color* g_lightColor;
 
 	vec3 reflect(vec3 D, vec3 N);
 
@@ -206,8 +208,9 @@ private:
 
 	// Intermediate screen buffer
 	Color intermediate[SCRWIDTH * SCRHEIGHT];	// intermediate screen buffer to add individual rays together
+	//void* g_intermediate;	// intermediate screen buffer to add individual rays together
+	g_Color* g_intermediate;
 	void addToIntermediate(float x, float y, Color color) { intermediate[(int)x + ((int)y * SCRWIDTH)] += color; }; // adds color to intermediate screen buffer
-
 	//Animation
 	bool animate = false;
 };

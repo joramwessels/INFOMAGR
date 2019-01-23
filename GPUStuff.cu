@@ -66,7 +66,7 @@ __device__ void addRayToQueue(float* ray, float* queue)
 
 	if (id > queuesize / R_SIZE)
 	{
-		printf("ERROR: Queue overflow. Rays exceeded the %i indices of queue space.\n", (int)(queuesize / R_SIZE));
+		printf("ERROR: Queue overflow. Rays exceeded the %i indices of ray queue space.\n", (int)(queuesize / R_SIZE));
 	}
 
 	int baseIndex = id * R_SIZE;
@@ -573,7 +573,7 @@ __global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 		{
 			int next = stack[0]--;
 			g_Collision newcollision = g_TraverseBVHNode(shadowray, BVH, orderedIndices, scene, stack[next], stack, AABBEntryPoints);
-			if (newcollision.t > 0 && newcollision.t < maxt) return; // collision: light source is occluded
+			if (newcollision.t > 0 && newcollision.t < maxt) break; // collision: light source is occluded
 		}
 
 		// Cleaning up
@@ -593,4 +593,248 @@ __global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 	// Adding the unoccluded ray to the intermediate screen buffer
 	g_Color toadd = g_Color(shadowrays[baseIndex + SR_R], shadowrays[baseIndex + SR_G], shadowrays[baseIndex + SR_B]);
 	g_addToIntermediate(intermediate, shadowrays[baseIndex + SR_PIXX], shadowrays[baseIndex + SR_PIXY], toadd);
+}
+
+__device__ float3 g_reflect(float3 D, float3 N)
+{
+	return D - N * (2 * (dot(D, N)));
+}
+
+__device__ float sqrLentgh(float3 a) //Not my typo. It was in the template and I'm keeping it to keep it consistent
+{
+	return a.x * a.x + a.y * a.y + a.z * a.z;
+}
+
+__device__ void g_addShadowRayToQueue(float3 ori, float3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue)
+{
+	int id = atomicInc(((uint*)queue) + 1, 0xffffffff) + 1;
+	int queuesize = ((uint*)queue)[0];
+
+
+	// array if full
+	if (id > queuesize / SR_SIZE)
+	{
+		printf("ERROR: Queue overflow. Rays exceeded the %d indices of shadowray queue space.\n", queuesize / R_SIZE);
+	}
+
+
+	// adding ray to array
+	int index = id * SR_SIZE; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
+	queue[index + SR_OX] = (float)ori.x;
+	queue[index + SR_OY] = (float)ori.y;
+	queue[index + SR_OZ] = (float)ori.z;
+	queue[index + SR_DX] = (float)dir.x;
+	queue[index + SR_DY] = (float)dir.y;
+	queue[index + SR_DZ] = (float)dir.z;
+	queue[index + SR_R] = R;
+	queue[index + SR_G] = G;
+	queue[index + SR_B] = B;
+	queue[index + SR_MAXT] = maxt;
+	queue[index + SR_PIXX] = pixelX;
+	queue[index + SR_PIXY] = pixelY;
+
+	//((int*)queue)[1]++; //Current count++
+	//no_rays++;
+}
+
+__device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor)
+{
+	//printf("traceray");
+
+	float* ray_ptr = rays + (ray * R_SIZE);
+	// unpacking ray pointer
+	float3 direction = make_float3(ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ]);
+	bool inobj = ray_ptr[R_INOBJ];
+	float refind = ray_ptr[R_REFRIND];
+	float rdepth = ray_ptr[R_DEPTH];
+	float pixelx = ray_ptr[R_PIXX];
+	float pixely = ray_ptr[R_PIXY];
+	float energy = ray_ptr[R_ENERGY];
+
+	// Basecase
+	if (ray_ptr[R_DEPTH] > MAX_RECURSION_DEPTH)
+	{
+		//return 0x000000;
+		return;
+	}
+
+	// Collision detection
+	g_Collision collision = collisions[ray];
+	if (bvhdebug) {
+		g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(255, 0, 0) * ray_ptr[R_BVHTRA]) << 3);;
+		//addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * ray_ptr[R_BVHTRA]) << 3);
+		return;
+	}
+
+	// if ray collides
+	if (collision.t > 0)
+	{
+		// if opaque
+		if (collision.refraction == 0.0f)
+		{
+			g_Color albedo, reflection;
+			float specularity = collision.specularity;
+
+			// diffuse aspect
+			if (specularity < 1.0f)
+			{
+				//Generate shadow rays
+				for (int light = 0; light < numLights; light++)
+				{
+					float3 lightPosition = make_float3(lightPos[light * 3 + 0], lightPos[light * 3 + 1], lightPos[light * 3 + 2]);
+					float3 direction = normalize(lightPosition - collision.Pos);
+					float3 origin = collision.Pos + ( direction * 0.00025f); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+					float maxt = (lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
+					g_Color collisioncolor = g_Color(collision.R, collision.G, collision.B);
+					g_Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColor[light] * (max(0.0f, dot(collision.N, direction)) * INV4PI / sqrLentgh(lightPosition - collision.Pos));
+					g_addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
+				}
+			}
+
+			// specular aspect
+			if (specularity > 0)
+			{
+				float3 newdirection = g_reflect(direction, collision.N);
+				float3 newOrigin = collision.Pos + newdirection * 0.00001f;
+				float* newray = new float[R_SIZE];
+				newray[R_OX] = newOrigin.x;
+				newray[R_OY] = newOrigin.y;
+				newray[R_OZ] = newOrigin.z;
+				newray[R_DX] = newdirection.x;
+				newray[R_DY] = newdirection.y;
+				newray[R_DZ] = newdirection.z;
+				newray[R_INOBJ] = (float)inobj;
+				newray[R_REFRIND] = refind;
+				newray[R_BVHTRA] = 0;
+				newray[R_DEPTH] = rdepth + 1;
+				newray[R_PIXX] = pixelx;
+				newray[R_PIXY] = pixely;
+				newray[R_ENERGY] = energy * specularity;
+
+				addRayToQueue(newray, newRays);
+				delete newray;
+				
+			}
+		}
+		// if transparent
+		else
+		{
+			float n1, n2;
+			if (inobj) n1 = refind, n2 = 1.0f;
+			else				n1 = refind, n2 = collision.refraction;
+			float transition = n1 / n2;
+			float costheta = dot(collision.N, direction * -1);
+			float k = 1 - (transition * transition) * (1.0f - (costheta * costheta));
+
+			float Fr;
+			if (k < 0)
+			{
+				// total internal reflection
+				Fr = 1;
+			}
+			else
+			{
+				float ndiff = n1 - n2;
+				float nsumm = n1 + n2;
+				float temp = ndiff / nsumm;
+				float R0 = temp * temp;
+				Fr = R0 + (1.0f - R0) * powf(1.0f - costheta, 5.0f);
+			}
+
+			// Fresnel reflection (Schlick's approximation)
+			g_Color reflection, refraction;
+			if (Fr > 0.0f)
+			{
+				float3 newdirection = g_reflect(direction, collision.N);
+				//printf("a");
+
+
+				float3 newOrigin = collision.Pos + newdirection * 0.00001f;
+				float* newray = new float[R_SIZE];
+				newray[R_OX] = newOrigin.x;
+				newray[R_OY] = newOrigin.y;
+				newray[R_OZ] = newOrigin.z;
+				newray[R_DX] = newdirection.x;
+				newray[R_DY] = newdirection.y;
+				newray[R_DZ] = newdirection.z;
+				newray[R_INOBJ] = (float)inobj;
+				newray[R_REFRIND] = refind;
+				newray[R_BVHTRA] = 0;
+				newray[R_DEPTH] = rdepth + 1;
+				newray[R_PIXX] = pixelx;
+				newray[R_PIXY] = pixely;
+				newray[R_ENERGY] = energy * Fr;
+
+				addRayToQueue(newray, newRays);
+				delete newray;
+
+			}
+
+			// Snell refraction
+			if (Fr < 1.0f)
+			{
+				float3 newdirection = direction * transition + collision.N * (transition * costheta - sqrt(k));
+				float3 newOrigin = collision.Pos + newdirection * 0.00001f;
+				float* newray = new float[R_SIZE];
+				newray[R_OX] = newOrigin.x;
+				newray[R_OY] = newOrigin.y;
+				newray[R_OZ] = newOrigin.z;
+				newray[R_DX] = newdirection.x;
+				newray[R_DY] = newdirection.y;
+				newray[R_DZ] = newdirection.z;
+				newray[R_INOBJ] = (float)inobj;
+				newray[R_REFRIND] = refind;
+				newray[R_BVHTRA] = 0;
+				newray[R_DEPTH] = rdepth + 1;
+				newray[R_PIXX] = pixelx;
+				newray[R_PIXY] = pixely;
+				newray[R_ENERGY] = energy * (1 - Fr);
+
+				addRayToQueue(newray, newRays);
+				delete newray;
+
+
+				/* // TODO: Beer's law (and mirror albedo) requires ray.energy to be a Color rather than a float
+				// Beer's law
+				if (ray.mediumRefractionIndex != 1.0f && collision.colorAt.to_uint() != 0xffffff)
+				{
+					float distance = collision.t;
+
+					vec3 a = vec3((float)(256 - collision.colorAt.R) / 256.0f, (float)(256 - collision.colorAt.G) / 256.0f, (float)(256 - collision.colorAt.B) / 256.0f);
+
+					refraction.R *= exp(-a.x * distance);
+					refraction.G *= exp(-a.y * distance);
+					refraction.B *= exp(-a.z * distance);
+				}
+				*/
+			}
+		}
+	}
+	// if no collision
+	else
+	{
+		//TODO: implement skybox
+		//addToIntermediate(pixelx, pixely, (skybox->ColorAt(direction) << 8) * energy);
+		g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(40, 20, 150) << 8) * energy);
+	}
+}
+
+__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor)
+{
+	if (threadIdx.x == 0 && blockIdx.x == 0) {
+		((uint*)rayQueue)[4] = 0;
+	}
+
+	uint numRays = ((uint*)rayQueue)[1];
+	uint id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
+
+	while (id <= numRays)
+	{
+		if (id != 0)
+		{
+			float* rayptr = rayQueue + (id * R_SIZE);
+			g_TraceRay(rayQueue, id, (g_Collision*)collisions, newRays, shadowRays, bvhdebug, intermediate, numLights, lightPos, lightColor);
+		}
+		id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
+	}
 }

@@ -49,7 +49,7 @@ void Game::Init()
 	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
 	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
 	cudaMalloc(&g_shadowRays, rayQueueSize * sizeof(float) * 5);
-
+	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color));
 
 	printf("rand: %f \n", random1);
 	printf("rand: %f \n", random2);
@@ -184,22 +184,45 @@ void Game::Tick(float deltaTime)
 		{
 
 
-			cudaMemset(g_rayQueue + 3, 0, sizeof(uint));
+			cudaMemset(g_rayQueue + 4, 0, sizeof(uint) * 2);
 			g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
 			CheckCudaError(10);
-			cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
 		}
-		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-		numRays = ((int*)rayQueue)[1];
 
-		CheckCudaError(11);
-
-
-		//#pragma omp parallel for
-		for (int i = 1; i <= numRays; i++)
+		if (bool useCPUforTraceray = false)
 		{
-			TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
+			cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			numRays = ((int*)rayQueue)[1];
+
+			CheckCudaError(11);
+
+
+			//#pragma omp parallel for
+			for (int i = 1; i <= numRays; i++)
+			{
+				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
+			}
 		}
+		else
+		{
+			cudaMemcpy(g_newRays, newRays, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+			cudaMemcpy(g_shadowRays, shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyHostToDevice);
+
+			g_Tracerays <<<24,255>>> (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor);
+			cudaDeviceSynchronize();
+			CheckCudaError(15);
+			cudaMemcpy(newRays, g_newRays, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaMemcpy(shadowRays, g_shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaMemcpy(intermediate, g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color), cudaMemcpyDeviceToHost);
+			CheckCudaError(16);
+			cudaDeviceSynchronize();
+
+		}
+
+
+
 		//printf("New rays generated: %i \n", numRays);
 
 		int numShadowRays = ((int*)shadowRays)[1];
@@ -212,9 +235,17 @@ void Game::Tick(float deltaTime)
 		float* temp = rayQueue;
 		rayQueue = newRays;
 		newRays = temp;
-		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+
+		float* gputemp = g_rayQueue;
+		g_rayQueue = g_newRays;
+		g_newRays = gputemp;
+
+
+		//cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 
 		((int*)newRays)[1] = 0; //set new ray count to 0
+		cudaMemset(g_newRays + 1, 0, sizeof(uint) * 4);
+
 		((int*)shadowRays)[1] = 0; //set new shadowray count to 0
 
 		if (((int*)rayQueue)[1] == 0) finished = true;
@@ -227,6 +258,7 @@ void Game::Tick(float deltaTime)
 	}
 
 	memset(intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
+	cudaMemset(g_intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
 
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.1f);
@@ -1029,6 +1061,11 @@ void Game::loadscene(SCENES scene)
 	default:
 		break;
 	}
+
+	cudaMalloc(&g_lightPos, numLights * 3 * sizeof(float));
+	cudaMalloc(&g_lightColor, numLights * sizeof(g_Color));
+
+
 	cudaMemcpy(g_triangles, triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float), cudaMemcpyHostToDevice);
 	CheckCudaError(6);
 }
