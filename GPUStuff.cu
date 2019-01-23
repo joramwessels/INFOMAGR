@@ -117,12 +117,6 @@ __device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, boo
 // Generates and collects primary rays in the given ray queue
 __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA)
 {
-	if (threadIdx.x == 0 & blockIdx.x == 0) {
-		((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
-		//((uint*)rayQueue)[2] = 0;
-
-	}
-
 	uint numRays = SCRWIDTH * SCRHEIGHT;
 	uint raynum = atomicInc(((uint*)rayQueue) + 2, 0xffffffff);
 
@@ -360,12 +354,7 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 	closest.t = -1;
 
 	ray_ptr[R_BVHTRA]++;
-
-	//vec3 ray_origin = { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
-	//vec3 ray_direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
 	int count = pool[index + B_COUNT];
-	//printf("Count: %i \n", count);
-
 		// If leaf
 	if (count != 0)
 	{
@@ -393,13 +382,10 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 	// If node
 	else
 	{
-		//printf("Not leaf \n");
+		//This is not a leaf
 		// Check both children and return the closest collision if both intersected
-		//AABB::AABBIntersection tleft = pool[(int)pool[index + B_LEFTFIRST]].bounds.Intersects(ray_origin, ray_direction);
-		//AABB::AABBIntersection tright = pool[node->leftFirst + 1].bounds.Intersects(ray_origin, ray_direction);
 		int leftchild = pool[(int)index + B_LEFTFIRST];
 		int rightchild = leftchild + B_SIZE;
-
 
 		float tleft = g_IntersectAABB(ray_ptr, pool + leftchild);
 		float tright = g_IntersectAABB(ray_ptr, pool + rightchild);
@@ -419,29 +405,22 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 		};
 
 		if (tEntryNearNode > -99999) {
-			//colclose = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexNear);
-			//if (colclose.t < tEntryFarNode && colclose.t > 0) {
-			//	return colclose;
-			//}
 			int stackindex = ++stack[0];
 			if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
 			else {
 				stack[stackindex] = baseIndexNear;
 				stackAABBEntrypoints[stackindex] = tEntryNearNode;
-
 				//printf("Added %i to stack location %i. This is the near child of %i \n", baseIndexNear, stackindex, index);
 
 			}
 		}
 		if (tEntryFarNode > -99999) {
-			//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
 			int stackindex = ++stack[0];
 			if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
 
 			else {
 				stack[stackindex] = baseIndexFar;
 				stackAABBEntrypoints[stackindex] = tEntryFarNode;
-
 				//printf("Added %i to stack location %i. Right child of %i \n", baseIndexFar, stackindex, index);
 			}
 		}
@@ -474,10 +453,6 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 
 			if (closest.t != -1 && closest.t < aabbEntryPoints[next]) {
 				continue;
-				//printf("%f \n", aabbEntryPoints[next]);
-				//delete stack;
-				//delete aabbEntryPoints;
-				//return closest;
 			}
 
 			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[next], stack, aabbEntryPoints);
@@ -490,8 +465,6 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 		delete stack;
 		delete aabbEntryPoints;
 		return closest;
-
-		//return g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, 0);
 	}
 	else
 	{
@@ -502,13 +475,7 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 		//Loop over all primitives to find the closest collision
 		for (int i = 0; i < numGeometries; i++)
 		{
-			//Collision collision = geometry[i]->Intersect(*ray);
-			//printf("Trying to intersect ray with triangle %i... \n", i);
 			g_Collision collision = g_intersectTriangle(i, ray_ptr, triangles);
-			//printf("(nearestcollision) got collision with t %f. \n", collision.t);
-
-
-
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
 			{
@@ -610,13 +577,11 @@ __device__ void g_addShadowRayToQueue(float3 ori, float3 dir, float R, float G, 
 	int id = atomicInc(((uint*)queue) + 1, 0xffffffff) + 1;
 	int queuesize = ((uint*)queue)[0];
 
-
-	// array if full
+	// array is full
 	if (id > queuesize / SR_SIZE)
 	{
 		printf("ERROR: Queue overflow. Rays exceeded the %d indices of shadowray queue space.\n", queuesize / R_SIZE);
 	}
-
 
 	// adding ray to array
 	int index = id * SR_SIZE; //Keep the first entry in the queue free, to save some metadata there (queuesize, currentCount)
@@ -632,9 +597,6 @@ __device__ void g_addShadowRayToQueue(float3 ori, float3 dir, float R, float G, 
 	queue[index + SR_MAXT] = maxt;
 	queue[index + SR_PIXX] = pixelX;
 	queue[index + SR_PIXY] = pixelY;
-
-	//((int*)queue)[1]++; //Current count++
-	//no_rays++;
 }
 
 __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor)
@@ -662,7 +624,6 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 	g_Collision collision = collisions[ray];
 	if (bvhdebug) {
 		g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(255, 0, 0) * ray_ptr[R_BVHTRA]) << 3);;
-		//addToIntermediate(pixelx, pixely, (Color(255, 0, 0) * ray_ptr[R_BVHTRA]) << 3);
 		return;
 	}
 
@@ -814,7 +775,6 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 	else
 	{
 		//TODO: implement skybox
-		//addToIntermediate(pixelx, pixely, (skybox->ColorAt(direction) << 8) * energy);
 		g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(40, 20, 150) << 8) * energy);
 	}
 }

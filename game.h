@@ -104,9 +104,6 @@ private:
 
 	Collision nearestCollision(float* ray_ptr);
 
-	int numNewRays = 0;
-	int numShadowrays = 0;
-
 	void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
 
 	int numGeometries = 0;

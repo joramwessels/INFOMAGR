@@ -40,6 +40,7 @@ void Game::Init()
 
 	((int*)rayQueue)[0] = rayQueueSize; //queue size, there can be at most just as many rays as we have pixels
 	((int*)rayQueue)[1] = 0; //current count
+	((int*)rayQueue)[2] = 0; //current count
 	((int*)newRays)[0] = rayQueueSize; //queue size
 	((int*)newRays)[1] = 0; //current count
 	((int*)shadowRays)[0] = rayQueueSize * 5; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
@@ -90,165 +91,123 @@ inline void CheckCudaError(int i)
 // -----------------------------------------------------------
 void Game::Tick(float deltaTime)
 {
-	((int*)rayQueue)[0] = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE; //Size of array
-	((int*)rayQueue)[1] = 0; //num rays in queue
-	((int*)rayQueue)[2] = 0; //num rays in queue
-
-	cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 3);
-
-	frames++;
-	raysPerFrame = 0;
-
-	if (positionInRaysQueue != endOfRaysQueue)
+	bool useCPU = false;
+	if (useCPU)
 	{
-		printf("ERROR: positionInRaysQueue and endOfRaysQueue did not start tick at the same index.\n");
-	}
+		//Generate primary rays (on GPU)
+		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+		float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
+		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
+		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
+		float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 
-	// Generate initial rays
-//#pragma omp parallel for
-	/*for (int pixely = 0; pixely < SCRHEIGHT; pixely++) for (int pixelx = 0; pixelx < SCRWIDTH; pixelx++)
-	{
-		Color result;
+		GeneratePrimaryRay << <24, 255 >> > (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
+		CheckCudaError(1);
+		
+		//Copy the primary rays from the gpu
+		cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+		cudaDeviceSynchronize();
 
-		if (SSAA) {
-
-			//Generate 4 rays
-			float* ray1 = camera.generateRayTroughVirtualScreen(pixelx + random5, pixely + random6);
-			addRayToQueue(
-				vec3{ ray1[0], ray1[1], ray1[2] }, vec3{ ray1[3], ray1[4], ray1[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
-			);
-
-			float* ray2 = camera.generateRayTroughVirtualScreen(pixelx + random1, pixely + random7);
-			addRayToQueue(
-				vec3{ ray2[0], ray2[1], ray2[2] }, vec3{ ray2[3], ray2[4], ray2[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
-			);
-
-			float* ray3 = camera.generateRayTroughVirtualScreen(pixelx + random2, pixely + random3);
-			addRayToQueue(
-				vec3{ ray3[0], ray3[1], ray3[2] }, vec3{ ray3[3], ray3[4], ray3[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
-			);
-			float* ray4 = camera.generateRayTroughVirtualScreen(pixelx + random8, pixely + random4);
-			addRayToQueue(
-				vec3{ ray4[0], ray4[1], ray4[2] }, vec3{ ray4[3], ray4[4], ray4[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 0.25f, rayQueue
-			);
-			delete ray1;
-			delete ray2;
-			delete ray3;
-			delete ray4;
-		}
-		else {
-
-			//Generate the ray
-			float* ray = camera.generateRayTroughVirtualScreen(pixelx, pixely);
-			addRayToQueue(
-				vec3{ ray[0], ray[1], ray[2] }, vec3{ ray[3], ray[4], ray[5] },
-				false, 1.0f, 0, 0, pixelx, pixely, 1.0f, rayQueue
-			);
-			delete ray;
-		}
-	}
-	*/
-	float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
-	float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
-	float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
-	float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
-	
-	cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 2);
-
-	GeneratePrimaryRay <<<24, 255 >>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
-	CheckCudaError(1);
-
-	cudaDeviceSynchronize();
-	CheckCudaError(2);
-	cudaDeviceSynchronize();
-	CheckCudaError(4);
-	//printf("Num rays: %i \n", ((int*)rayQueue)[1]);
-
-	// Tracing queued rays
-//#pragma omp parallel for
-
-	bool finished = false;
-
-	while (!finished) {
-		int numRays = ((int*)rayQueue)[1];
-		if (bool useCpuForCollisions = false) //Single = is intentional. change false to true to find the collisions on the cpu instead of the gpu.
+		bool finished = false;
+		while (!finished)
 		{
-			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			int numRays = ((int*)rayQueue)[1];
+
+			//Find collisions. Put in array 'collisions'
 			findCollisions(rayQueue, numRays, collisions); //Find all collisions
-		}
-		else
-		{
 
-
-			cudaMemset(g_rayQueue + 4, 0, sizeof(uint) * 2);
-			g_findCollisions << <24, 255 >>> (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
-			CheckCudaError(10);
-		}
-
-		if (bool useCPUforTraceray = false)
-		{
-			cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
-			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-			numRays = ((int*)rayQueue)[1];
-
-			CheckCudaError(11);
-
-
-			//#pragma omp parallel for
+			//Evaluate all found collisions. Generate shadowrays and ray extensions (reflections, refractions)
 			for (int i = 1; i <= numRays; i++)
 			{
 				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
 			}
-		}
-		else
-		{
-			cudaMemcpy(g_newRays, newRays, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
-			cudaMemcpy(g_shadowRays, shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyHostToDevice);
 
-			g_Tracerays <<<24,255>>> (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor);
-			cudaDeviceSynchronize();
-			CheckCudaError(15);
-			cudaMemcpy(newRays, g_newRays, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			//Trace the shadowrays.
+			int numShadowRays = ((int*)shadowRays)[1];
+			printf("Num shadowrays: %i \n", numShadowRays);
+			for (int i = 1; i <= numShadowRays; i++)
+			{
+				TraceShadowRay(shadowRays, i);
+			}
+
+			//Flip the arrays
+			float* temp = rayQueue;
+			rayQueue = newRays;
+			newRays = temp;
+
+			((int*)newRays)[1] = 0; //set new ray count to 0
+			((int*)shadowRays)[1] = 0; //set new shadowray count to 0
+
+			if (((int*)rayQueue)[1] == 0) finished = true;
+
+		}
+	}
+
+	else { //use the GPU
+		//Generate primary rays (on GPU)
+		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+		float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
+		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
+		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
+		float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
+
+		GeneratePrimaryRay << <24, 255 >> > (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
+		CheckCudaError(1);
+
+		bool finished = false;
+		while (!finished)
+		{
+			int numRays = ((int*)rayQueue)[1];
+
+			//Find collisions. Put in array 'collisions'
+			cudaMemset(g_rayQueue + 4, 0, sizeof(uint) * 2);
+			g_findCollisions << <24, 255 >> > (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
+			CheckCudaError(10);
+
+			//Copy the primary rays from the gpu, and the collisions
 			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
-			cudaMemcpy(shadowRays, g_shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyDeviceToHost);
-			cudaMemcpy(intermediate, g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color), cudaMemcpyDeviceToHost);
-			CheckCudaError(16);
-			cudaDeviceSynchronize();
+			cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+			numRays = ((int*)rayQueue)[1];
+			printf("numrays: %i", numRays);
 
+			//Evaluate all found collisions. Generate shadowrays and ray extensions (reflections, refractions)
+			for (int i = 1; i <= numRays; i++)
+			{
+				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
+				
+				//TODO: DO																 
+				//g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor);
+				//cudaDeviceSynchronize();
+				//CheckCudaError(15);
+
+			}
+
+			//Trace the shadowrays.
+			int numShadowRays = ((int*)shadowRays)[1];
+			printf("Num shadowrays: %i \n", numShadowRays);
+			for (int i = 1; i <= numShadowRays; i++)
+			{
+				TraceShadowRay(shadowRays, i);
+				//TODO: DO																 
+
+			}
+
+			//Flip the arrays
+			float* temp = rayQueue;
+			rayQueue = newRays;
+			newRays = temp;
+
+			((int*)newRays)[1] = 0; //set new ray count to 0
+			((int*)shadowRays)[1] = 0; //set new shadowray count to 0
+			((int*)rayQueue)[2] = 0; //set the counter of rays to be evaluated back to 0
+
+			//Send new rays to the gpu
+			cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+			cudaMemcpy(g_newRays, newRays, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+
+			if (((int*)rayQueue)[1] == 0) finished = true;
 		}
 
-
-
-		//printf("New rays generated: %i \n", numRays);
-
-		int numShadowRays = ((int*)shadowRays)[1];
-		for (int i = 1; i <= numShadowRays; i++)
-		{
-			TraceShadowRay(shadowRays, i);
-		}
-
-		//Flip the arrays
-		float* temp = rayQueue;
-		rayQueue = newRays;
-		newRays = temp;
-
-		float* gputemp = g_rayQueue;
-		g_rayQueue = g_newRays;
-		g_newRays = gputemp;
-
-
-		//cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
-
-		((int*)newRays)[1] = 0; //set new ray count to 0
-		cudaMemset(g_newRays + 1, 0, sizeof(uint) * 4);
-
-		((int*)shadowRays)[1] = 0; //set new shadowray count to 0
-
-		if (((int*)rayQueue)[1] == 0) finished = true;
 	}
 
 	// Plotting intermediate screen buffer to screen
@@ -257,6 +216,7 @@ void Game::Tick(float deltaTime)
 		screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
 	}
 
+	//Reset the intermediate buffer to 0
 	memset(intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
 	cudaMemset(g_intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
 
@@ -291,18 +251,6 @@ void Game::Tick(float deltaTime)
 		camera.setFocalPoint(camera.focalpoint * 1.1);
 	}
 
-	if (animate)
-	{
-		//frame += deltaTime;
-		frame++;
-		//Animate earth around mars
-		((ParentBVH*)bvh)->translateRight = { sinf(frame * 0.1f) * 4.0f, 0, cosf(frame * 0.1f) * 4.0f };
-
-		//Animate moon around earth
-		ParentBVH* moonbvh = (ParentBVH*)((ParentBVH*)bvh)->right;
-		moonbvh->translateRight = { sinf(frame * 0.5f) * 1.5f, sinf(frame * 0.5f) * 1.5f, cosf(frame * 0.5f) * 1.5f };
-	}
-
 	if (mytimer.elapsed() > 1000) {
 		prevsecframes = frames;
 		raysPerSecond = no_rays;
@@ -327,9 +275,7 @@ void Game::Tick(float deltaTime)
 	sprintf(buffer, "Rays/second: %i", raysPerSecond);
 	screen->Print(buffer, 1, 34, 0xffffff);
 	no_rays = 0;
-	positionInRaysQueue = 0;
-	numNewRays = 0;
-	numShadowrays = 0;
+	frames++;
 }
 
 void Game::MouseMove(int x, int y)
