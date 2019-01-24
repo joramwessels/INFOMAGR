@@ -109,6 +109,7 @@ private:
 	int numGeometries = 0;
 	float* triangles;
 	float* g_triangles;
+	uint* g_screen;
 
 	//Color DirectIllumination(Collision collision);
 	void TraceShadowRay(float* shadowrays, int rayIndex);

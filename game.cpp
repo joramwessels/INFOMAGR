@@ -29,7 +29,7 @@ void Game::Init()
 		SCENE_FLOORONLY
 	*/
 
-	loadscene(SCENES::SCENE_OBJ_HALFREFLECT);
+	loadscene(SCENES::SCENE_STRESSTEST);
 
 	SSAA = false;
 	camera.DoF = false;
@@ -53,6 +53,7 @@ void Game::Init()
 	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
 	cudaMalloc(&g_shadowRays, rayQueueSize * sizeof(float) * 5);
 	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color));
+	cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
 
 	cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
 	cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
@@ -179,10 +180,11 @@ void Game::Tick(float deltaTime)
 			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor, g_skybox, skybox->texture->GetWidth(), skybox->texture->GetHeight(), skybox->texture->GetPitch());
 			CheckCudaError(15);
 
+			cudaMemcpyAsync(rayQueue, g_rayQueue, sizeof(uint) * 2, cudaMemcpyDeviceToHost);
 			g_traceShadowRays<<<24, 255>>>(g_shadowRays, g_triangles, g_intermediate, g_BVH, g_orderedIndices, numGeometries, use_bvh);
 			CheckCudaError(17);
 
-			cudaMemcpy(intermediate, g_intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyDeviceToHost);
+			//cudaMemcpy(intermediate, g_intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyDeviceToHost);
 			CheckCudaError(15);
 
 			//Flip the arrays
@@ -191,21 +193,14 @@ void Game::Tick(float deltaTime)
 			g_newRays = temp;
 
 			//Get the new ray count from the gpu
-			cudaMemcpy(rayQueue, g_rayQueue, sizeof(uint) * 2, cudaMemcpyDeviceToHost);
 			if (((int*)rayQueue)[1] == 0) finished = true;
 		}
 
 	}
 
 	// Plotting intermediate screen buffer to screen
-	for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++) for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
-	{
-		screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
-	}
-
-	//Reset the intermediate buffer to 0
-	//memset(intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
-	cudaMemset(g_intermediate, 0, sizeof(Color) * SCRWIDTH * SCRHEIGHT);
+	copyIntermediateToScreen<<<SCRWIDTH, SCRHEIGHT>>>(g_screen, g_intermediate, screen->GetPitch());
+	cudaMemcpy(screen->GetBuffer(), g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint), cudaMemcpyDeviceToHost);
 
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.1f);
@@ -238,6 +233,7 @@ void Game::Tick(float deltaTime)
 		camera.setFocalPoint(camera.focalpoint * 1.1);
 	}
 
+	frames++;
 	if (mytimer.elapsed() > 1000) {
 		prevsecframes = frames;
 		raysPerSecond = no_rays;
@@ -262,7 +258,6 @@ void Game::Tick(float deltaTime)
 	sprintf(buffer, "Rays/second: %i", raysPerSecond);
 	screen->Print(buffer, 1, 34, 0xffffff);
 	no_rays = 0;
-	frames++;
 }
 
 void Game::MouseMove(int x, int y)
@@ -984,8 +979,6 @@ void Game::loadscene(SCENES scene)
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
 		lightColor[2] = 0xffffff;
 		lightColor[2] = lightColor[2] * 700;
-
-
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		generateBVH();

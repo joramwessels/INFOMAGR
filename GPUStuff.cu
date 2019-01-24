@@ -846,3 +846,15 @@ __global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, f
 		id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
 	}
 }
+
+__global__ void copyIntermediateToScreen(unsigned int* screen, g_Color* intermediate, int pitch)
+{
+	int pixelx = blockIdx.x;
+	int pixely = threadIdx.x;
+
+	if (pixelx > SCRWIDTH || pixely > SCRHEIGHT) return;
+
+	unsigned int pixelcolor = (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe();
+	screen[pixelx + pixely * SCRWIDTH] = pixelcolor;
+	intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] = g_Color(0, 0, 0);
+}
