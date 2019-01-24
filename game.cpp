@@ -187,17 +187,6 @@ void Game::Tick(float deltaTime)
 			printf("numrays: %i", numRays);
 			
 			
-			/*//Evaluate all found collisions. Generate shadowrays and ray extensions (reflections, refractions)
-			for (int i = 1; i <= numRays; i++)
-			{
-				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
-				
-				//TODO: DO																 
-				//cudaDeviceSynchronize();
-				//CheckCudaError(15);
-
-			}*/
-
 			//Trace the shadowrays.
 			int numShadowRays = ((int*)shadowRays)[1];
 			printf("Num shadowrays: %i \n", numShadowRays);
@@ -220,6 +209,7 @@ void Game::Tick(float deltaTime)
 			//Send new rays to the gpu
 			cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 			cudaMemcpy(g_newRays, newRays, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+			cudaMemcpy(g_shadowRays, shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyHostToDevice);
 
 			if (((int*)rayQueue)[1] == 0) finished = true;
 		}
