@@ -123,6 +123,7 @@ private:
 	vec3 reflect(vec3 D, vec3 N);
 
 	Skybox* skybox;
+	uint* g_skybox;
 
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };

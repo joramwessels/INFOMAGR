@@ -604,7 +604,19 @@ __device__ void g_addShadowRayToQueue(float3 ori, float3 dir, float R, float G, 
 	queue[index + SR_PIXY] = pixelY;
 }
 
-__device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor)
+__device__ g_Color skyboxColorAt(uint* skybox, float3 Direction, int skyboxWidth, int skyboxHeight, int skyboxPitch)
+{
+	float u;
+	float v;
+	u = 0.5f + (atan2f(-Direction.z, -Direction.x) * INV2PI);
+	v = 0.5f - (asinf(-Direction.y) * INVPI);
+	g_Color result;
+	result.from_uint(skybox[(int)((skyboxWidth - 1) * u) + (int)((skyboxHeight - 1) * v) * skyboxPitch]);
+	return result;
+
+}
+
+__device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch)
 {
 	//printf("traceray");
 
@@ -784,11 +796,12 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 	else
 	{
 		//TODO: implement skybox
-		g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(40, 20, 150) << 8) * energy);
+		//g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(40, 20, 150) << 8) * energy);
+		g_addToIntermediate(intermediate, pixelx, pixely, (skyboxColorAt(skybox, direction, skyboxWidth, skyboxHeight, skyboxPitch) << 8) * energy);
 	}
 }
 
-__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor)
+__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch)
 {
 	uint numRays = ((uint*)rayQueue)[1];
 	uint id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
@@ -798,7 +811,7 @@ __global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, f
 		if (id != 0)
 		{
 			float* rayptr = rayQueue + (id * R_SIZE);
-			g_TraceRay(rayQueue, id, (g_Collision*)collisions, newRays, shadowRays, bvhdebug, intermediate, numLights, lightPos, lightColor);
+			g_TraceRay(rayQueue, id, (g_Collision*)collisions, newRays, shadowRays, bvhdebug, intermediate, numLights, lightPos, lightColor, skybox, skyboxWidth, skyboxHeight, skyboxPitch);
 		}
 		id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
 	}

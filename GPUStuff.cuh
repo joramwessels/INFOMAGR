@@ -23,6 +23,15 @@ __device__ struct g_Color
 	__device__ g_Color operator>>(const int &operand) const { return g_Color(R >> operand, G >> operand, B >> operand); }
 	__device__ g_Color operator<<(const int &operand) const { return g_Color(R << operand, G << operand, B << operand); }
 
+	__device__ void from_uint(unsigned int color)
+	{
+		B = color & 255;
+		G = (color >> 8) & 255;
+		R = (color >> 16) & 255;
+	}
+
+	__device__ void operator=(const unsigned int &operand) { from_uint(operand); }
+
 
 };
 
@@ -52,4 +61,4 @@ __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQ
 
 __global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, float* BVH, unsigned int* orderedIndices, int numGeometries, float* scene, g_Color* intermediate, int bvhStackCapacity = 32);
 
-__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor);
+__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch);

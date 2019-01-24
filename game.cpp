@@ -171,7 +171,7 @@ void Game::Tick(float deltaTime)
 
 			//Copy the primary rays from the gpu, and the collisions
 			cudaMemcpy(g_intermediate, intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyHostToDevice);
-			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor);
+			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor, g_skybox, skybox->texture->GetWidth(), skybox->texture->GetHeight(), skybox->texture->GetPitch());
 			cudaDeviceSynchronize();
 			CheckCudaError(15);
 
@@ -1019,6 +1019,11 @@ void Game::loadscene(SCENES scene)
 	cudaMemcpy(g_lightPos, lightPos, numLights * 3 * sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(g_lightColor, lightColor, numLights * sizeof(g_Color), cudaMemcpyHostToDevice);
 	CheckCudaError(17);
+
+
+	cudaMalloc(&g_skybox, (skybox->texture->GetWidth() * skybox->texture->GetHeight()) * sizeof(uint));
+	cudaMemcpy(g_skybox, skybox->texture->GetBuffer(), skybox->texture->GetWidth() * skybox->texture->GetHeight() * sizeof(uint), cudaMemcpyHostToDevice);
+
 
 	cudaMemcpy(g_triangles, triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float), cudaMemcpyHostToDevice);
 	CheckCudaError(6);
