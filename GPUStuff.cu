@@ -59,7 +59,11 @@ __global__ void testkernel(float* a)
 // Adds the given color to the intermediate screen buffer
 __device__ void g_addToIntermediate(g_Color* buffer, float x, float y, g_Color color)
 {
-	buffer[(int)x + ((int)y * SCRWIDTH)] += color;
+	//buffer[(int)x + ((int)y * SCRWIDTH)] += color;
+	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].R, color.R);
+	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].G, color.G);
+	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].B, color.B);
+
 };
 
 // Adds a given ray to the given ray queue and updates the queue size
