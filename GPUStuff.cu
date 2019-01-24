@@ -491,10 +491,6 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 // Generates and collects the nearest geometry intersections for the given ray queue
 __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices)
 {
-	if (threadIdx.x == 0 && blockIdx.x == 0) {
-		((uint*)rayQueue)[3] = 0;
-	}
-
 	uint numRays = ((uint*)rayQueue)[1];
 	uint id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;
 
@@ -781,10 +777,6 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 
 __global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor)
 {
-	if (threadIdx.x == 0 && blockIdx.x == 0) {
-		((uint*)rayQueue)[4] = 0;
-	}
-
 	uint numRays = ((uint*)rayQueue)[1];
 	uint id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
 

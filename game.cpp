@@ -39,8 +39,10 @@ void Game::Init()
 	mytimer.reset();
 
 	((int*)rayQueue)[0] = rayQueueSize; //queue size, there can be at most just as many rays as we have pixels
-	((int*)rayQueue)[1] = 0; //current count
-	((int*)rayQueue)[2] = 0; //current count
+	((int*)rayQueue)[1] = 0; //Num rays currently in this queue
+	((int*)rayQueue)[2] = 0; //Counter used by generateprimaryray
+	((int*)rayQueue)[3] = 0; //counter used by findcollisions
+	((int*)rayQueue)[4] = 0; //counter used by traceray
 	((int*)newRays)[0] = rayQueueSize; //queue size
 	((int*)newRays)[1] = 0; //current count
 	((int*)shadowRays)[0] = rayQueueSize * 5; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
@@ -51,6 +53,9 @@ void Game::Init()
 	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
 	cudaMalloc(&g_shadowRays, rayQueueSize * sizeof(float) * 5);
 	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color));
+
+	cudaMemcpy(g_newRays, newRays, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(g_shadowRays, shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyHostToDevice);
 
 	printf("rand: %f \n", random1);
 	printf("rand: %f \n", random2);
@@ -160,27 +165,38 @@ void Game::Tick(float deltaTime)
 			int numRays = ((int*)rayQueue)[1];
 
 			//Find collisions. Put in array 'collisions'
-			cudaMemset(g_rayQueue + 4, 0, sizeof(uint) * 2);
+			cudaMemset(g_rayQueue + 3, 0, sizeof(uint) * 2);
 			g_findCollisions << <24, 255 >> > (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
 			CheckCudaError(10);
 
 			//Copy the primary rays from the gpu, and the collisions
+			cudaMemcpy(g_intermediate, intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyHostToDevice);
+			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor);
+			cudaDeviceSynchronize();
+			CheckCudaError(15);
+
 			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaMemcpy(shadowRays, g_shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyDeviceToHost);
+			cudaMemcpy(newRays, g_newRays, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 			cudaMemcpy(collisions, g_collisions, rayQueueSize * sizeof(Collision), cudaMemcpyDeviceToHost);
+			cudaMemcpy(intermediate, g_intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyDeviceToHost);
+			cudaDeviceSynchronize();
+			CheckCudaError(15);
+
 			numRays = ((int*)rayQueue)[1];
 			printf("numrays: %i", numRays);
-
-			//Evaluate all found collisions. Generate shadowrays and ray extensions (reflections, refractions)
+			
+			
+			/*//Evaluate all found collisions. Generate shadowrays and ray extensions (reflections, refractions)
 			for (int i = 1; i <= numRays; i++)
 			{
 				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
 				
 				//TODO: DO																 
-				//g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor);
 				//cudaDeviceSynchronize();
 				//CheckCudaError(15);
 
-			}
+			}*/
 
 			//Trace the shadowrays.
 			int numShadowRays = ((int*)shadowRays)[1];
