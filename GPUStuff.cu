@@ -515,27 +515,28 @@ __global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQ
 }
 
 // Checks for geometry intersections with the given shadow ray queue, and adds their energy to the intermediate screen buffer if unoccluded
-__global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, float* BVH, unsigned int* orderedIndices, int numGeometries, float* scene, g_Color* intermediate, int bvhStackCapacity)
+__device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, float* BVH, unsigned int* orderedIndices, int numGeometries, float* scene, g_Color* intermediate)
 {
 	int baseIndex = rayIndex * SR_SIZE;
 	float maxt = shadowrays[baseIndex + SR_MAXT];
 	bool collided = false;
 
 	// Extracting shadow ray from ray queue
-	float shadowray[R_SIZE] = {
+	/*float shadowray[R_SIZE] = {
 		shadowrays[baseIndex + SR_OX],
 		shadowrays[baseIndex + SR_OY],
 		shadowrays[baseIndex + SR_OZ],
 		shadowrays[baseIndex + SR_DX],
 		shadowrays[baseIndex + SR_DY],
 		shadowrays[baseIndex + SR_DZ]
-	};
+	};*/
+	float* shadowray = shadowrays + baseIndex;
 
 	if (use_bvh)
 	{
 		// Initializing stack
-		float* AABBEntryPoints = new float[bvhStackCapacity];
-		int* stack = new int[bvhStackCapacity];
+		int* stack = new int[32];
+		float* AABBEntryPoints = new float[32];
 		stack[0] = 1; //count, next one to evaluate;
 		stack[1] = 0; //root node
 
@@ -544,7 +545,11 @@ __global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 		{
 			int next = stack[0]--;
 			g_Collision newcollision = g_TraverseBVHNode(shadowray, BVH, orderedIndices, scene, stack[next], stack, AABBEntryPoints);
-			if (newcollision.t > 0 && newcollision.t < maxt) break; // collision: light source is occluded
+			if (newcollision.t > 0 && newcollision.t < maxt)
+			{
+				collided = true;
+				break;
+			} // collision: light source is occluded
 		}
 
 		// Cleaning up
@@ -557,13 +562,38 @@ __global__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 		for (int i = 0; i < numGeometries; i++)
 		{
 			g_Collision shadowcollision = g_intersectTriangle(i, shadowray, scene, true);
-			if (shadowcollision.t != -1 && shadowcollision.t < maxt) return; // collision: light source is occluded
+			if (shadowcollision.t != -1 && shadowcollision.t < maxt)
+			{
+				collided = true;
+				break;
+			} // collision: light source is occluded
 		}
+	}
+
+	if (collided) {
+		return;
 	}
 
 	// Adding the unoccluded ray to the intermediate screen buffer
 	g_Color toadd = g_Color(shadowrays[baseIndex + SR_R], shadowrays[baseIndex + SR_G], shadowrays[baseIndex + SR_B]);
 	g_addToIntermediate(intermediate, shadowrays[baseIndex + SR_PIXX], shadowrays[baseIndex + SR_PIXY], toadd);
+}
+
+__global__ void g_traceShadowRays(float* shadowrays, float* scene, g_Color* intermediate, float* BVH, unsigned int* orderedIndices, int numGeometries, bool use_bvh)
+{
+	uint numRays = ((uint*)shadowrays)[1];
+	uint id = atomicInc(((uint*)shadowrays) + 2, 0xffffffff) + 1;
+
+	while (id <= numRays)
+	{
+		if (id != 0)
+		{
+			float* rayptr = shadowrays + (id * SR_SIZE);
+			g_TraceShadowRay(shadowrays, id, use_bvh, BVH, orderedIndices, numGeometries, scene, intermediate);
+		}
+		id = atomicInc(((uint*)shadowrays) + 2, 0xffffffff) + 1;
+	}
+
 }
 
 __device__ float3 g_reflect(float3 D, float3 N)

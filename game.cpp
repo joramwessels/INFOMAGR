@@ -166,6 +166,7 @@ void Game::Tick(float deltaTime)
 
 			//Find collisions. Put in array 'collisions'
 			cudaMemset(g_rayQueue + 3, 0, sizeof(uint) * 2);
+			cudaMemset(g_shadowRays + 1, 0, sizeof(uint) * 2);
 			g_findCollisions << <24, 255 >> > (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
 			CheckCudaError(10);
 
@@ -175,6 +176,12 @@ void Game::Tick(float deltaTime)
 			cudaDeviceSynchronize();
 			CheckCudaError(15);
 
+
+			g_traceShadowRays<<<24, 255>>>(g_shadowRays, g_triangles, g_intermediate, g_BVH, g_orderedIndices, numGeometries, use_bvh);
+			cudaDeviceSynchronize();
+			CheckCudaError(17);
+
+
 			cudaMemcpy(rayQueue, g_rayQueue, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
 			cudaMemcpy(shadowRays, g_shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyDeviceToHost);
 			cudaMemcpy(newRays, g_newRays, rayQueueSize * sizeof(float), cudaMemcpyDeviceToHost);
@@ -183,19 +190,6 @@ void Game::Tick(float deltaTime)
 			cudaDeviceSynchronize();
 			CheckCudaError(15);
 
-			numRays = ((int*)rayQueue)[1];
-			printf("numrays: %i", numRays);
-			
-			
-			//Trace the shadowrays.
-			int numShadowRays = ((int*)shadowRays)[1];
-			printf("Num shadowrays: %i \n", numShadowRays);
-			for (int i = 1; i <= numShadowRays; i++)
-			{
-				TraceShadowRay(shadowRays, i);
-				//TODO: DO																 
-
-			}
 
 			//Flip the arrays
 			float* temp = rayQueue;
