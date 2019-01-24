@@ -54,8 +54,9 @@ void Game::Init()
 	cudaMalloc(&g_shadowRays, rayQueueSize * sizeof(float) * 5);
 	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color));
 
-	cudaMemcpy(g_newRays, newRays, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(g_shadowRays, shadowRays, rayQueueSize * 5 * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
+	cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
+	cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
 
 	printf("rand: %f \n", random1);
 	printf("rand: %f \n", random2);
@@ -150,11 +151,12 @@ void Game::Tick(float deltaTime)
 
 	else { //use the GPU
 		//Generate primary rays (on GPU)
-		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+		//cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 		float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
 		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 		float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
+		cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 4);
 
 		GeneratePrimaryRay << <24, 255 >> > (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
 		CheckCudaError(1);
@@ -168,21 +170,19 @@ void Game::Tick(float deltaTime)
 			cudaMemset(g_rayQueue + 2, 0, sizeof(uint) * 3);
 			g_findCollisions << <24, 255 >> > (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
 			CheckCudaError(10);
+
 			
 			//Set the ray counters for the new rays and shadowrays to 0
 			cudaMemset(g_shadowRays + 1, 0, sizeof(uint) * 2);
 			cudaMemset(g_newRays + 1, 0, sizeof(uint));
 
 			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor, g_skybox, skybox->texture->GetWidth(), skybox->texture->GetHeight(), skybox->texture->GetPitch());
-			cudaDeviceSynchronize();
 			CheckCudaError(15);
 
 			g_traceShadowRays<<<24, 255>>>(g_shadowRays, g_triangles, g_intermediate, g_BVH, g_orderedIndices, numGeometries, use_bvh);
-			cudaDeviceSynchronize();
 			CheckCudaError(17);
 
 			cudaMemcpy(intermediate, g_intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyDeviceToHost);
-			cudaDeviceSynchronize();
 			CheckCudaError(15);
 
 			//Flip the arrays
