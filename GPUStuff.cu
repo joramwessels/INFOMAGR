@@ -700,7 +700,9 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 
 					float3 shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColorAsFloat3 * (max(0.0f, dot(collision.N, direction)) * INV4PI / sqrLentgh(lightPosition - collision.Pos));
 
-					g_addShadowRayToQueue(origin, direction, shadowRayEnergy.x, shadowRayEnergy.y, shadowRayEnergy.z, maxt, pixelx, pixely, shadowRays);
+					if (shadowRayEnergy.x >= 1.0f | shadowRayEnergy.y >= 1.0f | shadowRayEnergy.z >= 1.0f) { //Ray will not contribute if all components < 1
+						g_addShadowRayToQueue(origin, direction, shadowRayEnergy.x, shadowRayEnergy.y, shadowRayEnergy.z, maxt, pixelx, pixely, shadowRays);
+					}
 				}
 			}
 
