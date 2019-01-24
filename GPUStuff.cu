@@ -14,6 +14,10 @@ __device__ float3 operator*(const float3 &a, const float &b)
 {
 	return make_float3(a.x * b, a.y * b, a.z * b);
 }
+__device__ float3 operator*(const float3 &a, const float3 &b)
+{
+	return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
 __device__ float3 normalize(float3 in)
 {
 	float mag = 1 / sqrtf(in.x * in.x + in.y * in.y + in.z*in.z);
@@ -590,6 +594,7 @@ __device__ void g_addShadowRayToQueue(float3 ori, float3 dir, float R, float G, 
 	queue[index + SR_R] = R;
 	queue[index + SR_G] = G;
 	queue[index + SR_B] = B;
+
 	queue[index + SR_MAXT] = maxt;
 	queue[index + SR_PIXX] = pixelX;
 	queue[index + SR_PIXY] = pixelY;
@@ -642,9 +647,14 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 					float3 direction = normalize(lightPosition - collision.Pos);
 					float3 origin = collision.Pos + ( direction * 0.00025f); //move away a little bit from the surface, to avoid self-collision in the outward direction.
 					float maxt = (lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
-					g_Color collisioncolor = g_Color(collision.R, collision.G, collision.B);
-					g_Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColor[light] * (max(0.0f, dot(collision.N, direction)) * INV4PI / sqrLentgh(lightPosition - collision.Pos));
-					g_addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
+
+
+					float3 collisioncolor = make_float3(collision.R, collision.G, collision.B);
+					float3 lightColorAsFloat3 = make_float3(lightColor[light].R, lightColor[light].G, lightColor[light].B);
+
+					float3 shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColorAsFloat3 * (max(0.0f, dot(collision.N, direction)) * INV4PI / sqrLentgh(lightPosition - collision.Pos));
+
+					g_addShadowRayToQueue(origin, direction, shadowRayEnergy.x, shadowRayEnergy.y, shadowRayEnergy.z, maxt, pixelx, pixely, shadowRays);
 				}
 			}
 
@@ -703,7 +713,6 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 			if (Fr > 0.0f)
 			{
 				float3 newdirection = g_reflect(direction, collision.N);
-				//printf("a");
 
 
 				float3 newOrigin = collision.Pos + newdirection * 0.00001f;

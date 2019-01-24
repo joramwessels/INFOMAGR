@@ -1016,7 +1016,9 @@ void Game::loadscene(SCENES scene)
 
 	cudaMalloc(&g_lightPos, numLights * 3 * sizeof(float));
 	cudaMalloc(&g_lightColor, numLights * sizeof(g_Color));
-
+	cudaMemcpy(g_lightPos, lightPos, numLights * 3 * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(g_lightColor, lightColor, numLights * sizeof(g_Color), cudaMemcpyHostToDevice);
+	CheckCudaError(17);
 
 	cudaMemcpy(g_triangles, triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float), cudaMemcpyHostToDevice);
 	CheckCudaError(6);
