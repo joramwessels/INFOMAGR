@@ -101,51 +101,33 @@ public:
 private:
 	Surface* screen;
 	Camera camera;
+	SceneManager *scene;
 
 	Collision nearestCollision(float* ray_ptr);
 
 	void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
 
-	int numGeometries = 0;
-	float* triangles;
-	float* g_triangles;
 	uint* g_screen;
 
 	//Color DirectIllumination(Collision collision);
 	void TraceShadowRay(float* shadowrays, int rayIndex);
 
-	int numLights = 2;
-	//Light* lights;
-	float* lightPos;
-	float* g_lightPos;
-	Color* lightColor;
-	g_Color* g_lightColor;
 
 	vec3 reflect(vec3 D, vec3 N);
 
-	Skybox* skybox;
-	uint* g_skybox;
 
 	//For moving camera, just for fun :)
 	vec3 camerapos = { 0,0,0 };
 
 	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false, keyComma = false, keyPeriod = false;
 	
-	enum SCENES {
-		SCENE_OBJ_GLASS,
-		SCENE_OBJ_HALFREFLECT,
-		SCENE_STRESSTEST,
-		SCENE_TRIANGLETEST,
-		SCENE_FLOORONLY,
-		SCENE_CUBE
-	};
 
 
-	void loadscene(SCENES scene);
-	void loadobj(string filename, vec3 scale, vec3 translate, Material material);
-	void createfloor(Material material);
-
-	void initializeTriangle(int i, float* triangles);
+	//void loadscene(SCENES scene);
+	//void loadobj(string filename, vec3 scale, vec3 translate, Material material);
+	//void createfloor(Material material);
+	//
+	//void initializeTriangle(int i, float* triangles);
 
 	bool SSAA;
 	bool DoF = false;
@@ -172,7 +154,7 @@ private:
 		bvh = new BVH;
 		printf("Starting BVH generation... \n");
 		mytimer.reset();
-		bvh->Build(triangles, numGeometries);
+		bvh->Build(scene->triangles, scene->numGeometries);
 		printf("BVH Generation done. Build time: %f, Depth: %i \n", mytimer.elapsed(), bvh->depth);
 		cudaMalloc(&g_BVH, bvh->poolPtr * B_SIZE * sizeof(float));
 		cudaMemcpy(g_BVH, bvh->pool, bvh->poolPtr * B_SIZE * sizeof(float), cudaMemcpyHostToDevice);

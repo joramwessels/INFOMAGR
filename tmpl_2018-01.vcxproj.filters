@@ -9,6 +9,7 @@
     </ClCompile>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="BVH.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="surface.h">
@@ -22,6 +23,7 @@
     <ClInclude Include="Structs.h" />
     <ClInclude Include="BVH.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="SceneManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">

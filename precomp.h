@@ -10,8 +10,13 @@
 #define SCRWIDTH 512
 #define SCRHEIGHT 512
 #define MAX_RECURSION_DEPTH 5
-#define FLOATS_PER_TRIANGLE 33
 
+// Scene Manager
+#define FLOATS_PER_TRIANGLE 33
+#define FLOATS_PER_LIGHTPOS 3
+#define SCENE_ARRAY_SIZE 5000
+
+// Triangle array positions
 #define T_V0X 0
 #define T_V0Y 1
 #define T_V0Z 2
@@ -46,6 +51,7 @@
 #define T_AABBMINZ 31
 #define T_AABBMAXZ 32
 
+// Shadow Ray array positions
 #define SR_OX 0
 #define SR_OY 1
 #define SR_OZ 2
@@ -60,6 +66,7 @@
 #define SR_PIXY 11
 #define SR_SIZE 12
 
+// Ray array positions
 #define R_OX 0
 #define R_OY 1
 #define R_OZ 2
@@ -75,6 +82,7 @@
 #define R_ENERGY 12
 #define R_SIZE 13
 
+// BVH array positions
 #define B_AABB_MINX 0
 #define B_AABB_MAXX 1
 #define B_AABB_MINY 2
@@ -150,6 +158,12 @@ using namespace std;
 using namespace Tmpl8;
 //tiny obj loader
 
+// CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
+#include "GPUStuff.cuh"
+
 // Own headers
 #include "Structs.h"
 //#include "Geometry.h"
@@ -158,12 +172,7 @@ using namespace Tmpl8;
 //#include "Triangle.h"
 #include "Camera.h"
 #include "BVH.h"
-
-// CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-#include "GPUStuff.cuh"
+#include "SceneManager.h"
 
 #include "game.h"
 // clang-format on
