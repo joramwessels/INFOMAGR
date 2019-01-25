@@ -1,6 +1,4 @@
 #include "precomp.h" // include (only) this in every .cpp file
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "lib\tinyobjloader\tiny_obj_loader.h"
 
 float frame = 0;
 
@@ -22,14 +20,17 @@ void Game::Init()
 {
 	/*
 	AVAILABLE SCENES:
-		SCENE_OBJ_GLASS,
-		SCENE_OBJ_HALFREFLECT,
-		SCENE_STRESSTEST,
-		SCENE_TRIANGLETEST,
+		SCENE_OBJ_GLASS
+		SCENE_OBJ_HALFREFLECT
+		SCENE_STRESSTEST
+		SCENE_TRIANGLETEST
 		SCENE_FLOORONLY
+		SCENE_CUBE
 	*/
 
-	loadscene(SCENES::SCENE_STRESSTEST);
+	scene = new SceneManager();
+	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, camera);
+	generateBVH();
 
 	SSAA = false;
 	camera.DoF = false;
@@ -48,6 +49,7 @@ void Game::Init()
 	((int*)shadowRays)[0] = rayQueueSize * 5; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
+	// Moving everything to the GPU
 	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
 	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
 	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
@@ -58,6 +60,8 @@ void Game::Init()
 	cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
 	cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
 	cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
+
+	scene->moveSceneToGPU();
 
 	printf("rand: %f \n", random1);
 	printf("rand: %f \n", random2);
@@ -177,7 +181,7 @@ void Game::Tick(float deltaTime)
 
 			//Find collisions. Put in array 'collisions'
 			cudaMemset(g_rayQueue + 2, 0, sizeof(uint) * 3);
-			g_findCollisions << <24, 255 >> > (g_triangles, numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
+			g_findCollisions << <24, 255 >> > (scene->g_triangles, scene->numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
 			CheckCudaError(10);
 
 			
@@ -185,11 +189,11 @@ void Game::Tick(float deltaTime)
 			cudaMemset(g_shadowRays + 1, 0, sizeof(uint) * 2);
 			cudaMemset(g_newRays + 1, 0, sizeof(uint));
 
-			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, numLights, g_lightPos, g_lightColor, g_skybox, skybox->texture->GetWidth(), skybox->texture->GetHeight(), skybox->texture->GetPitch());
+			g_Tracerays << <24, 255 >> > (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, scene->numLights, scene->g_lightPos, scene->g_lightColor, scene->g_skybox, scene->skybox->texture->GetWidth(), scene->skybox->texture->GetHeight(), scene->skybox->texture->GetPitch());
 			CheckCudaError(15);
 
 			cudaMemcpyAsync(rayQueue, g_rayQueue, sizeof(uint) * 2, cudaMemcpyDeviceToHost);
-			g_traceShadowRays<<<24, 255>>>(g_shadowRays, g_triangles, g_intermediate, g_BVH, g_orderedIndices, numGeometries, use_bvh);
+			g_traceShadowRays<<<24, 255>>>(g_shadowRays, scene->g_triangles, g_intermediate, g_BVH, g_orderedIndices, scene->numGeometries, use_bvh);
 			CheckCudaError(17);
 
 			//cudaMemcpy(intermediate, g_intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyDeviceToHost);
@@ -255,7 +259,7 @@ void Game::Tick(float deltaTime)
 
 	screen->Bar(0, 0, 150, 40, 0x000000);
 	char buffer[64];
-	sprintf(buffer, "No. primitives: %i", numGeometries);
+	sprintf(buffer, "No. primitives: %i", scene->numGeometries);
 	screen->Print(buffer, 1, 2, 0xffffff);
 	sprintf(buffer, "FPS: %i", prevsecframes);
 	screen->Print(buffer, 1, 10, 0xffffff);
@@ -326,12 +330,12 @@ Collision Game::nearestCollision(float* ray_ptr)
 		closest.t = -1;
 
 		//Loop over all primitives to find the closest collision
-		for (int i = 0; i < numGeometries; i++)
+		for (int i = 0; i < scene->numGeometries; i++)
 		{
 			//Collision collision = geometry[i]->Intersect(*ray);
 			vec3 ray_origin = { ray_ptr[R_OX], ray_ptr[R_OY], ray_ptr[R_OZ] };
 			vec3 ray_direction = { ray_ptr[R_DX], ray_ptr[R_DY], ray_ptr[R_DZ] };
-			Collision collision = intersectTriangle(i, ray_origin, ray_direction, triangles);
+			Collision collision = intersectTriangle(i, ray_origin, ray_direction, scene->triangles);
 			float dist = collision.t;
 			if (dist != -1 && dist < closestdist)
 			{
@@ -422,14 +426,14 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 			if (specularity < 1.0f)
 			{
 				//Generate shadow rays
-				for (int light = 0; light < numLights; light++)
+				for (int light = 0; light < scene->numLights; light++)
 				{
-					vec3 lightPosition = vec3(lightPos[light * 3 + 0], lightPos[light * 3 + 1], lightPos[light * 3 + 2]);
+					vec3 lightPosition = vec3(scene->lightPos[light * 3 + 0], scene->lightPos[light * 3 + 1], scene->lightPos[light * 3 + 2]);
 					vec3 direction = (lightPosition - collision.Pos).normalized();
 					vec3 origin = collision.Pos + (0.00025f * direction); //move away a little bit from the surface, to avoid self-collision in the outward direction.
-					float maxt = (lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
+					float maxt = (scene->lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 					Color collisioncolor = Color(collision.R, collision.G, collision.B);
-					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColor[light] * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lightPosition - collision.Pos).sqrLentgh()));
+					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * scene->lightColor[light] * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lightPosition - collision.Pos).sqrLentgh()));
 					addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
 				}
 			}
@@ -535,7 +539,7 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 	// if no collision
 	else
 	{
-		addToIntermediate(pixelx, pixely, (skybox->ColorAt(direction) << 8) * energy);
+		addToIntermediate(pixelx, pixely, (scene->skybox->ColorAt(direction) << 8) * energy);
 		//addToIntermediate(pixelx, pixely, (Color(255, 0, 0) << 8) * energy);
 	}
 }
@@ -579,14 +583,14 @@ void Game::TraceShadowRay(float* shadowrays, int rayIndex)
 		//if (shadowcollision.t < maxt && shadowcollision.t != -1) collided = true;
 	}
 	else {
-		for (int i = 0; i < numGeometries; i++)
+		for (int i = 0; i < scene->numGeometries; i++)
 		{
 			vec3 origin = { shadowrays[baseIndex + SR_OX], shadowrays[baseIndex + SR_OY], shadowrays[baseIndex + SR_OZ] };
 			vec3 direction = { shadowrays[baseIndex + SR_DX], shadowrays[baseIndex + SR_DY], shadowrays[baseIndex + SR_DZ] };
 
 			//Check if position is reachable by lightsource
 			//Collision scattercollision = geometry[i]->Intersect(shadowray, true);
-			Collision shadowcollision = intersectTriangle(i, origin, direction, triangles, true);
+			Collision shadowcollision = intersectTriangle(i, origin, direction, scene->triangles, true);
 			if (shadowcollision.t != -1 && shadowcollision.t < maxt)
 			{
 				//Collision, so this ray does not reach the light source
@@ -698,482 +702,6 @@ vec3 Game::reflect(vec3 D, vec3 N)
 	return D - 2 * (dot(D, N)) * N;
 }
 
-void Game::loadscene(SCENES scene)
-{
-	triangles = new float[5000 * FLOATS_PER_TRIANGLE];
-	cudaMalloc(&g_triangles, 5000 * FLOATS_PER_TRIANGLE * sizeof(float));
-	CheckCudaError(5);
-
-	switch (scene)
-	{
-	case SCENE_FLOORONLY:
-	{
-		createfloor(Material(0.0f, 0.0f, 0xffffff));
-		numGeometries = 4;
-
-		//Vertex positions
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V0X] = -10.0f; //v0.x
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V0Z] = 10.0f; //v0.z
-
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V1X] = -10.0f; //v1.x
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
-
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V2X] = -10.0f; //v2.x
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V2Y] = 0.0f; //v2.y
-		triangles[2 * FLOATS_PER_TRIANGLE + T_V2Z] = -10.0f; //v2.z
-
-		//TODO: Completely remove material class?
-		//Color
-		triangles[2 * FLOATS_PER_TRIANGLE + T_COLORR] = 255; //R
-		triangles[2 * FLOATS_PER_TRIANGLE + T_COLORG] = 255; //G
-		triangles[2 * FLOATS_PER_TRIANGLE + T_COLORB] = 255; //B
-
-		//Material properties
-		triangles[2 * FLOATS_PER_TRIANGLE + T_SPECULARITY] = 0.0f; //Specularity
-		triangles[2 * FLOATS_PER_TRIANGLE + T_REFRACTION] = 0.0f; //Refractionindex
-
-		//Calculate the edges, normal and D
-		initializeTriangle(2, triangles);
-
-		//Vertex positions
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V0X] = 10.0f; //v0.x
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V0Z] = 10.0f; //v0.z
-
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V1X] = 10.0f; //v1.x
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
-
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V2X] = 10.0f; //v2.x
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V2Y] = 0.0f; //v2.y
-		triangles[3 * FLOATS_PER_TRIANGLE + T_V2Z] = -10.0f; //v2.z
-
-		//TODO: Completely remove material class?
-		//Color
-		triangles[3 * FLOATS_PER_TRIANGLE + T_COLORR] = 255; //R
-		triangles[3 * FLOATS_PER_TRIANGLE + T_COLORG] = 255; //G
-		triangles[3 * FLOATS_PER_TRIANGLE + T_COLORB] = 255; //B
-
-		//Material properties
-		triangles[3 * FLOATS_PER_TRIANGLE + T_SPECULARITY] = 0.0f; //Specularity
-		triangles[3 * FLOATS_PER_TRIANGLE + T_REFRACTION] = 0.0f; //Refractionindex
-
-		//Calculate the edges, normal and D
-		initializeTriangle(3, triangles);
-
-
-		numLights = 3;
-		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
-
-		lightPos[0] = -5.0f; //X
-		lightPos[1] = -5.0f; //Y
-		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
-
-		lightPos[(1 * 3) + 0] = 5.0f; //X
-		lightPos[(1 * 3) + 1] = -5.0f; //Y
-		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
-
-		lightPos[(2 * 3) + 0] = -5.0f; //X
-		lightPos[(2 * 3) + 1] = -5.0f; //Y
-		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
-
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-		break;
-
-	}
-	case SCENE_CUBE:
-	{
-		numGeometries = 0;
-		//createfloor(Material(0.0f, 0.0f, 0xffffff));
-
-		loadobj("assets\\cube.obj", { 1, 1, 1 }, { 0.05, 0, 3 }, Material(0.0f, 0.0f, 0xff0000));
-
-		numLights = 3;
-		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
-
-		lightPos[0] = -5.0f; //X
-		lightPos[1] = -5.0f; //Y
-		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
-
-		lightPos[(1 * 3) + 0] = 5.0f; //X
-		lightPos[(1 * 3) + 1] = -5.0f; //Y
-		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
-
-		lightPos[(2 * 3) + 0] = -5.0f; //X
-		lightPos[(2 * 3) + 1] = -5.0f; //Y
-		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-		break;
-
-	}
-	case SCENE_OBJ_GLASS:
-	{
-		camera.rotate({ -20, 180, 0 });
-		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		numGeometries = 0;
-		createfloor(Material(1.0f, 0.0f, 0xffffff));
-		loadobj("assets\\MaleLow.obj", { 0.5f, -0.5f, 0.5f }, { 0, 1.5f, -9 }, Material(0.0f, 1.52f, 0xffffff));
-
-		numLights = 3;
-		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
-
-		lightPos[0] = -5.0f; //X
-		lightPos[1] = -5.0f; //Y
-		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
-
-		lightPos[(1 * 3) + 0] = 5.0f; //X
-		lightPos[(1 * 3) + 1] = -5.0f; //Y
-		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
-
-		lightPos[(2 * 3) + 0] = -5.0f; //X
-		lightPos[(2 * 3) + 1] = -5.0f; //Y
-		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
-
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-		break;
-	}
-	case SCENE_TRIANGLETEST:
-	{
-		//camera.rotate({ -20, 180, 0 });
-		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		numGeometries = 0;
-		createfloor(Material(0.0f, 0.0f, 0xffffff));
-
-		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
-		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { -2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
-		loadobj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
-
-		numLights = 3;
-		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
-
-		lightPos[0] = -5.0f; //X
-		lightPos[1] = -5.0f; //Y
-		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
-
-		lightPos[(1 * 3) + 0] = 5.0f; //X
-		lightPos[(1 * 3) + 1] = -5.0f; //Y
-		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
-
-		lightPos[(2 * 3) + 0] = -5.0f; //X
-		lightPos[(2 * 3) + 1] = -5.0f; //Y
-		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
-
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-		break;
-	}
-
-	case SCENE_OBJ_HALFREFLECT:
-	{
-		//camera.rotate({ -40, 0, 0 });
-		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		numGeometries = 0;
-		createfloor(Material(0.0f, 0.0f, 0xffffff));
-
-		loadobj("assets\\Banana.obj", { 0.02f, -0.02f, 0.02f }, { -2.5, 1.5f, 10 }, Material(0.5f, 0.0f, 0xffff00));
-
-		numLights = 3;
-		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
-
-		lightPos[0] = -5.0f; //X
-		lightPos[1] = -5.0f; //Y
-		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
-
-		lightPos[(1 * 3) + 0] = 5.0f; //X
-		lightPos[(1 * 3) + 1] = -5.0f; //Y
-		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
-
-		lightPos[(2 * 3) + 0] = -5.0f; //X
-		lightPos[(2 * 3) + 1] = -5.0f; //Y
-		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
-
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-
-		generateBVH();
-		break;
-	}
-	case SCENE_STRESSTEST:
-	{
-		delete triangles;
-		triangles = new float[900004 * FLOATS_PER_TRIANGLE];
-		cudaMalloc(&g_triangles, 900004 * FLOATS_PER_TRIANGLE * sizeof(float));
-
-		//Set up the scene
-		numGeometries = 0;
-		createfloor(Material(0.0f, 0.0f, 0xffffff));
-		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
-
-		for (size_t i = 0; i < 200; i++)
-		{
-			float ix = i % 14;
-			float iy = i / 14;
-
-
-			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
-			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -2.0f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
-			loadobj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -5.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
-
-		}
-
-		camera.rotate({ 30, 150, 0 });
-		camera.move({ 0.0f, -5.0f, 0.0f });
-
-		numLights = 3;
-		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
-
-		lightPos[0] = -5.0f; //X
-		lightPos[1] = -5.0f; //Y
-		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
-
-		lightPos[(1 * 3) + 0] = 5.0f; //X
-		lightPos[(1 * 3) + 1] = -5.0f; //Y
-		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
-
-		lightPos[(2 * 3) + 0] = -5.0f; //X
-		lightPos[(2 * 3) + 1] = -5.0f; //Y
-		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
-
-		skybox = new Skybox("assets\\skybox4.jpg");
-		generateBVH();
-		break;
-	}
-	default:
-		break;
-	}
-
-	cudaMalloc(&g_lightPos, numLights * 3 * sizeof(float));
-	cudaMalloc(&g_lightColor, numLights * sizeof(g_Color));
-	cudaMemcpy(g_lightPos, lightPos, numLights * 3 * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(g_lightColor, lightColor, numLights * sizeof(g_Color), cudaMemcpyHostToDevice);
-	CheckCudaError(17);
-
-
-	cudaMalloc(&g_skybox, (skybox->texture->GetWidth() * skybox->texture->GetHeight()) * sizeof(uint));
-	cudaMemcpy(g_skybox, skybox->texture->GetBuffer(), skybox->texture->GetWidth() * skybox->texture->GetHeight() * sizeof(uint), cudaMemcpyHostToDevice);
-
-
-	cudaMemcpy(g_triangles, triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float), cudaMemcpyHostToDevice);
-	CheckCudaError(6);
-}
-
-void Game::loadobj(string filename, vec3 scale, vec3 translate, Material material)
-{
-	int startpos = numGeometries;
-
-	tinyobj::attrib_t attrib;
-	vector<tinyobj::shape_t> shapes;
-	vector<tinyobj::material_t> materials;
-
-	string error;
-	string warn;
-	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &error, filename.c_str());
-
-	if (!error.empty()) { // `err` may contain warning message.
-		printf("Tinyobjloader error: %s", error);
-	}
-
-	printf("loaded %i shapes \n", shapes.size());
-	for (size_t shape = 0; shape < shapes.size(); shape++)
-	{
-		printf("loaded %i faces \n", shapes[shape].mesh.num_face_vertices.size());
-
-	}
-
-	//From https://github.com/syoyo/tinyobjloader
-	// Loop over shapes
-
-	for (size_t s = 0; s < shapes.size(); s++) {
-		// Loop over faces(polygon)
-		size_t index_offset = 0;
-		//for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-
-		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) { //Only do 12 triangles for now
-			int fv = shapes[s].mesh.num_face_vertices[f];
-
-			vec3 vertices[3];
-			//vec3 normals[3];
-
-			// Loop over vertices in the face.
-			for (size_t v = 0; v < fv; v++) {
-				// access to vertex
-
-				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-				tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
-				tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
-				tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
-				//tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
-				//tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
-				//tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
-				tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-				tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
-
-				//vec3 scale = { 0.000000005f, -0.000000005f, 0.000000005f };
-				vertices[v] = vec3(vx, vy, vz);
-				vertices[v] *= scale;
-				//normals[v] = { nx, ny, nz };
-				//printf("Vertice %i: %f, %f, %f, fv: %i \n", v, vx, vy, vz, fv);
-
-				// Optional: vertex colors
-				// tinyobj::real_t red = attrib.colors[3*idx.vertex_index+0];
-				// tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
-				// tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
-			}
-			//geometry[startpos] = new Triangle(vertices[0] + translate, vertices[2] + translate, vertices[1] + translate, material);
-
-			//The first float belonging to this triangle
-			int baseindex = startpos * FLOATS_PER_TRIANGLE;
-
-			//Vertex positions
-			triangles[baseindex + T_V0X] = vertices[0].x + translate.x; //v0.x
-			triangles[baseindex + T_V0Y] = vertices[0].y + translate.y; //v0.y
-			triangles[baseindex + T_V0Z] = vertices[0].z + translate.z; //v0.z
-			triangles[baseindex + T_V1X] = vertices[1].x + translate.x; //v1.x
-			triangles[baseindex + T_V1Y] = vertices[1].y + translate.y; //v1.y
-			triangles[baseindex + T_V1Z] = vertices[1].z + translate.z; //v1.z
-			triangles[baseindex + T_V2X] = vertices[2].x + translate.x; //v2.x
-			triangles[baseindex + T_V2Y] = vertices[2].y + translate.y; //v2.y
-			triangles[baseindex + T_V2Z] = vertices[2].z + translate.z; //v2.z
-
-			//TODO: Completely remove material class?
-			//Color
-			triangles[baseindex + T_COLORR] = material.color.R; //R
-			triangles[baseindex + T_COLORG] = material.color.G; //G
-			triangles[baseindex + T_COLORB] = material.color.B; //B
-
-			//Material properties
-			triangles[baseindex + T_SPECULARITY] = material.specularity; //Specularity
-			triangles[baseindex + T_REFRACTION] = material.refractionIndex; //Refractionindex
-
-			//Calculate the edges, normal and D
-			initializeTriangle(startpos, triangles);
-
-			startpos++;
-			numGeometries++;
-
-			index_offset += fv;
-
-			// per-face material
-			shapes[s].mesh.material_ids[f];
-		}
-	}
-	printf("Loadobj done. \n\n");
-}
-
-void Game::createfloor(Material material)
-{
-	numGeometries = 2;
-
-	//Vertex positions
-	triangles[0 + T_V0X] = -10.0f; //v0.x
-	triangles[0 + T_V0Y] = 1.5f; //v0.y
-	triangles[0 + T_V0Z] = 10.0f; //v0.z
-
-	triangles[0 + T_V1X] = -10.0f; //v1.x
-	triangles[0 + T_V1Y] = 1.5f; //v1.y
-	triangles[0 + T_V1Z] = -10.0f; //v1.z
-
-	triangles[0 + T_V2X] = 10.0f; //v2.x
-	triangles[0 + T_V2Y] = 1.5f; //v2.y
-	triangles[0 + T_V2Z] = 10.0f; //v2.z
-
-	//TODO: Completely remove material class?
-	//Color
-	triangles[0 + T_COLORR] = material.color.R; //R
-	triangles[0 + T_COLORG] = material.color.G; //G
-	triangles[0 + T_COLORB] = material.color.B; //B
-
-	//Material properties
-	triangles[0 + T_SPECULARITY] = material.specularity; //Specularity
-	triangles[0 + T_REFRACTION] = material.refractionIndex; //Refractionindex
-
-	//Calculate the edges, normal and D
-	initializeTriangle(0, triangles);
-
-
-
-	//Vertex positions
-	triangles[FLOATS_PER_TRIANGLE + T_V0X] = 10.0f; //v0.x
-	triangles[FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
-	triangles[FLOATS_PER_TRIANGLE + T_V0Z] = -10.0f; //v0.z
-
-	triangles[FLOATS_PER_TRIANGLE + T_V1X] = -10.0f; //v1.x
-	triangles[FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
-	triangles[FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
-
-	triangles[FLOATS_PER_TRIANGLE + T_V2X] = 10.0f; //v2.x
-	triangles[FLOATS_PER_TRIANGLE + T_V2Y] = 1.5f; //v2.y
-	triangles[FLOATS_PER_TRIANGLE + T_V2Z] = 10.0f; //v2.z
-
-	//TODO: Completely remove material class?
-	//Color
-	triangles[FLOATS_PER_TRIANGLE + T_COLORR] = material.color.R;//R
-	triangles[FLOATS_PER_TRIANGLE + T_COLORG] = material.color.G; //G
-	triangles[FLOATS_PER_TRIANGLE + T_COLORB] = material.color.B;//B
-
-	//Material properties
-	triangles[FLOATS_PER_TRIANGLE + T_SPECULARITY] = material.specularity; //Specularity
-	triangles[FLOATS_PER_TRIANGLE + T_REFRACTION] = material.refractionIndex; //Refractionindex
-
-	//Calculate the edges, normal and D
-	initializeTriangle(1, triangles);
-
-}
-
 // Adds new ray to the queue of rays to be traced
 void Game::addRayToQueue(Ray ray)
 {
@@ -1270,63 +798,6 @@ void Game::addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, fl
 	((int*)queue)[1]++; //Current count++
 	raysPerFrame++;
 	//no_rays++;
-}
-
-
-// Returns the next ray to be traced, and updates the queue position
-int Game::getRayQueuePosition()
-{
-	// checking for folding overflow
-	if (foldedQueue && positionInRaysQueue < endOfRaysQueue)
-	{
-		printf("ERROR: positionInRaysQueue is somehow ahead of endOfRaysQueue.\n");
-	}
-
-
-	float *ray_ptr = rayQueue + positionInRaysQueue * R_SIZE;
-	positionInRaysQueue++;
-	return (positionInRaysQueue);
-}
-
-// Calculates the edges, normal, D and aabb for a triangle
-void Game::initializeTriangle(int i, float * triangles)
-{
-	int baseindex = i * FLOATS_PER_TRIANGLE;
-
-	vec3 v0 = { triangles[baseindex + T_V0X],triangles[baseindex + T_V0Y],triangles[baseindex + T_V0Z] };
-	vec3 v1 = { triangles[baseindex + T_V1X],triangles[baseindex + T_V1Y],triangles[baseindex + T_V1Z] };
-	vec3 v2 = { triangles[baseindex + T_V2X],triangles[baseindex + T_V2Y],triangles[baseindex + T_V2Z] };
-
-	vec3 e0 = v1 - v0;
-	vec3 e1 = v2 - v1;
-	vec3 e2 = v0 - v2;
-
-	vec3 N = cross(e0, e1);
-	N.normalize();
-
-	float D = -dot(N, v0);
-
-	triangles[baseindex + T_E0X] = e0.x;
-	triangles[baseindex + T_E0Y] = e0.y;
-	triangles[baseindex + T_E0Z] = e0.z;
-	triangles[baseindex + T_E1X] = e1.x;
-	triangles[baseindex + T_E1Y] = e1.y;
-	triangles[baseindex + T_E1Z] = e1.z;
-	triangles[baseindex + T_E2X] = e2.x;
-	triangles[baseindex + T_E2Y] = e2.y;
-	triangles[baseindex + T_E2Z] = e2.z;
-	triangles[baseindex + T_NX] = N.x;
-	triangles[baseindex + T_NY] = N.y;
-	triangles[baseindex + T_NZ] = N.z;
-	triangles[baseindex + T_D] = D;
-
-	//AABB
-	triangles[baseindex + T_AABBMINX] = (v0.x <= v1.x && v0.x <= v2.x ? v0.x : (v1.x <= v0.x && v1.x <= v2.x ? v1.x : v2.x));
-	triangles[baseindex + T_AABBMAXX] = (v0.x >= v1.x && v0.x >= v2.x ? v0.x : (v1.x >= v0.x && v1.x >= v2.x ? v1.x : v2.x));
-	triangles[baseindex + T_AABBMINY] = (v0.y <= v1.y && v0.y <= v2.y ? v0.y : (v1.y <= v0.y && v1.y <= v2.y ? v1.y : v2.y));
-	triangles[baseindex + T_AABBMAXY] = (v0.y >= v1.y && v0.y >= v2.y ? v0.y : (v1.y >= v0.y && v1.y >= v2.y ? v1.y : v2.y));
-	triangles[baseindex + T_AABBMINZ] = (v0.z <= v1.z && v0.z <= v2.z ? v0.z : (v1.z <= v0.z && v1.z <= v2.z ? v1.z : v2.z));
-	triangles[baseindex + T_AABBMAXZ] = (v0.z >= v1.z && v0.z >= v2.z ? v0.z : (v1.z >= v0.z && v1.z >= v2.z ? v1.z : v2.z));
 }
 
 Collision intersectTriangle(int i, vec3 origin, vec3 direction, float * triangles, bool isShadowRay)

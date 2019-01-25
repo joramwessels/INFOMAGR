@@ -213,7 +213,7 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 }
 
 // Finds a collision with the triangle. Returns a collision with t = -1 if none were found.
-__device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float * triangles, bool isShadowRay = false)
+__device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float *triangles, bool isShadowRay = false)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;
 
