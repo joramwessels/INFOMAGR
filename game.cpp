@@ -792,22 +792,6 @@ void Game::addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, fl
 	//no_rays++;
 }
 
-
-// Returns the next ray to be traced, and updates the queue position
-int Game::getRayQueuePosition()
-{
-	// checking for folding overflow
-	if (foldedQueue && positionInRaysQueue < endOfRaysQueue)
-	{
-		printf("ERROR: positionInRaysQueue is somehow ahead of endOfRaysQueue.\n");
-	}
-
-
-	float *ray_ptr = rayQueue + positionInRaysQueue * R_SIZE;
-	positionInRaysQueue++;
-	return (positionInRaysQueue);
-}
-
 Collision intersectTriangle(int i, vec3 origin, vec3 direction, float * triangles, bool isShadowRay)
 {
 	int baseindex = i * FLOATS_PER_TRIANGLE;

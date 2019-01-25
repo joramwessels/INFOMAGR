@@ -99,39 +99,26 @@ public:
 		}
 	}
 private:
-	Surface* screen;
 	Camera camera;
 	SceneManager *scene;
 
-	Collision nearestCollision(float* ray_ptr);
-
-	void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
-
-	uint* g_screen;
-
-	//Color DirectIllumination(Collision collision);
-	void TraceShadowRay(float* shadowrays, int rayIndex);
-
-
-	vec3 reflect(vec3 D, vec3 N);
-
-
-	//For moving camera, just for fun :)
-	vec3 camerapos = { 0,0,0 };
-
-	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false, keyComma = false, keyPeriod = false;
-	
-
-
-	//void loadscene(SCENES scene);
-	//void loadobj(string filename, vec3 scale, vec3 translate, Material material);
-	//void createfloor(Material material);
-	//
-	//void initializeTriangle(int i, float* triangles);
-
+	// Application settings
 	bool SSAA;
 	bool DoF = false;
 	bool use_bvh = false;
+
+	// Tracing
+	void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
+	void TraceShadowRay(float* shadowrays, int rayIndex);
+	vec3 reflect(vec3 D, vec3 N);
+
+	// Screen buffer
+	Surface* screen;
+	uint* g_screen;
+
+	// User Interaction
+	vec3 camerapos = { 0,0,0 };
+	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false, keyComma = false, keyPeriod = false;
 
 	//fps counter
 	int frames = 0;
@@ -142,12 +129,10 @@ private:
 	float raysPerFrame = 0;
 	int raysPerSecond = 0;
 
-
 	// BVH
 	BVH* bvh;
 	float* g_BVH;
 	uint* g_orderedIndices;
-
 	bool bvhdebug = false;
 	void generateBVH() {
 		//BVH GENERATION
@@ -164,38 +149,31 @@ private:
 	
 
 	// Ray queue
-	int endOfRaysQueue = 0;				// the number of rays in the floats array
-	int positionInRaysQueue = 0;		// the next ray index to be traced (multiply with variablesInRay)
-	bool foldedQueue = false;			// if true, the position index is supposed to be higher than the end index
 	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
 	const int rayQueueSize = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
-	float *g_rayQueue;
-
 	float* newRays = new float[rayQueueSize];
-	float* g_newRays;
 	float* shadowRays = new float[rayQueueSize * 5];
-	float* g_shadowRays;
-	Collision* collisions = new Collision[rayQueueSize];
-	void* g_collisions;
-
+	float *g_rayQueue, *g_newRays, *g_shadowRays;
 	void addRayToQueue(Ray ray);
 	void addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
 	void addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue);
-	int getRayQueuePosition();
 
-	//Extend
+	// Collisions
+	Collision* collisions = new Collision[rayQueueSize];
+	void* g_collisions;
+	Collision nearestCollision(float* ray_ptr);
 	void findCollisions(float* rays, int numrays, Collision* collisions);
 
 	// Intermediate screen buffer
-	Color intermediate[SCRWIDTH * SCRHEIGHT];	// intermediate screen buffer to add individual rays together
-	//void* g_intermediate;	// intermediate screen buffer to add individual rays together
+	Color intermediate[SCRWIDTH * SCRHEIGHT];
 	g_Color* g_intermediate;
-	void addToIntermediate(float x, float y, Color color) { intermediate[(int)x + ((int)y * SCRWIDTH)] += color; }; // adds color to intermediate screen buffer
+	void addToIntermediate(float x, float y, Color color) { intermediate[(int)x + ((int)y * SCRWIDTH)] += color; };
+
 	//Animation
 	bool animate = false;
 };
 
 }; // namespace Tmpl8
-	Collision intersectTriangle(int i, vec3 origin, vec3 direction, float* triangles, bool isShadowRay = false);
 
+Collision intersectTriangle(int i, vec3 origin, vec3 direction, float* triangles, bool isShadowRay = false);
