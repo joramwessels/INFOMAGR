@@ -154,6 +154,18 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 				tEntryNearNode = tright;
 			};
 
+			if (tEntryFarNode > -99999) {
+				//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
+				int stackindex = ++stack[0];
+				if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
+
+				else {
+					stack[stackindex] = baseIndexFar;
+					stackAABBEntrypoints[stackindex] = tEntryFarNode;
+
+					//printf("Added %i to stack location %i. Right child of %i \n", baseIndexFar, stackindex, index);
+				}
+			}
 			if (tEntryNearNode > -99999) {
 				//colclose = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexNear);
 				//if (colclose.t < tEntryFarNode && colclose.t > 0) {
@@ -167,18 +179,6 @@ Collision TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, flo
 
 					//printf("Added %i to stack location %i. This is the near child of %i \n", baseIndexNear, stackindex, index);
 					
-				}
-			}
-			if (tEntryFarNode > -99999) {
-				//colfar = g_TraverseBVHNode(ray_ptr, pool, orderedIndices, scene, baseIndexFar);
-				int stackindex = ++stack[0];
-				if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
-
-				else {
-					stack[stackindex] = baseIndexFar;
-					stackAABBEntrypoints[stackindex] = tEntryFarNode;
-
-					//printf("Added %i to stack location %i. Right child of %i \n", baseIndexFar, stackindex, index);
 				}
 			}
 

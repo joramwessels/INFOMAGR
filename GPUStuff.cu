@@ -412,16 +412,6 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 			tEntryNearNode = tright;
 		};
 
-		if (tEntryNearNode > -99999) {
-			int stackindex = ++stack[0];
-			if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
-			else {
-				stack[stackindex] = baseIndexNear;
-				stackAABBEntrypoints[stackindex] = tEntryNearNode;
-				//printf("Added %i to stack location %i. This is the near child of %i \n", baseIndexNear, stackindex, index);
-
-			}
-		}
 		if (tEntryFarNode > -99999) {
 			int stackindex = ++stack[0];
 			if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
@@ -430,6 +420,16 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 				stack[stackindex] = baseIndexFar;
 				stackAABBEntrypoints[stackindex] = tEntryFarNode;
 				//printf("Added %i to stack location %i. Right child of %i \n", baseIndexFar, stackindex, index);
+			}
+		}
+		if (tEntryNearNode > -99999) {
+			int stackindex = ++stack[0];
+			if (stackindex >= 32) printf("stack too small!. index: %i \n", stackindex);
+			else {
+				stack[stackindex] = baseIndexNear;
+				stackAABBEntrypoints[stackindex] = tEntryNearNode;
+				//printf("Added %i to stack location %i. This is the near child of %i \n", baseIndexNear, stackindex, index);
+
 			}
 		}
 
@@ -497,7 +497,9 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 }
 
 // Generates and collects the nearest geometry intersections for the given ray queue
-__global__ void g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices)
+//__launch_bounds__(256, 1)
+__global__ void
+g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices)
 {
 	uint numRays = ((uint*)rayQueue)[1];
 	uint id = atomicInc(((uint*)rayQueue) + 3, 0xffffffff) + 1;

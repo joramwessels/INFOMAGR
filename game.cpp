@@ -148,6 +148,14 @@ void Game::Tick(float deltaTime)
 			if (((int*)rayQueue)[1] == 0) finished = true;
 
 		}
+		for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++)
+		{
+			for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
+			{
+				screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
+			}
+		}
+		memset(intermediate, 0, SCRWIDTH * SCRHEIGHT * sizeof(Color));
 	}
 
 	else { //use the GPU
@@ -196,11 +204,11 @@ void Game::Tick(float deltaTime)
 			if (((int*)rayQueue)[1] == 0) finished = true;
 		}
 
+		// Plotting intermediate screen buffer to screen
+		copyIntermediateToScreen<<<SCRWIDTH, SCRHEIGHT>>>(g_screen, g_intermediate, screen->GetPitch());
+		cudaMemcpy(screen->GetBuffer(), g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint), cudaMemcpyDeviceToHost);
 	}
 
-	// Plotting intermediate screen buffer to screen
-	copyIntermediateToScreen<<<SCRWIDTH, SCRHEIGHT>>>(g_screen, g_intermediate, screen->GetPitch());
-	cudaMemcpy(screen->GetBuffer(), g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint), cudaMemcpyDeviceToHost);
 
 	if (keyW) {
 		camera.move(camera.getDirection() * 0.1f);
