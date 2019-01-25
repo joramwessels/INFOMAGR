@@ -497,8 +497,8 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 }
 
 // Generates and collects the nearest geometry intersections for the given ray queue
-//__launch_bounds__(256, 1)
 __global__ void
+__launch_bounds__(256, 6)
 g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices)
 {
 	uint numRays = ((uint*)rayQueue)[1];
@@ -581,7 +581,9 @@ __device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 	g_addToIntermediate(intermediate, shadowrays[baseIndex + SR_PIXX], shadowrays[baseIndex + SR_PIXY], toadd);
 }
 
-__global__ void g_traceShadowRays(float* shadowrays, float* scene, g_Color* intermediate, float* BVH, unsigned int* orderedIndices, int numGeometries, bool use_bvh)
+__global__ void
+__launch_bounds__(256, 6)
+g_traceShadowRays(float* shadowrays, float* scene, g_Color* intermediate, float* BVH, unsigned int* orderedIndices, int numGeometries, bool use_bvh)
 {
 	uint numRays = ((uint*)shadowrays)[1];
 	uint id = atomicInc(((uint*)shadowrays) + 2, 0xffffffff) + 1;
