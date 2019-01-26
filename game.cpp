@@ -106,7 +106,12 @@ void Game::Tick(float deltaTime)
 	if (useCPU)
 	{
 		//Generate primary rays (on GPU)
+		rayQueue[1] = 0;
+		rayQueue[2] = 0;
+		rayQueue[3] = 0;
+		rayQueue[4] = 0;
 		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+		//cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 4);
 		float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
 		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
