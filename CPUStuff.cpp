@@ -152,7 +152,6 @@ void Game::findCollisions(float* rayQueue, int numrays, Collision* collisions)
 
 	int numRays = ((uint*)rayQueue)[1];
 	((uint*)rayQueue)[2] = 1;
-	printf("numrays: %i", numRays);
 
 	//numRays = 10;
 	//((uint*)rayQueue)[2] = 0; //current ray to be traced
