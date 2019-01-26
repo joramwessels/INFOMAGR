@@ -102,15 +102,17 @@ private:
 	Camera camera;
 	SceneManager *scene;
 
-	// Application settings
+	// SSAA
 	bool SSAA;
+	float *random = new float[8];
 	bool DoF = false;
-	bool use_bvh = false;
 
 	// Tracing
-	void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
+	void GeneratePrimaryRays(float* rayQueue, bool DoF, vec3 position, vec3 TL, vec3 TR, vec3 BL, bool SSAA);
+	void generateRayTroughVirtualScreen(float* ray, float pixelx, float pixely, bool DoF, vec3 position, vec3 TL, vec3 TR, vec3 BL);
+	void TraceRay(float* rays, int ray, int numrays, Collision* collisions, float* newRays, float* shadowRays);
 	void TraceShadowRay(float* shadowrays, int rayIndex);
-	vec3 reflect(vec3 D, vec3 N);
+	vec3 reflect(vec3 D, vec3 N) { return D - 2 * (dot(D, N)) * N; }
 
 	// Screen buffer
 	Surface* screen;
@@ -130,6 +132,7 @@ private:
 	int raysPerSecond = 0;
 
 	// BVH
+	bool use_bvh = false;
 	BVH* bvh;
 	float* g_BVH;
 	uint* g_orderedIndices;
@@ -147,15 +150,20 @@ private:
 		cudaMemcpy(g_orderedIndices, bvh->orderedIndices, bvh->totalNoElements * sizeof(uint), cudaMemcpyHostToDevice);
 	}
 	
-
+	// ---------
 	// Ray queue
-	const int rayQueueScreens = 10;		// the number of screen buffers that should fit in the ray array
-	const int rayQueueSize = ((SCRHEIGHT * SCRWIDTH * 4) + 1) * R_SIZE;
+	// ---------
+	const int rayQueueScreens = 4;												// The number of screen buffers that should fit in the ray queue
+	const int shadowRayQueueScreens = 4;										// The number of screen buffers that should fit in the shadow ray queue
+	const int primaryRayCount = SCRHEIGHT * SCRWIDTH * (SSAA ? SSAA : 1);		// The number of pixels * the number of rays per pixel
+	const int rayQueueSize = (primaryRayCount * rayQueueScreens + 1) * R_SIZE;	// The number of floats in a ray queue
+	const int shadowRayQueueSize = (primaryRayCount * shadowRayQueueScreens + 1) * R_SIZE;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	float* newRays = new float[rayQueueSize];
-	float* shadowRays = new float[rayQueueSize * 5];
+	float* shadowRays = new float[rayQueueSize];
 	float *g_rayQueue, *g_newRays, *g_shadowRays;
 	void addRayToQueue(Ray ray);
+	void addRayToQueue(float *ray, float *queue);
 	void addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhTr, int depth, int x, int y, float energy, float* queue);
 	void addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue);
 
@@ -172,6 +180,11 @@ private:
 
 	//Animation
 	bool animate = false;
+
+	// GPU optimization
+	bool use_GPU;
+	int num_multiprocessors;
+	const int num_gpu_threads = 32 * 8;
 };
 
 }; // namespace Tmpl8

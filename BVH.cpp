@@ -661,3 +661,16 @@ void storeBoundsInFloatArray(float* pool, int startIndex, AABB aabb) {
 	pool[startIndex + B_AABB_MAXZ] = aabb.zmax;
 
 }
+
+vec3 calculateTriangleAABBMidpoint(int i, float * triangles)
+{
+	int baseindex = i * FLOATS_PER_TRIANGLE;
+	float xmin = triangles[baseindex + T_AABBMINX];
+	float xmax = triangles[baseindex + T_AABBMAXX];
+	float ymin = triangles[baseindex + T_AABBMINY];
+	float ymax = triangles[baseindex + T_AABBMAXY];
+	float zmin = triangles[baseindex + T_AABBMINZ];
+	float zmax = triangles[baseindex + T_AABBMAXZ];
+
+	return vec3((xmin + xmax) / 2, (ymin + ymax) / 2, (zmin + zmax) / 2);
+}

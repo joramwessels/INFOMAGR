@@ -159,6 +159,7 @@
     <ClCompile Include="Camera.cpp" />
     <CudaCompile Include="game.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="CPUStuff.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="template.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
