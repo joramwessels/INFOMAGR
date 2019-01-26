@@ -70,25 +70,22 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
+		lightColor = new float3[numLights];
 
 		lightPos[0] = -5.0f; //X
 		lightPos[1] = -5.0f; //Y
 		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
+		lightColor[0] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(1 * 3) + 0] = 5.0f; //X
 		lightPos[(1 * 3) + 1] = -5.0f; //Y
 		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
+		lightColor[1] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(2 * 3) + 0] = -5.0f; //X
 		lightPos[(2 * 3) + 1] = -5.0f; //Y
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
+		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 
 		skybox = new Skybox("assets\\skybox4.jpg");
@@ -105,25 +102,22 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
+		lightColor = new float3[numLights];
 
 		lightPos[0] = -5.0f; //X
 		lightPos[1] = -5.0f; //Y
 		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
+		lightColor[0] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(1 * 3) + 0] = 5.0f; //X
 		lightPos[(1 * 3) + 1] = -5.0f; //Y
 		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
+		lightColor[1] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(2 * 3) + 0] = -5.0f; //X
 		lightPos[(2 * 3) + 1] = -5.0f; //Y
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
+		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		//generateBVH(); // TODO
@@ -141,25 +135,22 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
+		lightColor = new float3[numLights];
 
 		lightPos[0] = -5.0f; //X
 		lightPos[1] = -5.0f; //Y
 		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
+		lightColor[0] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(1 * 3) + 0] = 5.0f; //X
 		lightPos[(1 * 3) + 1] = -5.0f; //Y
 		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
+		lightColor[1] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(2 * 3) + 0] = -5.0f; //X
 		lightPos[(2 * 3) + 1] = -5.0f; //Y
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
+		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 
 		skybox = new Skybox("assets\\skybox4.jpg");
@@ -180,25 +171,22 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
+		lightColor = new float3[numLights];
 
 		lightPos[0] = -5.0f; //X
 		lightPos[1] = -5.0f; //Y
 		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
+		lightColor[0] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(1 * 3) + 0] = 5.0f; //X
 		lightPos[(1 * 3) + 1] = -5.0f; //Y
 		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
+		lightColor[1] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(2 * 3) + 0] = -5.0f; //X
 		lightPos[(2 * 3) + 1] = -5.0f; //Y
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
+		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 
 		skybox = new Skybox("assets\\skybox4.jpg");
@@ -218,25 +206,22 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
+		lightColor = new float3[numLights];
 
 		lightPos[0] = -5.0f; //X
 		lightPos[1] = -5.0f; //Y
 		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
+		lightColor[0] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(1 * 3) + 0] = 5.0f; //X
 		lightPos[(1 * 3) + 1] = -5.0f; //Y
 		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
+		lightColor[1] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(2 * 3) + 0] = -5.0f; //X
 		lightPos[(2 * 3) + 1] = -5.0f; //Y
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
+		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 
 		skybox = new Skybox("assets\\skybox4.jpg");
@@ -272,25 +257,22 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
-		lightColor = new Color[numLights];
+		lightColor = new float3[numLights];
 
 		lightPos[0] = -5.0f; //X
 		lightPos[1] = -5.0f; //Y
 		lightPos[2] = 20.0f; //Z
-		lightColor[0] = 0xffffff;
-		lightColor[0] = lightColor[0] * 700;
+		lightColor[0] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(1 * 3) + 0] = 5.0f; //X
 		lightPos[(1 * 3) + 1] = -5.0f; //Y
 		lightPos[(1 * 3) + 2] = 0.0f; //Z
-		lightColor[1] = 0xffffff;
-		lightColor[1] = lightColor[1] * 700;
+		lightColor[1] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		lightPos[(2 * 3) + 0] = -5.0f; //X
 		lightPos[(2 * 3) + 1] = -5.0f; //Y
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
-		lightColor[2] = 0xffffff;
-		lightColor[2] = lightColor[2] * 700;
+		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		// generateBVH(); // TODO
@@ -516,9 +498,9 @@ void SceneManager::moveSceneToGPU()
 
 	// Lights
 	cudaMalloc(&g_lightPos, numLights * FLOATS_PER_LIGHTPOS * sizeof(float));
-	cudaMalloc(&g_lightColor, numLights * sizeof(g_Color));
+	cudaMalloc(&g_lightColor, numLights * sizeof(float3));
 	cudaMemcpy(g_lightPos, lightPos, numLights * FLOATS_PER_LIGHTPOS * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(g_lightColor, lightColor, numLights * sizeof(g_Color), cudaMemcpyHostToDevice);
+	cudaMemcpy(g_lightColor, lightColor, numLights * sizeof(float3), cudaMemcpyHostToDevice);
 	
 	// Skybox
 	cudaMalloc(&g_skybox, (skybox->texture->GetWidth() * skybox->texture->GetHeight()) * sizeof(uint));

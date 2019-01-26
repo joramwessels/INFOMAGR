@@ -219,7 +219,8 @@ void Game::TraceRay(float* rays, int ray, int numrays, Collision* collisions, fl
 					vec3 origin = collision.Pos + (0.00025f * direction); //move away a little bit from the surface, to avoid self-collision in the outward direction.
 					float maxt = (scene->lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 					Color collisioncolor = Color(collision.R, collision.G, collision.B);
-					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * scene->lightColor[light] * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lightPosition - collision.Pos).sqrLentgh()));
+					Color lightcolor = Color(scene->lightColor[light].x, scene->lightColor[light].y, scene->lightColor[light].z);
+					Color shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightcolor * (max(0.0f, dot(collision.N, direction)) * INV4PI / ((lightPosition - collision.Pos).sqrLentgh()));
 					addShadowRayToQueue(origin, direction, shadowRayEnergy.R, shadowRayEnergy.G, shadowRayEnergy.B, maxt, pixelx, pixely, shadowRays);
 				}
 			}

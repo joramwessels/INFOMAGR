@@ -174,7 +174,7 @@ private:
 
 	// Intermediate screen buffer
 	Color intermediate[SCRWIDTH * SCRHEIGHT];
-	g_Color* g_intermediate;
+	float4* g_intermediate;
 	void addToIntermediate(float x, float y, Color color) { intermediate[(int)x + ((int)y * SCRWIDTH)] += color; };
 
 	//Animation

@@ -31,6 +31,14 @@ __device__ float dot(float3 a, float3 b)
 {
 	return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
+__device__ float4 operator*(const float4 &a, const float &b)
+{
+	return make_float4(a.x * b, a.y * b, a.z * b, a.w * b);
+}
+__device__ float4 operator/(const float4 &a, const float &b)
+{
+	return make_float4(a.x / b, a.y / b, a.z / b, a.w / b);
+}
 
 
 // SSAA random number generation
@@ -57,12 +65,12 @@ __global__ void testkernel(float* a)
 }
 
 // Adds the given color to the intermediate screen buffer
-__device__ void g_addToIntermediate(g_Color* buffer, float x, float y, g_Color color)
+__device__ void g_addToIntermediate(float4* buffer, float x, float y, float4 color)
 {
 	//buffer[(int)x + ((int)y * SCRWIDTH)] += color;
-	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].R, color.R);
-	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].G, color.G);
-	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].B, color.B);
+	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].x, color.x);
+	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].y, color.y);
+	atomicAdd(&buffer[(int)x + ((int)y * SCRWIDTH)].z, color.z);
 
 };
 
@@ -523,7 +531,7 @@ g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* coll
 }
 
 // Checks for geometry intersections with the given shadow ray queue, and adds their energy to the intermediate screen buffer if unoccluded
-__device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, float* BVH, unsigned int* orderedIndices, int numGeometries, float* scene, g_Color* intermediate)
+__device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, float* BVH, unsigned int* orderedIndices, int numGeometries, float* scene, float4* intermediate)
 {
 	int baseIndex = rayIndex * SR_SIZE;
 	float maxt = shadowrays[baseIndex + SR_MAXT];
@@ -583,13 +591,13 @@ __device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 	}
 
 	// Adding the unoccluded ray to the intermediate screen buffer
-	g_Color toadd = g_Color(shadowrays[baseIndex + SR_R], shadowrays[baseIndex + SR_G], shadowrays[baseIndex + SR_B]);
+	float4 toadd = make_float4(shadowrays[baseIndex + SR_R], shadowrays[baseIndex + SR_G], shadowrays[baseIndex + SR_B], 1.0f);
 	g_addToIntermediate(intermediate, shadowrays[baseIndex + SR_PIXX], shadowrays[baseIndex + SR_PIXY], toadd);
 }
 
 __global__ void
 //__launch_bounds__(256, 6)
-g_traceShadowRays(float* shadowrays, float* scene, g_Color* intermediate, float* BVH, unsigned int* orderedIndices, int numGeometries, bool use_bvh)
+g_traceShadowRays(float* shadowrays, float* scene, float4* intermediate, float* BVH, unsigned int* orderedIndices, int numGeometries, bool use_bvh)
 {
 	uint numRays = ((uint*)shadowrays)[1];
 	uint id = atomicInc(((uint*)shadowrays) + 2, 0xffffffff) + 1;
@@ -644,19 +652,22 @@ __device__ void g_addShadowRayToQueue(float3 ori, float3 dir, float R, float G, 
 	queue[index + SR_PIXY] = pixelY;
 }
 
-__device__ g_Color skyboxColorAt(uint* skybox, float3 Direction, int skyboxWidth, int skyboxHeight, int skyboxPitch)
+__device__ float4 uint2float4(unsigned int in)
+{
+	return make_float4((in >> 16) & 255, (in >> 8) & 255, in & 255, 1.0f);
+}
+
+__device__ float4 skyboxColorAt(uint* skybox, float3 Direction, int skyboxWidth, int skyboxHeight, int skyboxPitch)
 {
 	float u;
 	float v;
 	u = 0.5f + (atan2f(-Direction.z, -Direction.x) * INV2PI);
 	v = 0.5f - (asinf(-Direction.y) * INVPI);
-	g_Color result;
-	result.from_uint(skybox[(int)((skyboxWidth - 1) * u) + (int)((skyboxHeight - 1) * v) * skyboxPitch]);
-	return result;
+	return uint2float4(skybox[(int)((skyboxWidth - 1) * u) + (int)((skyboxHeight - 1) * v) * skyboxPitch]);
 
 }
 
-__device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch)
+__device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float* newRays, float* shadowRays, bool bvhdebug, float4* intermediate, int numLights, float* lightPos, float3* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch)
 {
 	//printf("traceray");
 
@@ -680,7 +691,7 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 	// Collision detection
 	g_Collision collision = collisions[ray];
 	if (bvhdebug) {
-		g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(255, 0, 0) * ray_ptr[R_BVHTRA]) << 3);;
+		g_addToIntermediate(intermediate, pixelx, pixely, (make_float4(255, 0, 0, 0) * ray_ptr[R_BVHTRA]) * 8.0f);
 		return;
 	}
 
@@ -692,7 +703,7 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 		// if opaque
 		if (collision.PosRefr.w== 0.0f)
 		{
-			g_Color albedo, reflection;
+			float4 albedo, reflection;
 			float specularity = collision.ColorSpec.w;
 
 			// diffuse aspect
@@ -708,7 +719,7 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 
 
 					float3 collisioncolor = make_float3(collision.ColorSpec.x, collision.ColorSpec.y, collision.ColorSpec.z);
-					float3 lightColorAsFloat3 = make_float3(lightColor[light].R, lightColor[light].G, lightColor[light].B);
+					float3 lightColorAsFloat3 = lightColor[light];
 
 					float3 shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColorAsFloat3 * (max(0.0f, dot(collN, direction)) * INV4PI / sqrLentgh(lightPosition - collPos));
 
@@ -769,7 +780,6 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 			}
 
 			// Fresnel reflection (Schlick's approximation)
-			g_Color reflection, refraction;
 			if (Fr > 0.0f)
 			{
 				float3 newdirection = g_reflect(direction, collN);
@@ -841,11 +851,11 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 	{
 		//TODO: implement skybox
 		//g_addToIntermediate(intermediate, pixelx, pixely, (g_Color(40, 20, 150) << 8) * energy);
-		g_addToIntermediate(intermediate, pixelx, pixely, (skyboxColorAt(skybox, direction, skyboxWidth, skyboxHeight, skyboxPitch) << 8) * energy);
+		g_addToIntermediate(intermediate, pixelx, pixely, (skyboxColorAt(skybox, direction, skyboxWidth, skyboxHeight, skyboxPitch) * 255.0f) * energy);
 	}
 }
 
-__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, g_Color* intermediate, int numLights, float* lightPos, g_Color* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch)
+__global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, float* shadowRays, bool bvhdebug, float4* intermediate, int numLights, float* lightPos, float3* lightColor, unsigned int* skybox, int skyboxWidth, int skyboxHeight, int skyboxPitch)
 {
 	uint numRays = ((uint*)rayQueue)[1];
 	uint id = atomicInc(((uint*)rayQueue) + 4, 0xffffffff) + 1;
@@ -861,14 +871,30 @@ __global__ void g_Tracerays(float* rayQueue, void* collisions, float* newRays, f
 	}
 }
 
-__global__ void copyIntermediateToScreen(unsigned int* screen, g_Color* intermediate, int pitch)
+
+__global__ void copyIntermediateToScreen(unsigned int* screen, float4* intermediate, int pitch)
 {
 	int pixelx = blockIdx.x;
 	int pixely = threadIdx.x;
 
 	if (pixelx > SCRWIDTH || pixely > SCRHEIGHT) return;
 
-	unsigned int pixelcolor = (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe();
-	screen[pixelx + pixely * SCRWIDTH] = pixelcolor;
-	intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] = g_Color(0, 0, 0);
+	float4 pixelcolorf = intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] / 255.0f;
+
+	if (pixelcolorf.x > 255)
+	{
+		pixelcolorf.x = 255;
+	}
+	if (pixelcolorf.y > 255)
+	{
+		pixelcolorf.y = 255;
+	}
+	if (pixelcolorf.z > 255)
+	{
+		pixelcolorf.z = 255;
+	}
+
+	unsigned int pixelcolori = (((int)pixelcolorf.x & 255) << 16) + (((int)pixelcolorf.y & 255) << 8) + ((int)pixelcolorf.z & 255);
+	screen[pixelx + pixely * SCRWIDTH] = pixelcolori;
+	intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] = make_float4(0, 0, 0, 0);
 }

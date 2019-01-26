@@ -49,7 +49,7 @@ void Game::Init()
 	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
 	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
 	cudaMalloc(&g_shadowRays, shadowRayQueueSize);
-	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(g_Color));
+	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
 	cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
 
 	cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);

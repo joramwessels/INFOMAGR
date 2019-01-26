@@ -9,8 +9,8 @@ public:
 
 	float numLights;
 	float *lightPos, *g_lightPos;
-	Color *lightColor;
-	g_Color *g_lightColor;
+	float3 *lightColor;
+	float3 *g_lightColor;
 
 	Skybox *skybox;
 	uint *g_skybox;
