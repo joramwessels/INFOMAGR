@@ -154,14 +154,12 @@ private:
 	// ---------
 	// Ray queue
 	// ---------
-	const int rayQueueScreens = 4;												// The number of screen buffers that should fit in the ray queue
-	const int shadowRayQueueScreens = 4;										// The number of screen buffers that should fit in the shadow ray queue
-	const int primaryRayCount = SCRHEIGHT * SCRWIDTH * (SSAA ? SSAA : 1);		// The number of pixels * the number of rays per pixel
-	const int rayQueueSize = (primaryRayCount * rayQueueScreens + 1) * R_SIZE;	// The number of floats in a ray queue
-	const int shadowRayQueueSize = (primaryRayCount * shadowRayQueueScreens + 1) * R_SIZE;
+	const int primaryRayCount = SCRHEIGHT * SCRWIDTH * 4;		// The number of pixels * the number of rays per pixel
+	const int rayQueueSize = (primaryRayCount + 1) * R_SIZE;	// The number of floats in a ray queue
+	const int shadowRayQueueSize = (rayQueueSize * 5 + R_SIZE);
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	float* newRays = new float[rayQueueSize];
-	float* shadowRays = new float[rayQueueSize];
+	float* shadowRays = new float[shadowRayQueueSize];
 	float *g_rayQueue, *g_newRays, *g_shadowRays;
 	void addRayToQueue(Ray ray);
 	void addRayToQueue(float *ray, float *queue);

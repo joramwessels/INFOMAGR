@@ -41,7 +41,7 @@ void Game::Init()
 	((int*)rayQueue)[4] = 0; //counter used by traceray
 	((int*)newRays)[0] = rayQueueSize; //queue size
 	((int*)newRays)[1] = 0; //current count
-	((int*)shadowRays)[0] = rayQueueSize; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
+	((int*)shadowRays)[0] = shadowRayQueueSize; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
 	// Moving everything to the GPU
