@@ -47,14 +47,9 @@ __device__ struct g_Color
 
 __device__ struct g_Collision
 {
-	float3 N;
-	float3 Pos;
-	float t;
-	float R;
-	float G;
-	float B;
-	float refraction;
-	float specularity;
+	float4 Nt; //t saved in position 4
+	float4 PosRefr; //Refraction index saved in position 4
+	float4 ColorSpec; //Specularity saved in position 4
 };
 
 

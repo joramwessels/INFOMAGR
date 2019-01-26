@@ -252,7 +252,7 @@ __device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float *triangl
 	
 
 	g_Collision collision;
-	collision.t = -1;
+	collision.Nt.w = -1;
 
 	float NdotR = dot(direction, N);
 	if (NdotR == 0) return collision; //Ray parrallel to plane, would cause division by 0
@@ -266,21 +266,27 @@ __device__ g_Collision g_intersectTriangle(int i, float* ray_ptr, float *triangl
 		if (dot(N, cross(e0, (P - v0))) > 0 && dot(N, cross(e1, (P - v1))) > 0 && dot(N, cross(e2, (P - v2))) > 0)
 		{
 			//Collision
-			collision.t = t;
+			collision.Nt.w = t;
 
 			if (isShadowRay) {
 				return collision;
 			}
 
-			collision.R = triangles[baseindex + T_COLORR];
-			collision.G = triangles[baseindex + T_COLORG];
-			collision.B = triangles[baseindex + T_COLORB];
+			collision.ColorSpec.x = triangles[baseindex + T_COLORR];
+			collision.ColorSpec.y = triangles[baseindex + T_COLORG];
+			collision.ColorSpec.z = triangles[baseindex + T_COLORB];
+			collision.ColorSpec.w = triangles[baseindex + T_SPECULARITY];
 			//collision.other = triangles + baseindex;
-			collision.refraction = triangles[baseindex + T_REFRACTION];
-			collision.specularity = triangles[baseindex + T_SPECULARITY];
-			if (NdotR > 0) collision.N = N * -1;
-			else collision.N = N;
-			collision.Pos = P;
+			collision.PosRefr.w = triangles[baseindex + T_REFRACTION];
+			if (NdotR > 0) N = N * -1;
+
+			collision.Nt.x = N.x;
+			collision.Nt.y = N.y;
+			collision.Nt.z = N.z;
+
+			collision.PosRefr.x = P.x;
+			collision.PosRefr.y = P.y;
+			collision.PosRefr.z = P.z;
 			return collision;
 		}
 	}
@@ -359,7 +365,7 @@ __device__ float g_IntersectAABB(float* ray_ptr, float* BVHNode)
 __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orderedIndices, float* scene, int index, int* stack, float* stackAABBEntrypoints)
 {
 	g_Collision closest;
-	closest.t = -1;
+	closest.Nt.w = -1;
 
 	ray_ptr[R_BVHTRA]++;
 	int count = pool[index + B_COUNT];
@@ -376,7 +382,7 @@ __device__ g_Collision g_TraverseBVHNode(float* ray_ptr, float* pool, uint* orde
 			int triangleindex = orderedIndices[(int)pool[index + B_LEFTFIRST] + i];
 
 			g_Collision collision = g_intersectTriangle(triangleindex, ray_ptr, scene);
-			float dist = collision.t;
+			float dist = collision.Nt.w;
 			if (dist != -1 && dist < closestdist)
 			{
 				//Collision. Check if closest
@@ -452,22 +458,22 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 		stack[1] = 0; //Root node
 
 		g_Collision closest;
-		closest.t = -1;
+		closest.Nt.w = -1;
 
 		while (stack[0] > 0)
 		{
 			int next = stack[0]--;
 			//printf("next: stack[%i]: %i. AABB entrypoint: %f \n", next, stack[next], aabbEntryPoints[next]);
 
-			if (closest.t != -1 && closest.t < aabbEntryPoints[next]) {
+			if (closest.Nt.w != -1 && closest.Nt.w < aabbEntryPoints[next]) {
 				continue;
 			}
 
 			g_Collision newcollision = g_TraverseBVHNode(ray_ptr, BVH, orderedIndices, triangles, stack[next], stack, aabbEntryPoints);
 
-			if ((newcollision.t != -1 && newcollision.t < closest.t) || closest.t == -1) {
+			if ((newcollision.Nt.w != -1 && newcollision.Nt.w < closest.Nt.w) || closest.Nt.w == -1) {
 				closest = newcollision;
-				//printf("closest t now %f \n", closest.t);
+				//printf("closest t now %f \n", closest.Nt.w);
 			}
 		}
 		delete stack;
@@ -478,13 +484,13 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 	{
 		float closestdist = 0xffffff;
 		g_Collision closest;
-		closest.t = -1;
+		closest.Nt.w = -1;
 
 		//Loop over all primitives to find the closest collision
 		for (int i = 0; i < numGeometries; i++)
 		{
 			g_Collision collision = g_intersectTriangle(i, ray_ptr, triangles);
-			float dist = collision.t;
+			float dist = collision.Nt.w;
 			if (dist != -1 && dist < closestdist)
 			{
 				//Collision. Check if closest
@@ -498,7 +504,7 @@ __device__ g_Collision g_nearestCollision(float* ray_ptr, bool use_bvh, int numG
 
 // Generates and collects the nearest geometry intersections for the given ray queue
 __global__ void
-__launch_bounds__(256, 6)
+//__launch_bounds__(256, 6)
 g_findCollisions(float* triangles, int numtriangles, float* rayQueue, void* collisions, bool useBVH, float* BVH, unsigned int* orderedIndices)
 {
 	uint numRays = ((uint*)rayQueue)[1];
@@ -547,7 +553,7 @@ __device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 		{
 			int next = stack[0]--;
 			g_Collision newcollision = g_TraverseBVHNode(shadowray, BVH, orderedIndices, scene, stack[next], stack, AABBEntryPoints);
-			if (newcollision.t > 0 && newcollision.t < maxt)
+			if (newcollision.Nt.w > 0 && newcollision.Nt.w < maxt)
 			{
 				collided = true;
 				break;
@@ -564,7 +570,7 @@ __device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 		for (int i = 0; i < numGeometries; i++)
 		{
 			g_Collision shadowcollision = g_intersectTriangle(i, shadowray, scene, true);
-			if (shadowcollision.t != -1 && shadowcollision.t < maxt)
+			if (shadowcollision.Nt.w != -1 && shadowcollision.Nt.w < maxt)
 			{
 				collided = true;
 				break;
@@ -582,7 +588,7 @@ __device__ void g_TraceShadowRay(float* shadowrays, int rayIndex, bool use_bvh, 
 }
 
 __global__ void
-__launch_bounds__(256, 6)
+//__launch_bounds__(256, 6)
 g_traceShadowRays(float* shadowrays, float* scene, g_Color* intermediate, float* BVH, unsigned int* orderedIndices, int numGeometries, bool use_bvh)
 {
 	uint numRays = ((uint*)shadowrays)[1];
@@ -679,13 +685,15 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 	}
 
 	// if ray collides
-	if (collision.t > 0)
+	if (collision.Nt.w > 0)
 	{
+		float3 collPos = make_float3(collision.PosRefr.x, collision.PosRefr.y, collision.PosRefr.z);
+		float3 collN = make_float3(collision.Nt.x, collision.Nt.y, collision.Nt.z);
 		// if opaque
-		if (collision.refraction == 0.0f)
+		if (collision.PosRefr.w== 0.0f)
 		{
 			g_Color albedo, reflection;
-			float specularity = collision.specularity;
+			float specularity = collision.ColorSpec.w;
 
 			// diffuse aspect
 			if (specularity < 1.0f)
@@ -694,15 +702,15 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 				for (int light = 0; light < numLights; light++)
 				{
 					float3 lightPosition = make_float3(lightPos[light * 3 + 0], lightPos[light * 3 + 1], lightPos[light * 3 + 2]);
-					float3 direction = normalize(lightPosition - collision.Pos);
-					float3 origin = collision.Pos + ( direction * 0.00025f); //move away a little bit from the surface, to avoid self-collision in the outward direction.
-					float maxt = (lightPos[light * 3 + 0] - collision.Pos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
+					float3 direction = normalize(lightPosition - collPos);
+					float3 origin = collPos + ( direction * 0.00025f); //move away a little bit from the surface, to avoid self-collision in the outward direction.
+					float maxt = (lightPos[light * 3 + 0] - collPos.x) / direction.x; //calculate t where the shadowray hits the light source. Because we don't want to count collisions that are behind the light source.
 
 
-					float3 collisioncolor = make_float3(collision.R, collision.G, collision.B);
+					float3 collisioncolor = make_float3(collision.ColorSpec.x, collision.ColorSpec.y, collision.ColorSpec.z);
 					float3 lightColorAsFloat3 = make_float3(lightColor[light].R, lightColor[light].G, lightColor[light].B);
 
-					float3 shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColorAsFloat3 * (max(0.0f, dot(collision.N, direction)) * INV4PI / sqrLentgh(lightPosition - collision.Pos));
+					float3 shadowRayEnergy = collisioncolor * energy * (1 - specularity) * lightColorAsFloat3 * (max(0.0f, dot(collN, direction)) * INV4PI / sqrLentgh(lightPosition - collPos));
 
 					if (shadowRayEnergy.x >= 1.0f | shadowRayEnergy.y >= 1.0f | shadowRayEnergy.z >= 1.0f) { //Ray will not contribute if all components < 1
 						g_addShadowRayToQueue(origin, direction, shadowRayEnergy.x, shadowRayEnergy.y, shadowRayEnergy.z, maxt, pixelx, pixely, shadowRays);
@@ -713,8 +721,8 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 			// specular aspect
 			if (specularity > 0)
 			{
-				float3 newdirection = g_reflect(direction, collision.N);
-				float3 newOrigin = collision.Pos + newdirection * 0.00001f;
+				float3 newdirection = g_reflect(direction, collN);
+				float3 newOrigin = collPos + newdirection * 0.00001f;
 				float* newray = new float[R_SIZE];
 				newray[R_OX] = newOrigin.x;
 				newray[R_OY] = newOrigin.y;
@@ -740,9 +748,9 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 		{
 			float n1, n2;
 			if (inobj) n1 = refind, n2 = 1.0f;
-			else				n1 = refind, n2 = collision.refraction;
+			else				n1 = refind, n2 = collision.PosRefr.w;
 			float transition = n1 / n2;
-			float costheta = dot(collision.N, direction * -1);
+			float costheta = dot(collN, direction * -1);
 			float k = 1 - (transition * transition) * (1.0f - (costheta * costheta));
 
 			float Fr;
@@ -764,10 +772,10 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 			g_Color reflection, refraction;
 			if (Fr > 0.0f)
 			{
-				float3 newdirection = g_reflect(direction, collision.N);
+				float3 newdirection = g_reflect(direction, collN);
 
 
-				float3 newOrigin = collision.Pos + newdirection * 0.00001f;
+				float3 newOrigin = collPos + newdirection * 0.00001f;
 				float* newray = new float[R_SIZE];
 				newray[R_OX] = newOrigin.x;
 				newray[R_OY] = newOrigin.y;
@@ -791,8 +799,8 @@ __device__ void g_TraceRay(float* rays, int ray, g_Collision* collisions, float*
 			// Snell refraction
 			if (Fr < 1.0f)
 			{
-				float3 newdirection = direction * transition + collision.N * (transition * costheta - sqrt(k));
-				float3 newOrigin = collision.Pos + newdirection * 0.00001f;
+				float3 newdirection = direction * transition + collN * (transition * costheta - sqrt(k));
+				float3 newOrigin = collPos + newdirection * 0.00001f;
 				float* newray = new float[R_SIZE];
 				newray[R_OX] = newOrigin.x;
 				newray[R_OY] = newOrigin.y;
