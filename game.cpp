@@ -17,23 +17,23 @@ void Game::Init()
 		SCENE_FLOORONLY
 		SCENE_CUBE
 	*/
-
 	scene = new SceneManager();
 	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, camera);
 	generateBVH();
 
+	// Settings
 	SSAA = false;
 	camera.DoF = false;
 	use_bvh = true;
 	bvhdebug = false;
 	use_GPU = true;
 
-	mytimer.reset();
-
+	// Collecting GPU core count
 	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
 	num_multiprocessors = prop.multiProcessorCount;
 
+	// Initializing the sizes of all ray queues
 	((int*)rayQueue)[0] = rayQueueSize; //queue size, there can be at most just as many rays as we have pixels
 	((int*)rayQueue)[1] = 0; //Num rays currently in this queue
 	((int*)rayQueue)[2] = 0; //Counter used by generateprimaryray
@@ -67,6 +67,8 @@ void Game::Init()
 	random[5] = RandomFloat();
 	random[6] = RandomFloat();
 	random[7] = RandomFloat();
+
+	mytimer.reset();
 }
 
 // -----------------------------------------------------------
@@ -99,6 +101,7 @@ void Game::Tick(float deltaTime)
 	// Using the GPU
 	// ----------------------------------------------
 	{
+		// Generating primary rays that shoot through the virtual screen
 		float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
 		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
@@ -111,27 +114,24 @@ void Game::Tick(float deltaTime)
 		bool finished = false;
 		while (!finished)
 		{
+			// Extending primary rays to find collisions
 			int numRays = ((int*)rayQueue)[1];
-
-			//Find collisions. Put in array 'collisions'
 			cudaMemset(g_rayQueue + 2, 0, sizeof(uint) * 3);
 			g_findCollisions <<<num_multiprocessors, num_gpu_threads>>> (scene->g_triangles, scene->numGeometries, g_rayQueue, g_collisions, use_bvh, g_BVH, g_orderedIndices);
-			CheckCudaError(10);
+			CheckCudaError(2);
 
-			
-			//Set the ray counters for the new rays and shadowrays to 0
+			// Setting the ray counters for the new rays and shadowrays to 0
 			cudaMemset(g_shadowRays + 1, 0, sizeof(uint) * 2);
 			cudaMemset(g_newRays + 1, 0, sizeof(uint));
 
+			// Evaluating all found collisions. Generating shadowrays and ray extensions for reflections & refractions
 			g_Tracerays <<<num_multiprocessors, num_gpu_threads >>> (g_rayQueue, g_collisions, g_newRays, g_shadowRays, bvhdebug, g_intermediate, scene->numLights, scene->g_lightPos, scene->g_lightColor, scene->g_skybox, scene->skybox->texture->GetWidth(), scene->skybox->texture->GetHeight(), scene->skybox->texture->GetPitch());
-			CheckCudaError(15);
+			CheckCudaError(3);
 
+			// Extending the shadowrays towards the light sources to check for occlusion
 			cudaMemcpyAsync(rayQueue, g_rayQueue, sizeof(uint) * 2, cudaMemcpyDeviceToHost);
 			g_traceShadowRays <<<num_multiprocessors, num_gpu_threads>>> (g_shadowRays, scene->g_triangles, g_intermediate, g_BVH, g_orderedIndices, scene->numGeometries, use_bvh);
-			CheckCudaError(17);
-
-			//cudaMemcpy(intermediate, g_intermediate, sizeof(Color) * SCRWIDTH * SCRHEIGHT, cudaMemcpyDeviceToHost);
-			CheckCudaError(15);
+			CheckCudaError(4);
 
 			//Flip the arrays
 			float* temp = g_rayQueue;
@@ -142,7 +142,7 @@ void Game::Tick(float deltaTime)
 			if (((int*)rayQueue)[1] == 0) finished = true;
 		}
 
-		// Plotting intermediate screen buffer to screen
+		// Copying GPU screen buffer to CPU
 		copyIntermediateToScreen<<<SCRWIDTH, SCRHEIGHT>>>(g_screen, g_intermediate, screen->GetPitch());
 		cudaMemcpy(screen->GetBuffer(), g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint), cudaMemcpyDeviceToHost);
 	}
@@ -156,52 +156,48 @@ void Game::Tick(float deltaTime)
 		rayQueue[3] = 0;
 		rayQueue[4] = 0;
 
-		//cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
+		// Generating primary rays that shoot through the virtual screen
 		vec3 TL = vec3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		vec3 TR = vec3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 		vec3 BL = vec3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
-
 		GeneratePrimaryRays(rayQueue, DoF, camera.position, TL, TR, BL, SSAA);
 
 		bool finished = false;
 		while (!finished)
 		{
+			// Extending primary rays to find collisions
 			int numRays = ((int*)rayQueue)[1];
+			findCollisions(rayQueue, numRays, collisions);
 
-			//Find collisions. Put in array 'collisions'
-			findCollisions(rayQueue, numRays, collisions); //Find all collisions
-
-			//Evaluate all found collisions. Generate shadowrays and ray extensions (reflections, refractions)
+			// Evaluating all found collisions. Generating shadowrays and ray extensions for reflections & refractions
 			for (int i = 1; i <= numRays; i++)
 			{
-				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays); //Trace all rays
+				TraceRay(rayQueue, i, numRays, collisions, newRays, shadowRays);
 			}
 
-			//Trace the shadowrays.
+			// Extending the shadowrays towards the light sources to check for occlusion
 			int numShadowRays = ((int*)shadowRays)[1];
-			printf("Num shadowrays: %i \n", numShadowRays);
 			for (int i = 1; i <= numShadowRays; i++)
 			{
 				TraceShadowRay(shadowRays, i);
 			}
 
-			//Flip the arrays
+			// Flip the arrays
 			float* temp = rayQueue;
 			rayQueue = newRays;
 			newRays = temp;
 
-			((int*)newRays)[1] = 0; //set new ray count to 0
+			((int*)newRays)[1] = 0;    //set new ray count to 0
 			((int*)shadowRays)[1] = 0; //set new shadowray count to 0
 
 			if (((int*)rayQueue)[1] == 0) finished = true;
 
 		}
-		for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++)
+
+		// Plotting the intermediate screen buffer to the screen
+		for (size_t pixelx = 0; pixelx < SCRWIDTH; pixelx++) for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
 		{
-			for (size_t pixely = 0; pixely < SCRHEIGHT; pixely++)
-			{
-				screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
-			}
+			screen->Plot(pixelx, pixely, (intermediate[(int)pixelx + ((int)pixely * SCRWIDTH)] >> 8).to_uint_safe());
 		}
 		memset(intermediate, 0, SCRWIDTH * SCRHEIGHT * sizeof(Color));
 	}
@@ -246,9 +242,3 @@ void Game::Tick(float deltaTime)
 	screen->Print(buffer, 1, 34, 0xffffff);
 	no_rays = 0;
 }
-
-void Game::MouseMove(int x, int y)
-{
-	camera.rotate({ (float)y, (float)x, 0 });
-}
-

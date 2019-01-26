@@ -11,9 +11,9 @@ public:
 	void Shutdown();
 	void Tick( float deltaTime );
 
-	void MouseUp( int button ) { /* implement if you want to detect mouse button presses */ }
+	void MouseUp( int button ) {   /* implement if you want to detect mouse button presses */ }
 	void MouseDown( int button ) { /* implement if you want to detect mouse button presses */ }
-	void MouseMove(int x, int y);
+	void MouseMove(int x, int y) { camera.rotate({ (float)y, (float)x, 0 }); }
 	void KeyUp( int key ) { 
 		switch (key)
 		{
@@ -98,6 +98,7 @@ public:
 			break;
 		}
 	}
+
 private:
 	Camera camera;
 	SceneManager *scene;
