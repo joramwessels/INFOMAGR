@@ -94,11 +94,6 @@ inline void CheckCudaError(int i)
 // -----------------------------------------------------------
 void Game::Tick(float deltaTime)
 {
-	rayQueue[1] = 0;
-	rayQueue[2] = 0;
-	rayQueue[3] = 0;
-	rayQueue[4] = 0;
-
 	if (use_GPU)
 	// ----------------------------------------------
 	// Using the GPU
@@ -108,8 +103,7 @@ void Game::Tick(float deltaTime)
 		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 		float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
-		cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
-		//cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 4);
+		cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 4);
 
 		GeneratePrimaryRay <<<num_multiprocessors, num_gpu_threads>>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
 		CheckCudaError(1);
@@ -157,6 +151,11 @@ void Game::Tick(float deltaTime)
 	// Using the CPU
 	// ----------------------------------------------
 	{
+		rayQueue[1] = 0;
+		rayQueue[2] = 0;
+		rayQueue[3] = 0;
+		rayQueue[4] = 0;
+
 		//cudaMemcpy(g_rayQueue, rayQueue, rayQueueSize * sizeof(float), cudaMemcpyHostToDevice);
 		vec3 TL = vec3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		vec3 TR = vec3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
