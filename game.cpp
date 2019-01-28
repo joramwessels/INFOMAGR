@@ -18,16 +18,17 @@ void Game::Init()
 		SCENE_CUBE
 	*/
 	scene = new SceneManager();
-	scene->loadScene(SceneManager::SCENE_TERRA_COTTA, &camera);
-	generateBVH();
+	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, &camera);
 
 	// Settings
-	SSAA = false;
+	SSAA = true;
 	SSAA_val = 4;
 	camera.DoF = false;
 	use_bvh = true;
 	bvhdebug = false;
-	use_GPU = true;
+	use_GPU = false;
+
+	if (use_bvh) generateBVH();
 
 	// Collecting GPU core count
 	cudaDeviceProp prop;
@@ -45,24 +46,28 @@ void Game::Init()
 	((int*)shadowRays)[0] = shadowRayQueueSize; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
-	if (SSAA)
-	{
-		random = (float*)malloc(SCRWIDTH * SCRHEIGHT * SSAA_val * 2 * sizeof(float));
-	}
+	SSAA_random_size = SCRWIDTH * SCRHEIGHT * SSAA_val * 2;
+	SSAA_random = (float*)malloc(SSAA_random_size * sizeof(float));
+	for (int i = 0; i < SSAA_random_size; i++) SSAA_random[i] = ((float)(rand() % 1000)) / 1000.0f;
 
 	// Moving everything to the GPU
-	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
-	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
-	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
-	cudaMalloc(&g_shadowRays, shadowRayQueueSize);
-	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
-	cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
+	if (use_GPU)
+	{
+		cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
+		cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
+		cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
+		cudaMalloc(&g_shadowRays, shadowRayQueueSize);
+		cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
+		cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
+		cudaMalloc(&g_SSAA_random, SCRWIDTH * SCRHEIGHT * SSAA_val * 2 * sizeof(float));
 
-	cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
-	cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
-	cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_SSAA_random, SSAA_random, SSAA_random_size * sizeof(float), cudaMemcpyHostToDevice);
 
-	scene->moveSceneToGPU();
+		scene->moveSceneToGPU();
+	}
 
 	//Random positions for the SSAA
 	//random[0] = RandomFloat();

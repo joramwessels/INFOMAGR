@@ -106,8 +106,10 @@ private:
 	// SSAA
 	bool SSAA;
 	int SSAA_val;
-	float *random;
+	float *SSAA_random;
+	float *g_SSAA_random;
 	bool DoF = false;
+	int SSAA_random_size;
 
 	// Tracing
 	void GeneratePrimaryRays(float* rayQueue, bool DoF, vec3 position, vec3 TL, vec3 TR, vec3 BL, bool SSAA);
