@@ -18,15 +18,17 @@ void Game::Init()
 		SCENE_CUBE
 	*/
 	scene = new SceneManager();
-	scene->loadScene(SceneManager::SCENE_TERRA_COTTA, &camera);
-	generateBVH();
+	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, &camera);
 
 	// Settings
-	SSAA = false;
-	camera.DoF = false;
+	SSAA = true;
+	SSAA_val = 4;
+	camera.DoF = true;
 	use_bvh = true;
 	bvhdebug = false;
 	use_GPU = true;
+
+	if (use_bvh) generateBVH();
 
 	// Collecting GPU core count
 	cudaDeviceProp prop;
@@ -45,18 +47,25 @@ void Game::Init()
 	((int*)shadowRays)[1] = 0; //current count
 
 	// Moving everything to the GPU
-	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
-	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
-	cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
-	cudaMalloc(&g_shadowRays, shadowRayQueueSize);
-	cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
-	cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
+	if (use_GPU)
+	{
+		cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
+		cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
+		cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
+		cudaMalloc(&g_shadowRays, shadowRayQueueSize);
+		cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
+		cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
+		cudaMalloc(&g_DoF_random, SCRWIDTH * SCRHEIGHT * SSAA_val * 2 * sizeof(float));
+		cudaMalloc(&curandstate, sizeof(curandState));
 
-	cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
-	cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
-	cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
 
-	scene->moveSceneToGPU();
+		scene->moveSceneToGPU();
+
+		setup_RNG <<<1, 1>>> (curandstate, DoF_seed);
+	}
 
 	//Random positions for the SSAA
 	random[0] = RandomFloat();
@@ -102,13 +111,18 @@ void Game::Tick(float deltaTime)
 	// ----------------------------------------------
 	{
 		// Generating primary rays that shoot through the virtual screen
+		if (camera.DoF)
+		{
+			precalculate_RNG <<<SCRWIDTH, SCRHEIGHT>>> (g_DoF_random, curandstate, SSAA_val);
+			cudaDeviceSynchronize();
+		}
 		float3 camPos = make_float3(camera.position.x, camera.position.y, camera.position.z);
 		float3 TL = make_float3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		float3 TR = make_float3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 		float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 		cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 4);
 
-		GeneratePrimaryRay <<<num_multiprocessors, num_gpu_threads>>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA);
+		GeneratePrimaryRay <<<num_multiprocessors, num_gpu_threads>>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA, SSAA_val, g_DoF_random);
 		CheckCudaError(1);
 
 		bool finished = false;

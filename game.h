@@ -105,8 +105,12 @@ private:
 
 	// SSAA
 	bool SSAA;
+	int SSAA_val;
 	float *random = new float[8];
 	bool DoF = false;
+	float *g_DoF_random;
+	int DoF_seed = 12345;
+	curandState *curandstate;
 
 	// Tracing
 	void GeneratePrimaryRays(float* rayQueue, bool DoF, vec3 position, vec3 TL, vec3 TR, vec3 BL, bool SSAA);
