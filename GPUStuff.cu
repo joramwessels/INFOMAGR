@@ -595,7 +595,6 @@ g_traceShadowRays(float* shadowrays, float* scene, float4* intermediate, float* 
 		}
 		id = atomicInc(((uint*)shadowrays) + 2, 0xffffffff) + 1;
 	}
-
 }
 
 __device__ float3 g_reflect(float3 D, float3 N)

@@ -164,10 +164,10 @@ private:
 	// ---------
 	const int primaryRayCount = SCRHEIGHT * SCRWIDTH * SSAA_val; // The number of pixels * the number of rays per pixel
 	const int rayQueueSize = (primaryRayCount + 1) * R_SIZE;	// The number of floats in a ray queue
-	const int shadowRayQueueSize = (rayQueueSize * (SSAA_val + 1) + SR_SIZE);
+	int shadowRayQueueSize;
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	float* newRays = new float[rayQueueSize];
-	float* shadowRays = new float[shadowRayQueueSize];
+	float* shadowRays;
 	float *g_rayQueue, *g_newRays, *g_shadowRays;
 	void addRayToQueue(Ray ray);
 	void addRayToQueue(float *ray, float *queue);
@@ -175,7 +175,7 @@ private:
 	void addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue);
 
 	// Collisions
-	Collision* collisions = new Collision[rayQueueSize];
+	Collision* collisions = new Collision[primaryRayCount];
 	void* g_collisions;
 	Collision nearestCollision(float* ray_ptr);
 	void findCollisions(float* rays, int numrays, Collision* collisions);

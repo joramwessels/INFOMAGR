@@ -19,6 +19,8 @@ void Game::Init()
 	*/
 	scene = new SceneManager();
 	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, &camera);
+	shadowRays = new float[shadowRayQueueSize];
+	shadowRayQueueSize = (primaryRayCount * scene->numLights * SR_SIZE);
 
 	// Settings
 	SSAA = false;
@@ -53,8 +55,8 @@ void Game::Init()
 	{
 		cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
 		cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
-		cudaMalloc(&g_collisions, rayQueueSize * sizeof(Collision));
-		cudaMalloc(&g_shadowRays, shadowRayQueueSize);
+		cudaMalloc(&g_collisions, primaryRayCount * sizeof(Collision));
+		cudaMalloc(&g_shadowRays, shadowRayQueueSize * sizeof(float));
 		cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
 		cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
 		cudaMalloc(&g_DoF_random, SSAA_random_size * sizeof(float));
@@ -148,6 +150,7 @@ void Game::Tick(float deltaTime)
 
 			// Extending the shadowrays towards the light sources to check for occlusion
 			cudaMemcpyAsync(rayQueue, g_rayQueue, sizeof(uint) * 2, cudaMemcpyDeviceToHost);
+			cudaMemcpyAsync(&raysInGPU, g_shadowRays + 1, sizeof(uint), cudaMemcpyDeviceToHost);
 			g_traceShadowRays <<<num_multiprocessors, num_gpu_threads>>> (g_shadowRays, scene->g_triangles, g_intermediate, g_BVH, g_orderedIndices, scene->numGeometries, use_bvh);
 			CheckCudaError(4);
 
@@ -157,7 +160,6 @@ void Game::Tick(float deltaTime)
 			g_newRays = temp;
 
 			//Get the new ray count from the gpu
-			cudaMemcpy(&raysInGPU, g_shadowRays + 1, sizeof(uint), cudaMemcpyDeviceToHost);
 			no_rays += raysInGPU + numRays;
 			raysPerFrame += raysInGPU + numRays;
 			if (((int*)rayQueue)[1] == 0) finished = true;
