@@ -12,13 +12,13 @@ void Game::Init()
 	AVAILABLE SCENES:
 		SCENE_OBJ_GLASS
 		SCENE_OBJ_HALFREFLECT
-		SCENE_STRESSTEST
-		SCENE_TRIANGLETEST
+		SCENE_TERRA_COTTA
+		SCENE_MODERN_ART
 		SCENE_FLOORONLY
 		SCENE_CUBE
 	*/
 	scene = new SceneManager();
-	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, camera);
+	scene->loadScene(SceneManager::SCENE_TERRA_COTTA, &camera);
 	generateBVH();
 
 	// Settings

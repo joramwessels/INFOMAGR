@@ -4,7 +4,7 @@
 #include "lib\tinyobjloader\tiny_obj_loader.h"
 
 // Loads a predefined scene into the scene manager
-void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
+void SceneManager::loadScene(SceneManager::SCENES scene, Camera* camera)
 {
 	triangles = new float[SCENE_ARRAY_SIZE * FLOATS_PER_TRIANGLE];
 
@@ -126,7 +126,7 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 	}
 	case SCENE_OBJ_GLASS:
 	{
-		camera.rotate({ -20, 180, 0 });
+		camera->rotate({ -20, 180, 0 });
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
@@ -157,17 +157,17 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 		// generateBVH(); // TODO
 		break;
 	}
-	case SCENE_TRIANGLETEST:
+	case SCENE_MODERN_ART:
 	{
 		//camera.rotate({ -20, 180, 0 });
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
 		numGeometries = 0;
-		createFloor(Material(0.0f, 0.0f, 0xffffff));
+		createFloor(Material(0.0f, 0.0f, 0x11ff11));
 
-		loadObj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
-		loadObj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { -2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
-		loadObj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 2, 0, 0 }, Material(1.0f, 0.0f, 0xffffff));
+		loadObj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 0, 0, 3 }, Material(1.0f, 0.0f, 0xffffff));
+		loadObj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { -2, 0, 3 }, Material(1.0f, 0.0f, 0xffffff));
+		loadObj("assets\\cube.obj", { 1.0f, 1.0f, 1.0f }, { 2, 0, 3 }, Material(1.0f, 0.0f, 0xffffff));
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
@@ -188,6 +188,8 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 		lightPos[(2 * 3) + 2] = 0.0f; //Z
 		lightColor[2] = make_float3(255 * 700, 255 * 700, 255 * 700);
 
+		camera->move(vec3(-2.62f, 1.19f, -0.422f));
+		camera->rotate(vec3{ -20, 30, 0 });
 
 		skybox = new Skybox("assets\\skybox4.jpg");
 		// generateBVH(); // TODO
@@ -229,7 +231,7 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 		// generateBVH(); // TODO
 		break;
 	}
-	case SCENE_STRESSTEST:
+	case SCENE_TERRA_COTTA:
 	{
 		delete triangles;
 		triangles = new float[900004 * FLOATS_PER_TRIANGLE];
@@ -237,23 +239,23 @@ void SceneManager::loadScene(SceneManager::SCENES scene, Camera camera)
 
 		//Set up the scene
 		numGeometries = 0;
-		createFloor(Material(0.0f, 0.0f, 0xffffff));
+		createFloor(Material(0.0f, 0.0f, 0xffffff), 30);
 		//geometry[0] = new Plane(vec3(0, 1, 0), -1.5f, Material(Material(0.0f, 0.0f, Material::TEXTURE, new Surface("assets\\tiles.jpg"))));
 
-		for (size_t i = 0; i < 200; i++)
+		for (size_t i = 0; i < 600; i++)
 		{
 			float ix = i % 14;
 			float iy = i / 14;
 
 
-			loadObj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, 1.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
-			loadObj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -2.0f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
-			loadObj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -5.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+			loadObj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 15, 1.5f, -0 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+			//loadObj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -2.0f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
+			//loadObj("assets\\MaleLow.obj", { 0.2f, -0.2f, 0.2f }, { ix * 3 - 10, -5.5f, -5 - (2 * iy) }, Material(0.0f, 0.0f, 0xffffff));
 
 		}
 
-		camera.rotate({ 30, 150, 0 });
-		camera.move({ 0.0f, -5.0f, 0.0f });
+		camera->rotate({ 30, 150, 0 });
+		camera->move({ 0.0f, -5.0f, 0.0f });
 
 		numLights = 3;
 		lightPos = new float[numLights * 3];
@@ -388,22 +390,22 @@ void SceneManager::loadObj(string filename, vec3 scale, vec3 translate, Material
 }
 
 // Adds a standard size floor with the given material to the scene
-void SceneManager::createFloor(Material material)
+void SceneManager::createFloor(Material material, float size)
 {
 	numGeometries = 2;
 
 	//Vertex positions
-	triangles[0 + T_V0X] = -10.0f; //v0.x
+	triangles[0 + T_V0X] = -size; //v0.x
 	triangles[0 + T_V0Y] = 1.5f; //v0.y
-	triangles[0 + T_V0Z] = 10.0f; //v0.z
+	triangles[0 + T_V0Z] = size; //v0.z
 
-	triangles[0 + T_V1X] = -10.0f; //v1.x
+	triangles[0 + T_V1X] = -size; //v1.x
 	triangles[0 + T_V1Y] = 1.5f; //v1.y
-	triangles[0 + T_V1Z] = -10.0f; //v1.z
+	triangles[0 + T_V1Z] = -size; //v1.z
 
-	triangles[0 + T_V2X] = 10.0f; //v2.x
+	triangles[0 + T_V2X] = size; //v2.x
 	triangles[0 + T_V2Y] = 1.5f; //v2.y
-	triangles[0 + T_V2Z] = 10.0f; //v2.z
+	triangles[0 + T_V2Z] = size; //v2.z
 
 	//TODO: Completely remove material class?
 	//Color
@@ -421,17 +423,17 @@ void SceneManager::createFloor(Material material)
 
 
 	//Vertex positions
-	triangles[FLOATS_PER_TRIANGLE + T_V0X] = 10.0f; //v0.x
+	triangles[FLOATS_PER_TRIANGLE + T_V0X] = size; //v0.x
 	triangles[FLOATS_PER_TRIANGLE + T_V0Y] = 1.5f; //v0.y
-	triangles[FLOATS_PER_TRIANGLE + T_V0Z] = -10.0f; //v0.z
+	triangles[FLOATS_PER_TRIANGLE + T_V0Z] = -size; //v0.z
 
-	triangles[FLOATS_PER_TRIANGLE + T_V1X] = -10.0f; //v1.x
+	triangles[FLOATS_PER_TRIANGLE + T_V1X] = -size; //v1.x
 	triangles[FLOATS_PER_TRIANGLE + T_V1Y] = 1.5f; //v1.y
-	triangles[FLOATS_PER_TRIANGLE + T_V1Z] = -10.0f; //v1.z
+	triangles[FLOATS_PER_TRIANGLE + T_V1Z] = -size; //v1.z
 
-	triangles[FLOATS_PER_TRIANGLE + T_V2X] = 10.0f; //v2.x
+	triangles[FLOATS_PER_TRIANGLE + T_V2X] = size; //v2.x
 	triangles[FLOATS_PER_TRIANGLE + T_V2Y] = 1.5f; //v2.y
-	triangles[FLOATS_PER_TRIANGLE + T_V2Z] = 10.0f; //v2.z
+	triangles[FLOATS_PER_TRIANGLE + T_V2Z] = size; //v2.z
 
 	//TODO: Completely remove material class?
 	//Color
@@ -493,7 +495,7 @@ void SceneManager::initializeTriangle(int i, float * triangles)
 void SceneManager::moveSceneToGPU()
 {
 	// Triangles
-	cudaMalloc(&g_triangles, SCENE_ARRAY_SIZE * FLOATS_PER_TRIANGLE * sizeof(float));
+	cudaMalloc(&g_triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float));
 	cudaMemcpy(g_triangles, triangles, numGeometries * FLOATS_PER_TRIANGLE * sizeof(float), cudaMemcpyHostToDevice);
 
 	// Lights
