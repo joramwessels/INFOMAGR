@@ -19,8 +19,8 @@ void Game::Init()
 	*/
 	scene = new SceneManager();
 	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, &camera);
-	shadowRays = new float[shadowRayQueueSize];
 	shadowRayQueueSize = (primaryRayCount * scene->numLights * SR_SIZE);
+	shadowRays = new float[shadowRayQueueSize];
 
 	// Settings
 	SSAA = false;
@@ -117,6 +117,7 @@ void Game::Tick(float deltaTime)
 	// ----------------------------------------------
 	{
 		// Generating primary rays that shoot through the virtual screen
+		camera.DoF = false; // DEBUG
 		if (camera.DoF)
 		{
 			precalculate_RNG <<<SCRWIDTH, SCRHEIGHT>>> (g_DoF_random, curandstate, SSAA_val);
