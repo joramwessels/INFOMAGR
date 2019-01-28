@@ -12,22 +12,19 @@ void Game::GeneratePrimaryRays(float* rayQueue, bool DoF, vec3 position, vec3 TL
 		int pixely = i / SCRWIDTH;
 
 		//Generate the ray
-		if (SSAA)
+		if (SSAA) for (int j = 0; j < SSAA_val; j++)
 		{
-			for (int j = 0; j < 4; j++)
-			{
-				generateRayTroughVirtualScreen(ray, (float)pixelx + random[j*2], (float)pixely + random[j*2+1], DoF, position, TL, TR, BL);
+			generateRayTroughVirtualScreen(ray, (float)pixelx + random[i*SSAA_val*2 + j*2], (float)pixely + random[i*SSAA_val * 2 + j*2+1], DoF, position, TL, TR, BL);
 
-				ray[R_INOBJ] = 0;
-				ray[R_REFRIND] = 1.0f;
-				ray[R_BVHTRA] = 0;
-				ray[R_DEPTH] = 0;
-				ray[R_PIXX] = pixelx;
-				ray[R_PIXY] = pixely;
-				ray[R_ENERGY] = 0.25f;
+			ray[R_INOBJ] = 0;
+			ray[R_REFRIND] = 1.0f;
+			ray[R_BVHTRA] = 0;
+			ray[R_DEPTH] = 0;
+			ray[R_PIXX] = pixelx;
+			ray[R_PIXY] = pixely;
+			ray[R_ENERGY] = 0.25f;
 
-				addRayToQueue(ray, rayQueue);
-			}
+			addRayToQueue(ray, rayQueue);
 		}
 		else
 		{

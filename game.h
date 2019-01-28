@@ -105,7 +105,8 @@ private:
 
 	// SSAA
 	bool SSAA;
-	float *random = new float[8];
+	int SSAA_val;
+	float *random;
 	bool DoF = false;
 
 	// Tracing

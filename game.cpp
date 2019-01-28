@@ -23,6 +23,7 @@ void Game::Init()
 
 	// Settings
 	SSAA = false;
+	SSAA_val = 4;
 	camera.DoF = false;
 	use_bvh = true;
 	bvhdebug = false;
@@ -44,6 +45,11 @@ void Game::Init()
 	((int*)shadowRays)[0] = shadowRayQueueSize; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
+	if (SSAA)
+	{
+		random = (float*)malloc(SCRWIDTH * SCRHEIGHT * SSAA_val * 2 * sizeof(float));
+	}
+
 	// Moving everything to the GPU
 	cudaMalloc(&g_rayQueue, rayQueueSize * sizeof(float));
 	cudaMalloc(&g_newRays, rayQueueSize * sizeof(float));
@@ -59,14 +65,14 @@ void Game::Init()
 	scene->moveSceneToGPU();
 
 	//Random positions for the SSAA
-	random[0] = RandomFloat();
-	random[1] = RandomFloat();
-	random[2] = RandomFloat();
-	random[3] = RandomFloat();
-	random[4] = RandomFloat();
-	random[5] = RandomFloat();
-	random[6] = RandomFloat();
-	random[7] = RandomFloat();
+	//random[0] = RandomFloat();
+	//random[1] = RandomFloat();
+	//random[2] = RandomFloat();
+	//random[3] = RandomFloat();
+	//random[4] = RandomFloat();
+	//random[5] = RandomFloat();
+	//random[6] = RandomFloat();
+	//random[7] = RandomFloat();
 
 	mytimer.reset();
 }
