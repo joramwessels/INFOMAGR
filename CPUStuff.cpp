@@ -14,9 +14,9 @@ void Game::GeneratePrimaryRays(float* rayQueue, bool DoF, vec3 position, vec3 TL
 		//Generate the ray
 		if (SSAA)
 		{
-			for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
 			{
-				generateRayTroughVirtualScreen(ray, (float)pixelx + random[i*2], (float)pixely + random[i*2+1], DoF, position, TL, TR, BL);
+				generateRayTroughVirtualScreen(ray, (float)pixelx + random[j*2], (float)pixely + random[j*2+1], DoF, position, TL, TR, BL);
 
 				ray[R_INOBJ] = 0;
 				ray[R_REFRIND] = 1.0f;
