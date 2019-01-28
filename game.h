@@ -134,9 +134,10 @@ private:
 	timer mytimer;
 	int frames = 0;
 	long int no_rays = 0;
+	int raysInGPU = 0;
 	int prevsecframes = 0;
 	float avgFrameTime;
-	float raysPerFrame = 0;
+	int raysPerFrame = 0;
 	int raysPerSecond = 0;
 
 	// BVH

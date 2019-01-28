@@ -25,9 +25,7 @@ void Game::Init()
 	camera.DoF = false;
 	use_bvh = true;
 	bvhdebug = false;
-	use_GPU = false;
-
-	if (use_bvh) generateBVH();
+	use_GPU = true;
 
 	if (use_bvh) generateBVH();
 
@@ -159,6 +157,9 @@ void Game::Tick(float deltaTime)
 			g_newRays = temp;
 
 			//Get the new ray count from the gpu
+			cudaMemcpy(&raysInGPU, g_shadowRays + 1, sizeof(uint), cudaMemcpyDeviceToHost);
+			no_rays += raysInGPU + numRays;
+			raysPerFrame += raysInGPU + numRays;
 			if (((int*)rayQueue)[1] == 0) finished = true;
 		}
 
@@ -246,11 +247,12 @@ void Game::Tick(float deltaTime)
 		mytimer.reset();
 	}
 	float raysPerPixel = ((float) raysPerFrame) / (SCRWIDTH * SCRHEIGHT);
+	int numPrimitives = scene->numGeometries;
 
 	// Printing on-screen display
 	screen->Bar(0, 0, 150, 40, 0x000000);
 	char buffer[64];
-	sprintf(buffer, "No. primitives: %i", scene->numGeometries);
+	sprintf(buffer, "No. primitives: %i", numPrimitives);
 	screen->Print(buffer, 1, 2, 0xffffff);
 	sprintf(buffer, "FPS: %i", prevsecframes);
 	screen->Print(buffer, 1, 10, 0xffffff);
