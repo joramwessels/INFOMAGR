@@ -12,22 +12,19 @@ void Game::GeneratePrimaryRays(float* rayQueue, bool DoF, vec3 position, vec3 TL
 		int pixely = i / SCRWIDTH;
 
 		//Generate the ray
-		if (SSAA)
+		if (SSAA) for (int j = 0; j < SSAA_val; j++)
 		{
-			for (int j = 0; j < 4; j++)
-			{
-				generateRayTroughVirtualScreen(ray, (float)pixelx + random[j*2], (float)pixely + random[j*2+1], DoF, position, TL, TR, BL);
+			generateRayTroughVirtualScreen(ray, (float)pixelx + SSAA_random[i*SSAA_val*2 + j*2], (float)pixely + SSAA_random[i*SSAA_val * 2 + j*2+1], DoF, position, TL, TR, BL);
 
-				ray[R_INOBJ] = 0;
-				ray[R_REFRIND] = 1.0f;
-				ray[R_BVHTRA] = 0;
-				ray[R_DEPTH] = 0;
-				ray[R_PIXX] = pixelx;
-				ray[R_PIXY] = pixely;
-				ray[R_ENERGY] = 0.25f;
+			ray[R_INOBJ] = 0;
+			ray[R_REFRIND] = 1.0f;
+			ray[R_BVHTRA] = 0;
+			ray[R_DEPTH] = 0;
+			ray[R_PIXX] = pixelx;
+			ray[R_PIXY] = pixely;
+			ray[R_ENERGY] = 1.0f / SSAA_val;
 
-				addRayToQueue(ray, rayQueue);
-			}
+			addRayToQueue(ray, rayQueue);
 		}
 		else
 		{
@@ -557,7 +554,7 @@ void Game::addRayToQueue(vec3 ori, vec3 dir, bool inObj, float refrInd, int bvhT
 
 	((int*)queue)[1]++; //Current count++
 	raysPerFrame++;
-	//no_rays++;
+	no_rays++;
 }
 
 void Game::addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, float maxt, float pixelX, float pixelY, float* queue)
@@ -596,7 +593,7 @@ void Game::addShadowRayToQueue(vec3 ori, vec3 dir, float R, float G, float B, fl
 
 	((int*)queue)[1]++; //Current count++
 	raysPerFrame++;
-	//no_rays++;
+	no_rays++;
 }
 
 Collision intersectTriangle(int i, vec3 origin, vec3 direction, float * triangles, bool isShadowRay)

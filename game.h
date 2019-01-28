@@ -105,11 +105,14 @@ private:
 
 	// SSAA
 	bool SSAA;
-	int SSAA_val;
-	float *random = new float[8];
-	bool DoF = false;
+	const int SSAA_val = 4;
+	float *SSAA_random;
+	float *g_SSAA_random;
+	const int SSAA_random_size = SCRWIDTH * SCRHEIGHT * SSAA_val * 2;
+
+	// DoF
 	float *g_DoF_random;
-	int DoF_seed = 12345;
+	const int DoF_seed = 12345;
 	curandState *curandstate;
 
 	// Tracing
@@ -128,10 +131,10 @@ private:
 	bool keyW = false, keyA = false, keyS = false, keyD = false, keyQ = false, keyE = false, keymin = false, keyplus = false, keyComma = false, keyPeriod = false;
 
 	//fps counter
-	int frames = 0;
-	int no_rays = 0;
-	int prevsecframes = 0;
 	timer mytimer;
+	int frames = 0;
+	long int no_rays = 0;
+	int prevsecframes = 0;
 	float avgFrameTime;
 	float raysPerFrame = 0;
 	int raysPerSecond = 0;
@@ -158,9 +161,9 @@ private:
 	// ---------
 	// Ray queue
 	// ---------
-	const int primaryRayCount = SCRHEIGHT * SCRWIDTH * 4;		// The number of pixels * the number of rays per pixel
+	const int primaryRayCount = SCRHEIGHT * SCRWIDTH * SSAA_val; // The number of pixels * the number of rays per pixel
 	const int rayQueueSize = (primaryRayCount + 1) * R_SIZE;	// The number of floats in a ray queue
-	const int shadowRayQueueSize = (rayQueueSize * 5 + R_SIZE);
+	const int shadowRayQueueSize = (rayQueueSize * (SSAA_val + 1) + SR_SIZE);
 	float *rayQueue = new float[rayQueueSize]; // ray queue; rays are represented as consecutive series of 13 floats, ordered as in the Ray struct
 	float* newRays = new float[rayQueueSize];
 	float* shadowRays = new float[shadowRayQueueSize];

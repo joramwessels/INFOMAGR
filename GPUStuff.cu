@@ -151,7 +151,7 @@ __device__ float* generateRayTroughVirtualScreen(float pixelx, float pixely, boo
 }
 
 // Generates and collects primary rays in the given ray queue
-__global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA, int SSAA_val, float* DoF_random)
+__global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, float3 virtualScreenCornerTL, float3 virtualScreenCornerTR, float3 virtualScreenCornerBL, bool SSAA, int SSAA_val, float* DoF_random, float* g_SSAA_random)
 {
 	uint numRays = SCRWIDTH * SCRHEIGHT;
 	uint raynum = atomicInc(((uint*)rayQueue) + 2, 0xffffffff);
@@ -159,7 +159,7 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 	while (raynum < numRays) {
 		int pixelx = raynum % SCRWIDTH;
 		int pixely = raynum / SCRWIDTH;
-		float* DoF_ptr;
+		float* DoF_ptr, *SSAA_ptr;
 		//int pixelx = threadIdx.x;
 		//int pixely = blockIdx.x;
 
@@ -170,8 +170,9 @@ __global__ void GeneratePrimaryRay(float* rayQueue, bool DoF, float3 position, f
 		//Generate the ray
 		if (SSAA) for(int i=0; i < SSAA_val; i++)
 		{
+			SSAA_ptr =      g_SSAA_random + ((raynum * SSAA_val) + i) * 2;
 			if (DoF) DoF_ptr = DoF_random + ((raynum * SSAA_val) + i) * 2;
-			float* ray = generateRayTroughVirtualScreen(pixelx, pixely, DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL, DoF_ptr);
+			float* ray = generateRayTroughVirtualScreen(pixelx + SSAA_ptr[0], pixely + SSAA_ptr[1], DoF, position, virtualScreenCornerTL, virtualScreenCornerTR, virtualScreenCornerBL, DoF_ptr);
 
 			ray[R_INOBJ] = 0;
 			ray[R_REFRIND] = 1.0f;

@@ -21,12 +21,13 @@ void Game::Init()
 	scene->loadScene(SceneManager::SCENE_OBJ_HALFREFLECT, &camera);
 
 	// Settings
-	SSAA = true;
-	SSAA_val = 4;
-	camera.DoF = true;
+	SSAA = false;
+	camera.DoF = false;
 	use_bvh = true;
 	bvhdebug = false;
-	use_GPU = true;
+	use_GPU = false;
+
+	if (use_bvh) generateBVH();
 
 	if (use_bvh) generateBVH();
 
@@ -46,6 +47,9 @@ void Game::Init()
 	((int*)shadowRays)[0] = shadowRayQueueSize; //queue size, can be more than the number of pixels (for instance, half reflecting objects)
 	((int*)shadowRays)[1] = 0; //current count
 
+	SSAA_random = (float*)malloc(SSAA_random_size * sizeof(float));
+	for (int i = 0; i < SSAA_random_size; i++) SSAA_random[i] = RandomFloat();
+
 	// Moving everything to the GPU
 	if (use_GPU)
 	{
@@ -55,12 +59,14 @@ void Game::Init()
 		cudaMalloc(&g_shadowRays, shadowRayQueueSize);
 		cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
 		cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
-		cudaMalloc(&g_DoF_random, SCRWIDTH * SCRHEIGHT * SSAA_val * 2 * sizeof(float));
+		cudaMalloc(&g_DoF_random, SSAA_random_size * sizeof(float));
 		cudaMalloc(&curandstate, sizeof(curandState));
+		cudaMalloc(&g_SSAA_random, SSAA_random_size * sizeof(float));
 
 		cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
 		cudaMemcpy(g_shadowRays, shadowRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
 		cudaMemcpy(g_rayQueue, rayQueue, sizeof(float) * 5, cudaMemcpyHostToDevice);
+		cudaMemcpy(g_SSAA_random, SSAA_random, SSAA_random_size * sizeof(float), cudaMemcpyHostToDevice);
 
 		scene->moveSceneToGPU();
 
@@ -68,14 +74,14 @@ void Game::Init()
 	}
 
 	//Random positions for the SSAA
-	random[0] = RandomFloat();
-	random[1] = RandomFloat();
-	random[2] = RandomFloat();
-	random[3] = RandomFloat();
-	random[4] = RandomFloat();
-	random[5] = RandomFloat();
-	random[6] = RandomFloat();
-	random[7] = RandomFloat();
+	//random[0] = RandomFloat();
+	//random[1] = RandomFloat();
+	//random[2] = RandomFloat();
+	//random[3] = RandomFloat();
+	//random[4] = RandomFloat();
+	//random[5] = RandomFloat();
+	//random[6] = RandomFloat();
+	//random[7] = RandomFloat();
 
 	mytimer.reset();
 }
@@ -122,7 +128,7 @@ void Game::Tick(float deltaTime)
 		float3 BL = make_float3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
 		cudaMemset(g_rayQueue + 1, 0, sizeof(uint) * 4);
 
-		GeneratePrimaryRay <<<num_multiprocessors, num_gpu_threads>>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA, SSAA_val, g_DoF_random);
+		GeneratePrimaryRay <<<num_multiprocessors, num_gpu_threads>>> (g_rayQueue, camera.DoF, camPos, TL, TR, BL, SSAA, SSAA_val, g_DoF_random, g_SSAA_random);
 		CheckCudaError(1);
 
 		bool finished = false;
@@ -174,7 +180,7 @@ void Game::Tick(float deltaTime)
 		vec3 TL = vec3(camera.virtualScreenCornerTL.x, camera.virtualScreenCornerTL.y, camera.virtualScreenCornerTL.z);
 		vec3 TR = vec3(camera.virtualScreenCornerTR.x, camera.virtualScreenCornerTR.y, camera.virtualScreenCornerTR.z);
 		vec3 BL = vec3(camera.virtualScreenCornerBL.x, camera.virtualScreenCornerBL.y, camera.virtualScreenCornerBL.z);
-		GeneratePrimaryRays(rayQueue, DoF, camera.position, TL, TR, BL, SSAA);
+		GeneratePrimaryRays(rayQueue, camera.DoF, camera.position, TL, TR, BL, SSAA);
 
 		bool finished = false;
 		while (!finished)
@@ -232,14 +238,14 @@ void Game::Tick(float deltaTime)
 	frames++;
 	if (mytimer.elapsed() > 1000) {
 		prevsecframes = frames;
-		raysPerSecond = no_rays;
+		raysPerSecond = no_rays * 1000 / mytimer.elapsed();
 		avgFrameTime = mytimer.elapsed() / (float)frames;
 
 		frames = 0;
 		no_rays = 0;
 		mytimer.reset();
 	}
-	float raysPerPixel = raysPerFrame / (SCRWIDTH * SCRHEIGHT);
+	float raysPerPixel = ((float) raysPerFrame) / (SCRWIDTH * SCRHEIGHT);
 
 	// Printing on-screen display
 	screen->Bar(0, 0, 150, 40, 0x000000);
@@ -254,5 +260,5 @@ void Game::Tick(float deltaTime)
 	screen->Print(buffer, 1, 26, 0xffffff);
 	sprintf(buffer, "Rays/second: %i", raysPerSecond);
 	screen->Print(buffer, 1, 34, 0xffffff);
-	no_rays = 0;
+	raysPerFrame = 0;
 }
