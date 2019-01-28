@@ -60,7 +60,7 @@ void Game::Init()
 		cudaMalloc(&g_intermediate, SCRWIDTH * SCRHEIGHT * sizeof(float4));
 		cudaMalloc(&g_screen, SCRWIDTH * SCRHEIGHT * sizeof(uint));
 		cudaMalloc(&g_DoF_random, SSAA_random_size * sizeof(float));
-		cudaMalloc(&curandstate, sizeof(curandState));
+		cudaMalloc(&curandstate, SCRWIDTH * SCRHEIGHT * sizeof(curandState));
 		cudaMalloc(&g_SSAA_random, SSAA_random_size * sizeof(float));
 
 		cudaMemcpy(g_newRays, newRays, sizeof(float) * 2, cudaMemcpyHostToDevice);
@@ -70,7 +70,7 @@ void Game::Init()
 
 		scene->moveSceneToGPU();
 
-		setup_RNG <<<1, 1>>> (curandstate, DoF_seed);
+		setup_RNG <<<SCRWIDTH, SCRHEIGHT>>> (curandstate, DoF_seed);
 	}
 
 	//Random positions for the SSAA

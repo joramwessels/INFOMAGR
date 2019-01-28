@@ -57,19 +57,18 @@ __device__ float g_random8 = 0.769904f;
 __global__ void setup_RNG(void* curandstate, int seed)
 {
 	int idx = threadIdx.x + blockDim.x * blockIdx.x;
-	curand_init(seed, idx, 0, &((curandState*)curandstate)[idx]);
+	curand_init(seed, 0, 0, &((curandState*)curandstate)[idx]);
 }
 
 __global__ void precalculate_RNG(float* g_DoF_random, void* curandstate, int SSAA_val)
 {
 	// TODO make independent of x, y
+	int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	int ranPerPixel = 2 * SSAA_val;
-	int x = threadIdx.x * ranPerPixel;
-	int y = blockIdx.x * ranPerPixel;
 
 	for (int i = 0; i < ranPerPixel; i++)
 	{
-		g_DoF_random[x + y * SCRWIDTH + i] = curand_uniform((curandState*)curandstate);
+		g_DoF_random[idx * ranPerPixel + i] = curand_uniform(&((curandState*)curandstate)[idx]);
 	}
 }
 
